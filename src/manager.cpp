@@ -90,12 +90,14 @@ bool Manager::LoadPresetMesh(PresetMesh& a_mesh)
 
     a_mesh.foundCharacterBumper = true;
 
+    // Probably we won't need collisionObject but it's nice to check for safety before copying the character bumper node.
     auto* collisionObject = bumperObject->collisionObject.get();
     if (!collisionObject) {
         logger::error("Preset [{}] loaded and CharacterBumper found, but it has no collision object", a_mesh.name);
         return false;
     }
 
+    
     auto* spCollisionObject = skyrim_cast<RE::bhkSPCollisionObject*>(collisionObject);
     a_mesh.foundBhkSPCollisionObject = spCollisionObject != nullptr;
 
