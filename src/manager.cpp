@@ -97,7 +97,7 @@ bool Manager::LoadPresetMesh(PresetMesh& a_mesh)
         return false;
     }
 
-    
+
     auto* spCollisionObject = skyrim_cast<RE::bhkSPCollisionObject*>(collisionObject);
     a_mesh.foundBhkSPCollisionObject = spCollisionObject != nullptr;
 
@@ -105,6 +105,8 @@ bool Manager::LoadPresetMesh(PresetMesh& a_mesh)
         logger::error("Preset [{}] CharacterBumper collision object is not bhkSPCollisionObject", a_mesh.name);
         return false;
     }
+
+    a_mesh.spCollisionObject = RE::NiPointer<RE::bhkSPCollisionObject>(spCollisionObject);
 
     logger::info("Preset [{}] OK", a_mesh.name, loadedRoot->name.c_str());
 

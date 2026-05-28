@@ -1,5 +1,6 @@
 #include "eventSinks.hpp"
 #include "logger.hpp"
+#include "manager.hpp"
 
 namespace EventSinks {
 
@@ -34,7 +35,7 @@ namespace EventSinks {
 		return RE::BSEventNotifyControl::kContinue;
 	}
 
-	// combat event runs on all npcs must filter for player
+	// seems to run anytime a npcs combat state changes, fired for every npc
 	RE::BSEventNotifyControl CombatEventSink::ProcessEvent(const RE::TESCombatEvent* event,
 		RE::BSTEventSource <RE::TESCombatEvent>*) {
 
@@ -42,17 +43,66 @@ namespace EventSinks {
 			return RE::BSEventNotifyControl::kContinue;
 		}
 
+		logger::debug("combat event fired");
+
 		auto* player = RE::PlayerCharacter::GetSingleton();
 		if (!player) {
 			return RE::BSEventNotifyControl::kContinue;
 		}
 
-		// filter for player only if wanted
-		if (event->actor.get() != player) {
+		auto manager = VCD::Manager::GetSingleton();
+
+		auto& collisionNode =
+			VCD::Manager::GetSingleton().GetPresetMeshes()
+			[VCD::ToUnderlying(VCD::Preset::kPersonalSpace)].spCollisionObject;
+
+		if (!collisionNode) return RE::BSEventNotifyControl::kContinue;
+
+		auto* sp = collisionNode.get();
+		if (!sp || !sp->body)
 			return RE::BSEventNotifyControl::kContinue;
+
+		auto* hkWorldObj = static_cast<RE::hkpWorldObject*>(
+			collisionNode->body->referencedObject.get()
+			);
+
+		if (!hkWorldObj || !hkWorldObj->collidable.shape)
+			return RE::BSEventNotifyControl::kContinue;
+
+		auto* shape = hkWorldObj->collidable.shape;
+
+		auto playerController = player->GetCharController(); 
+
+		if (auto proxyController = skyrim_cast<RE::bhkCharProxyController*>(playerController)) {
+
+			logger::debug("Grabbed Character Controller grabbing proxy now");
+
+			auto proxy = static_cast<RE::hkpCharacterProxy*>(
+				proxyController->proxy.referencedObject.get()
+				);
+
+			if (proxy) {
+
+				logger::debug("Grabbed proxy setting collision now");
+
+				logger::info("Shape ptr before swap: {:p}", (void*)proxy->shapePhantom->collidable.shape);
+
+				proxy->shapePhantom->SetShape(
+					shape
+				);
+
+				logger::info("Shape ptr after swap: {:p}", (void*)proxy->shapePhantom->collidable.shape);
+			}
+
+			else {
+				logger::error("no Proxy Cant Change Players Collision");
+			}
 		}
 
-		// change collision here
+		else {
+			logger::error("no Proxy Controller Cant Change Players Collision");
+		}
+
 
 		return RE::BSEventNotifyControl::kContinue;
 	}
@@ -66,6 +116,7 @@ namespace EventSinks {
 		auto* eventSink = CombatEventSink::GetSingleton();
 		auto* eventSourceHolder = RE::ScriptEventSourceHolder::GetSingleton();
 		eventSourceHolder->AddEventSink<RE::TESCombatEvent>(eventSink);
+		logger::info("CombatEventSink sink registered");
 	}
 
 	void PlayerCellEvent::RegisterEventSink() {

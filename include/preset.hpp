@@ -23,6 +23,7 @@ namespace VCD {
         std::string_view path{};
 
         RE::NiPointer<RE::NiNode> root{};
+        RE::NiPointer<RE::bhkSPCollisionObject> spCollisionObject{};
 
         bool loaded{ false };
         bool foundCharacterBumper{ false };

@@ -30,6 +30,10 @@ static void MessageHandler(SKSE::MessagingInterface::Message* msg) {
     case SKSE::MessagingInterface::kDataLoaded:
     {
         VCD::Manager::GetSingleton().LoadPresetMeshes();
+        if (!VCD::Manager::GetSingleton().AreAllPresetMeshesLoaded()) {
+            logger::error("Presets Are Not Loaded Cant Continue");
+        }
+
         EventSinks::InstallEventSinks();
         break;
     }
@@ -40,7 +44,7 @@ static void MessageHandler(SKSE::MessagingInterface::Message* msg) {
 
 SKSEPluginLoad(const SKSE::LoadInterface* skse) {
     SKSE::Init(skse);
-    setupLog(spdlog::level::info);
+    setupLog(spdlog::level::debug);
     logger::info("Variadic Collision Dynamics Plugin is Loaded");
     SKSE::GetMessagingInterface()->RegisterListener(MessageHandler);
     return true;
