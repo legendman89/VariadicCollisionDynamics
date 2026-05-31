@@ -91,6 +91,9 @@ bool Manager::LoadPresetMesh(PresetMesh& a_mesh)
 
     a_mesh.foundCharacterBumper = true;
 
+    a_mesh.data.bump.translation = bumperObject->local.translate;
+    a_mesh.data.bump.scale = bumperObject->local.scale;
+
     auto* collisionObject = bumperObject->collisionObject.get();
     if (!collisionObject) {
         logger::error("Preset [{}] loaded and CharacterBumper found, but it has no collision object", a_mesh.name);
@@ -116,7 +119,7 @@ bool Manager::LoadPresetMesh(PresetMesh& a_mesh)
 
     auto* bhkPhantom = static_cast<RE::bhkShapePhantom*>(body);
     if (!bhkPhantom) {
-        logger::error( "Preset [{}] bhkSPCollisionObject body is not bhkShapePhantom", a_mesh.name);
+        logger::error("Preset [{}] bhkSPCollisionObject body is not bhkShapePhantom", a_mesh.name);
         return false;
     }
 
@@ -151,6 +154,13 @@ bool Manager::LoadPresetMesh(PresetMesh& a_mesh)
     }
 
     a_mesh.foundCapsuleShape = true;
+
+    a_mesh.data.capsule.radius = capsuleShape->radius;
+    a_mesh.data.capsule.point1.Set(capsuleShape->vertexA);
+    a_mesh.data.capsule.point2.Set(capsuleShape->vertexA);
+    a_mesh.data.capsule.height = capsuleShape->vertexA.GetDistance3(capsuleShape->vertexB);
+
+    a_mesh.data.Log();
 
     return true;
 }
