@@ -3,6 +3,7 @@
 #include "logger.hpp"
 #include "eventSinks.hpp"
 #include "manager.hpp"
+#include "Menu.hpp"
 
 static void MessageHandler(SKSE::MessagingInterface::Message* msg) {
     switch (msg->type) {
@@ -34,7 +35,8 @@ static void MessageHandler(SKSE::MessagingInterface::Message* msg) {
             logger::error("Presets Are Not Loaded Cant Continue");
         }
 
-        //EventSinks::InstallEventSinks();
+        EventSinks::InstallEventSinks();
+
         break;
     }
     default:
@@ -47,5 +49,6 @@ SKSEPluginLoad(const SKSE::LoadInterface* skse) {
     setupLog(spdlog::level::debug);
     logger::info("Variadic Collision Dynamics Plugin is Loaded");
     SKSE::GetMessagingInterface()->RegisterListener(MessageHandler);
+    UI::Register(); 
     return true;
 }

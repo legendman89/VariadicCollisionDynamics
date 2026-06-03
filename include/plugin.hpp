@@ -9,4 +9,3 @@ using namespace std::literals;
 using namespace std;
 
 #define RELOCATION_OFFSET(SE, AE) REL::VariantOffset(SE, AE, 0).offset()
-

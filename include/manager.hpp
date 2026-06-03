@@ -17,6 +17,12 @@ namespace VCD {
         void LoadPresetMeshes();
 		void ClearLoadedMeshes();
 
+        //works but player falls through floor halfway not sure why yet
+        bool SetPreset(RE::Actor* a_actor, VCD::Preset a_preset);
+
+        bool SetCollisionShape(RE::bhkCharProxyController* a_controller,
+            const RE::hkpShape* a_shape);
+
         bool AreAllPresetMeshesLoaded() const;
         std::size_t GetLoadedPresetCount() const;
         const std::array<PresetMesh, 4>& GetPresetMeshes() const noexcept;

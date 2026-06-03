@@ -63,6 +63,118 @@ void Manager::ClearLoadedMeshes()
     }
 }
 
+bool Manager::SetCollisionShape(RE::bhkCharProxyController* a_controller,
+    const RE::hkpShape* a_shape)
+{
+    if (!a_controller || !a_shape)
+        return false;
+
+    auto proxy = static_cast<RE::hkpCharacterProxy*>(
+        a_controller->proxy.referencedObject.get()
+        );
+
+    if (!proxy || !proxy->shapePhantom)
+        return false;
+
+    proxy->shapePhantom->SetShape(a_shape);
+    return true;
+}
+
+//works but player falls through floor halfway not sure why yet
+/*bool Manager::SetPreset(RE::Actor* a_actor, VCD::Preset a_preset)
+{
+    if (!a_actor)
+        return false;
+
+    auto* playerController =
+        skyrim_cast<RE::bhkCharProxyController*>(a_actor->GetCharController());
+
+    if (!playerController)
+        return false;
+
+    auto& mesh =
+        VCD::Manager::GetSingleton()
+        .GetPresetMeshes()[VCD::ToUnderlying(a_preset)];
+
+    auto* sp = mesh.spCollisionObject.get();
+    if (!sp || !sp->body)
+        return false;
+
+    auto* body = sp->body.get();
+    if (!body) {
+        logger::error("Preset bhkSPCollisionObject has no body");
+        return false;
+    }
+
+    auto* bhkPhantom = static_cast<RE::bhkShapePhantom*>(body);
+    if (!bhkPhantom) {
+        logger::error("Preset bhkSPCollisionObject body is not bhkShapePhantom");
+        return false;
+    }
+
+    auto* referencedObject = bhkPhantom->referencedObject.get();
+    if (!referencedObject) {
+        logger::error("Preset  bhkShapePhantom has no referenced Havok object");
+        return false;
+    }
+
+    auto* simpleShapePhantom = static_cast<RE::hkpSimpleShapePhantom*>(referencedObject);
+
+    if (!simpleShapePhantom) {
+        logger::error("Preset referenced object is not hkpSimpleShapePhantom");
+        return false;
+    }
+
+    const auto* shape = simpleShapePhantom->collidable.shape;
+    if (!shape) {
+        logger::error("Preset  hkpSimpleShapePhantom has no collidable shape");
+        return false;
+    }
+
+    if (shape->type != RE::hkpShapeType::kCapsule) {
+        logger::error("Preset  shape is not capsule. shapeType=");
+        return false;
+    }
+
+    const auto* capsuleShape = static_cast<const RE::hkpCapsuleShape*>(shape);
+    if (!capsuleShape) {
+        logger::error("Preset failed to cast shape to hkpCapsuleShape");
+        return false;
+    }
+
+    return SetCollisionShape(playerController, capsuleShape);
+}*/
+
+//works but player falls through floor halfway not sure why yet
+bool Manager::SetPreset(RE::Actor* a_actor, VCD::Preset a_preset)
+{
+    if (!a_actor)
+        return false;
+
+    auto* playerController =
+        skyrim_cast<RE::bhkCharProxyController*>(a_actor->GetCharController());
+
+    if (!playerController)
+        return false;
+
+    auto& mesh =
+        VCD::Manager::GetSingleton()
+        .GetPresetMeshes()[VCD::ToUnderlying(a_preset)];
+
+    auto* sp = mesh.spCollisionObject.get();
+    if (!sp || !sp->body)
+        return false;
+
+    auto* worldObj =
+        static_cast<RE::hkpWorldObject*>(sp->body->referencedObject.get());
+
+    if (!worldObj || !worldObj->collidable.shape)
+        return false;
+
+   return SetCollisionShape(playerController, worldObj->collidable.shape);
+}
+
+
 bool Manager::LoadPresetMesh(PresetMesh& a_mesh)
 {
     logger::info("Loading preset [{}] from [{}]", a_mesh.name, a_mesh.path);

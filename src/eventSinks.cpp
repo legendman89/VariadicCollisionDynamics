@@ -50,59 +50,10 @@ namespace EventSinks {
 			return RE::BSEventNotifyControl::kContinue;
 		}
 
-		auto& manager = VCD::Manager::GetSingleton();
+		auto manager = VCD::Manager::GetSingleton();
 
-		auto& collisionNode =
-			VCD::Manager::GetSingleton().GetPresetMeshes()
-			[VCD::ToUnderlying(VCD::Preset::kPersonalSpace)].spCollisionObject;
-
-		if (!collisionNode) return RE::BSEventNotifyControl::kContinue;
-
-		auto* sp = collisionNode.get();
-		if (!sp || !sp->body)
-			return RE::BSEventNotifyControl::kContinue;
-
-		auto* hkWorldObj = static_cast<RE::hkpWorldObject*>(
-			collisionNode->body->referencedObject.get()
-			);
-
-		if (!hkWorldObj || !hkWorldObj->collidable.shape)
-			return RE::BSEventNotifyControl::kContinue;
-
-		auto* shape = hkWorldObj->collidable.shape;
-
-		auto playerController = player->GetCharController(); 
-
-		if (auto proxyController = skyrim_cast<RE::bhkCharProxyController*>(playerController)) {
-
-			logger::debug("Grabbed Character Controller grabbing proxy now");
-
-			auto proxy = static_cast<RE::hkpCharacterProxy*>(
-				proxyController->proxy.referencedObject.get()
-				);
-
-			if (proxy) {
-
-				logger::debug("Grabbed proxy setting collision now");
-
-				logger::info("Shape ptr before swap: {:p}", (void*)proxy->shapePhantom->collidable.shape);
-
-				proxy->shapePhantom->SetShape(
-					shape
-				);
-
-				logger::info("Shape ptr after swap: {:p}", (void*)proxy->shapePhantom->collidable.shape);
-			}
-
-			else {
-				logger::error("no Proxy Cant Change Players Collision");
-			}
-		}
-
-		else {
-			logger::error("no Proxy Controller Cant Change Players Collision");
-		}
-
+		// we should prolly allow user to decide what preset they want for combat
+		manager.SetPreset(player, VCD::Preset::kCompact);
 
 		return RE::BSEventNotifyControl::kContinue;
 	}
