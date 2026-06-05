@@ -1,5 +1,9 @@
 #include "manager.hpp"
 #include "logger.hpp"
+#include "RE/Skyrim.h"
+#include "SKSE/SKSE.h"
+#include "TrueHUDAPI.h"
+#include "globals.hpp"
 
 #include <type_traits>
 
@@ -387,6 +391,59 @@ const PresetMesh* Manager::GetPresetMesh(const VCD::Preset& a_preset) const
 RE::hkpCapsuleShape* Manager::GetPresetShape(const VCD::Preset& a_preset)
 {
     return const_cast<RE::hkpCapsuleShape*>(static_cast<const Manager*>(this)->GetPresetShape(a_preset));
+}
+
+void Manager::DrawPlayerBumper()
+{
+    if (!globals::g_trueHUD)
+        return;
+    auto player = RE::PlayerCharacter::GetSingleton();
+    if (!player)
+        return;
+    auto charController = skyrim_cast<RE::bhkCharProxyController*>(player->GetCharController());
+    if (!charController)
+        return;
+    auto cell = player->GetParentCell();
+    if (!cell)
+        return;
+    auto world = cell->GetbhkWorld();
+    if (!world)
+        return;
+    RE::BSReadLockGuard lock(world->worldLock);
+    auto* bumper = VCD::Manager::GetSingleton().FindWorldCharacterBumperShape(charController);
+    if (!bumper)
+        return;
+
+    auto hkToNi = [](const RE::hkVector4& v) {
+        return RE::NiPoint3(v.quad.m128_f32[0], v.quad.m128_f32[1], v.quad.m128_f32[2]);
+        };
+
+    //scale vertex and bumper  everything by hk scale for collisions
+    constexpr float hkScale = 70.f; 
+
+    RE::hkVector4 controllerPosHK;
+    charController->GetPosition(controllerPosHK, false);
+    RE::NiPoint3 controllerPos = hkToNi(controllerPosHK) * hkScale;
+    RE::NiPoint3 aLocal = hkToNi(bumper->vertexA) * hkScale;
+    RE::NiPoint3 bLocal = hkToNi(bumper->vertexB) * hkScale;
+
+    
+    float radius = bumper->radius * hkScale;
+    float yaw = -player->data.angle.z;
+    float c = std::cos(yaw);
+    float s = std::sin(yaw);
+
+
+    // its a cylinder or capsule shape so idk if we need to even rotate but mabye helpfull for future shapes if needed
+    auto rotate = [&](const RE::NiPoint3& p) {
+        return RE::NiPoint3(p.x * c - p.y * s, p.x * s + p.y * c, p.z);
+        };
+
+    RE::NiPoint3 a = rotate(aLocal) + controllerPos;
+    RE::NiPoint3 b = rotate(bLocal) + controllerPos;
+
+    //I can move this func to qtr so we dont need true hud 
+    globals::g_trueHUD->DrawCapsule(a, b, radius, 0.f, 0xFF4087FF, 1.f);
 }
 
 const RE::hkpCapsuleShape* Manager::GetPresetShape(const VCD::Preset& a_preset) const

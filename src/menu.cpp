@@ -2,6 +2,7 @@
 #include "preset.hpp"
 #include "manager.hpp"
 #include "logger.hpp"
+#include "globals.hpp"
 
 namespace UI {
 
@@ -53,6 +54,8 @@ namespace UI {
             logger::info("Debug menu SetPreset result: {}", manager.SetPreset(player, currentPreset));
         }
 
+        ImGuiMCP::Checkbox("Draw Bumper", &globals::bDrawCharacterBumper);
+
         auto& manager = VCD::Manager::GetSingleton();
         auto* selectedShape = manager.GetPresetShape(currentPreset);
         static Preset sliderPreset = Preset::kVanillaLike;
@@ -63,6 +66,8 @@ namespace UI {
             radius = selectedShape->radius;
         }
 
+        //legendman I dont think this is correct I was told radius is actually vector 4 under the hood even though commonlib says float? 
+        // anywho this was only for testing can be removed if needed
         if (selectedShape && ImGuiMCP::SliderFloat("Capsule Radius", &radius, 0.0f, 1.0f))
         {
             selectedShape->radius = radius;

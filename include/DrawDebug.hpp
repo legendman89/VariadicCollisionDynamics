@@ -4,6 +4,7 @@
 
 #include <REX/REX/Singleton.h>
 #include <shared_mutex>
+#include "logger.hpp"
 
 namespace DebugAPI_IMPL {
     constexpr int CIRCLE_NUM_SEGMENTS = 32;

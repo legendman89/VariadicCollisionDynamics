@@ -27,7 +27,8 @@ namespace VCD {
         const PresetMesh* GetPresetMesh(const VCD::Preset& a_preset) const;
         RE::hkpCapsuleShape* GetPresetShape(const VCD::Preset& a_preset);
         const RE::hkpCapsuleShape* GetPresetShape(const VCD::Preset& a_preset) const;
-
+        void DrawPlayerBumper(); 
+        RE::hkpCapsuleShape* FindWorldCharacterBumperShape(RE::bhkCharProxyController* a_controller) const;
     private:
 
         Manager();
@@ -35,7 +36,7 @@ namespace VCD {
         bool LoadPresetMesh(PresetMesh& a_mesh);
 
         RE::NiAVObject* FindCharacterBumper(RE::NiNode* a_root) const;
-        RE::hkpCapsuleShape* FindWorldCharacterBumperShape(RE::bhkCharProxyController* a_controller) const;
+      
         RE::hkpCapsuleShape* FindCharacterBumperShape(RE::hkpShape* a_shape, const RE::hkpShapeKey& a_key) const;
         bool IsCharacterBumperShape(const RE::hkpShape* a_shape, const RE::hkpShapeKey& a_key) const;
 
