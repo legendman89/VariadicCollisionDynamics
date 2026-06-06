@@ -57,20 +57,18 @@ namespace UI {
         ImGuiMCP::Checkbox("Draw Bumper", &globals::bDrawCharacterBumper);
 
         auto& manager = VCD::Manager::GetSingleton();
-        auto* selectedShape = manager.GetPresetShape(currentPreset);
+        auto* selectedPreset = manager.GetPresetConfig(currentPreset);
         static Preset sliderPreset = Preset::kVanillaLike;
         static float radius = 0.0f;
 
-        if (selectedShape && (sliderPreset != currentPreset || radius <= 0.0f)) {
+        if (selectedPreset && (sliderPreset != currentPreset || radius <= 0.0f)) {
             sliderPreset = currentPreset;
-            radius = selectedShape->radius;
+            radius = selectedPreset->data.capsule.radius;
         }
 
-        //legendman I dont think this is correct I was told radius is actually vector 4 under the hood even though commonlib says float? 
-        // anywho this was only for testing can be removed if needed
-        if (selectedShape && ImGuiMCP::SliderFloat("Capsule Radius", &radius, 0.0f, 1.0f))
+        if (selectedPreset && ImGuiMCP::SliderFloat("Capsule Radius", &radius, 0.0f, 1.0f))
         {
-            selectedShape->radius = radius;
+            selectedPreset->data.capsule.radius = radius;
             manager.SetPreset(player, currentPreset);
         }
  

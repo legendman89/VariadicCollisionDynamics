@@ -1,0 +1,19 @@
+{
+  // Display name shown in logs and debug UI.
+  "name": "Bulky",
+
+  // Position offset: [x, y, z].
+  "position": [0.0, 25.0, 10.0],
+
+  // Multiplier reserved for future position/point mapping.
+  "scale": 1.09,
+
+  // Collision radius.
+  "radius": 0.4,
+
+  // First endpoint: [x, y, z].
+  "firstPoint": [0.0, 0.0, 1.22],
+
+  // Second endpoint: [x, y, z].
+  "secondPoint": [0.0, 0.0, 0.31]
+}

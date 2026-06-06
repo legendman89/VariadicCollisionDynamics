@@ -16,7 +16,7 @@ void PlayerCharacter_Update::thunk(RE::PlayerCharacter* player, float delta) {
 	}
 
 	if (globals::bDrawCharacterBumper) {
-		logger::info("Drawing bumper");
+		// logger::info("Drawing bumper"); this psams the log, as it rins every frame.
 		VCD::Manager::GetSingleton().DrawPlayerBumper();
 	}
 

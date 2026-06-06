@@ -33,8 +33,8 @@ static void MessageHandler(SKSE::MessagingInterface::Message* msg) {
     }
     case SKSE::MessagingInterface::kDataLoaded:
     {
-        VCD::Manager::GetSingleton().LoadPresetMeshes();
-        if (!VCD::Manager::GetSingleton().AreAllPresetMeshesLoaded()) {
+        VCD::Manager::GetSingleton().LoadPresets();
+        if (!VCD::Manager::GetSingleton().AreAllPresetsLoaded()) {
             logger::error("Presets Are Not Loaded Cant Continue");
         }
 

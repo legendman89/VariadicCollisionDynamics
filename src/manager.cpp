@@ -1,4 +1,5 @@
 #include "manager.hpp"
+#include "config.hpp"
 #include "logger.hpp"
 #include "RE/Skyrim.h"
 #include "SKSE/SKSE.h"
@@ -9,6 +10,13 @@
 
 using namespace VCD;
 
+namespace {
+    RE::hkVector4 ToHkVector(const Vec3& a_vec)
+    {
+        return RE::hkVector4(a_vec.x, a_vec.y, a_vec.z, 0.0f);
+    }
+}
+
 Manager& Manager::GetSingleton()
 {
     static Manager singleton;
@@ -16,72 +24,42 @@ Manager& Manager::GetSingleton()
 }
 
 Manager::Manager() :
-    presetMeshes{ {
-        PresetMesh{
+    presetConfigs{ {
+        PresetConfig{
             Preset::kVanillaLike,
-            "Vanilla-like",
-            MakeTemplatePath("VanillaLike.nif")
+            "Vanilla-like"
         },
-        PresetMesh{
+        PresetConfig{
             Preset::kPersonalSpace,
-            "Personal Space",
-            MakeTemplatePath("PersonalSpace.nif")
+            "Personal Space"
         },
-        PresetMesh{
+        PresetConfig{
             Preset::kCompact,
-            "Compact",
-            MakeTemplatePath("Compact.nif")
+            "Compact"
         },
-        PresetMesh{
+        PresetConfig{
             Preset::kBulky,
-            "Bulky",
-            MakeTemplatePath("Bulky.nif")
+            "Bulky"
         }
     } }
 { }
 
-void Manager::LoadPresetMeshes()
+void Manager::LoadPresets()
 {
-    logger::info("Loading collision presets..");
+    logger::info("Loading collision presets from JSON..");
 
-    ClearLoadedMeshes();
+    ClearLoadedPresets();
 
-    std::size_t loadedCount = 0;
-    for (auto& presetMesh : presetMeshes) {
-        if (LoadPresetMesh(presetMesh)) {
-            ++loadedCount;
-        }
-    }
-
-    logger::info("loading finished: {}/{} loaded successfully", loadedCount, presetMeshes.size());
+    LoadPresetConfigurations(presetConfigs);
 }
 
-void Manager::ClearLoadedMeshes()
+void Manager::ClearLoadedPresets()
 {
-    for (auto& presetMesh : presetMeshes) {
-        presetMesh.root = nullptr;
-        presetMesh.spCollisionObject = nullptr;
-        presetMesh.data = {};
-        presetMesh.loaded = false;
-        presetMesh.foundCharacterBumper = false;
-        presetMesh.foundBhkSPCollisionObject = false;
-        presetMesh.foundCapsuleShape = false;
-        presetMesh.loadResult = {};
+    for (auto& presetConfig : presetConfigs) {
+        presetConfig.data = {};
+        presetConfig.loaded = false;
+        presetConfig.configPath = {};
     }
-}
-
-bool Manager::SetCollisionShape(RE::bhkCharProxyController* a_controller, const RE::hkpShape* a_shape)
-{
-    if (!a_controller || !a_shape)
-        return false;
-
-    auto* proxy = skyrim_cast<RE::hkpCharacterProxy*>(a_controller->proxy.referencedObject.get());
-
-    if (!proxy || !proxy->shapePhantom)
-        return false;
-
-    proxy->shapePhantom->SetShape(a_shape);
-    return true;
 }
 
 bool Manager::SetPreset(const RE::Actor* a_actor, const VCD::Preset& a_preset)
@@ -94,13 +72,8 @@ bool Manager::SetPreset(const RE::Actor* a_actor, const VCD::Preset& a_preset)
     if (!playerController)
         return false;
 
-    const auto* mesh = GetPresetMesh(a_preset);
-    if (!mesh) {
-        return false;
-    }
-
-    const auto* capsuleShape = GetPresetShape(a_preset);
-    if (!capsuleShape) {
+    const auto* presetConfig = GetPresetConfig(a_preset);
+    if (!presetConfig) {
         return false;
     }
 
@@ -120,23 +93,24 @@ bool Manager::SetPreset(const RE::Actor* a_actor, const VCD::Preset& a_preset)
     if (!worldCapsuleShape) {
         auto* proxy = skyrim_cast<RE::hkpCharacterProxy*>(playerController->proxy.referencedObject.get());
         const auto* worldShape = proxy && proxy->shapePhantom ? proxy->shapePhantom->collidable.shape : nullptr;
-        logger::error("Could not find world CharacterBumper capsule for preset [{}]. worldShapeType={}", mesh->name, worldShape ? static_cast<std::uint32_t>(worldShape->type) : 0);
+        logger::error("Could not find world CharacterBumper capsule for preset [{}]. worldShapeType={}", 
+                        presetConfig->name, worldShape ? static_cast<std::uint32_t>(worldShape->type) : 0);
         return false;
     }
 
     const auto previousRadius = worldCapsuleShape->radius;
     const auto previousHeight = worldCapsuleShape->vertexA.GetDistance3(worldCapsuleShape->vertexB);
 
-    worldCapsuleShape->radius = capsuleShape->radius;
-    worldCapsuleShape->vertexA = capsuleShape->vertexA;
-    worldCapsuleShape->vertexB = capsuleShape->vertexB;
+    worldCapsuleShape->radius = presetConfig->data.capsule.radius;
+    worldCapsuleShape->vertexA = ToHkVector(presetConfig->data.capsule.point1);
+    worldCapsuleShape->vertexB = ToHkVector(presetConfig->data.capsule.point2);
 
     logger::info("Applied preset [{}] to world CharacterBumper capsule. translation=({}, {}, {}), scale={}, radius {} -> {}, height {} -> {}",
-        mesh->name,
-        mesh->data.bump.translation.x,
-        mesh->data.bump.translation.y,
-        mesh->data.bump.translation.z,
-        mesh->data.bump.scale,
+        presetConfig->name,
+        presetConfig->data.bump.translation.x,
+        presetConfig->data.bump.translation.y,
+        presetConfig->data.bump.translation.z,
+        presetConfig->data.bump.scale,
         previousRadius,
         worldCapsuleShape->radius,
         previousHeight,
@@ -144,123 +118,6 @@ bool Manager::SetPreset(const RE::Actor* a_actor, const VCD::Preset& a_preset)
     return true;
 }
 
-
-bool Manager::LoadPresetMesh(PresetMesh& a_mesh)
-{
-    logger::info("Loading preset [{}] from [{}]", a_mesh.name, a_mesh.path);
-
-    RE::NiPointer<RE::NiNode> loadedRoot;
-    RE::BSModelDB::DBTraits::ArgsType args{};
-
-    const auto result = RE::BSModelDB::Demand(a_mesh.path.c_str(), loadedRoot, args);
-    a_mesh.loadResult = result;
-
-    if (result != RE::BSResource::ErrorCode::kNone || !loadedRoot) {
-        logger::error("Failed to load preset [{}]. path=[{}], errorCode={}", a_mesh.name, a_mesh.path, static_cast<int>(result));
-        return false;
-    }
-
-    // We should have the Havok object created by now.
-
-    a_mesh.root = loadedRoot;
-    a_mesh.loaded = true;
-
-    auto* bumperObject = FindCharacterBumper(loadedRoot.get());
-    if (!bumperObject) {
-        logger::error("Preset [{}] loaded, but node [{}] was not found in [{}]", a_mesh.name, kCharacterBumperNodeName, a_mesh.path);
-        return false;
-    }
-
-    a_mesh.foundCharacterBumper = true;
-
-    a_mesh.data.bump.translation = bumperObject->local.translate;
-    a_mesh.data.bump.scale = bumperObject->local.scale;
-
-    auto* collisionObject = bumperObject->collisionObject.get();
-    if (!collisionObject) {
-        logger::error("Preset [{}] loaded and CharacterBumper found, but it has no collision object", a_mesh.name);
-        return false;
-    }
-
-
-    auto* spCollisionObject = netimmerse_cast<RE::bhkSPCollisionObject*>(collisionObject);
-    a_mesh.foundBhkSPCollisionObject = spCollisionObject != nullptr;
-
-    if (!spCollisionObject) {
-        logger::error("Preset [{}] CharacterBumper collision object is not bhkSPCollisionObject", a_mesh.name);
-        return false;
-    }
-
-    a_mesh.spCollisionObject = RE::NiPointer<RE::bhkSPCollisionObject>(spCollisionObject);
-
-    auto* body = spCollisionObject->body.get();
-    if (!body) {
-        logger::error("Preset [{}] bhkSPCollisionObject has no body", a_mesh.name);
-        return false;
-    }
-
-    auto* bhkPhantom = skyrim_cast<RE::bhkShapePhantom*>(body);
-    if (!bhkPhantom) {
-        logger::error("Preset [{}] bhkSPCollisionObject body is not bhkShapePhantom", a_mesh.name);
-        return false;
-    }
-
-    auto* referencedObject = bhkPhantom->referencedObject.get();
-    if (!referencedObject) {
-        logger::error("Preset [{}] bhkShapePhantom has no referenced Havok object", a_mesh.name);
-        return false;
-    }
-
-    auto* simpleShapePhantom = skyrim_cast<RE::hkpSimpleShapePhantom*>(referencedObject);
-
-    if (!simpleShapePhantom) {
-        logger::error("Preset [{}] referenced object is not hkpSimpleShapePhantom", a_mesh.name);
-        return false;
-    }
-
-    const auto* shape = simpleShapePhantom->collidable.shape;
-    if (!shape) {
-        logger::error("Preset [{}] hkpSimpleShapePhantom has no collidable shape", a_mesh.name);
-        return false;
-    }
-
-    if (shape->type != RE::hkpShapeType::kCapsule) {
-        logger::error("Preset [{}] shape is not capsule. shapeType={}", a_mesh.name, static_cast<std::uint32_t>(shape->type));
-        return false;
-    }
-
-    const auto* capsuleShape = skyrim_cast<const RE::hkpCapsuleShape*>(shape);
-    if (!capsuleShape) {
-        logger::error("Preset [{}] failed to cast shape to hkpCapsuleShape", a_mesh.name);
-        return false;
-    }
-
-    a_mesh.foundCapsuleShape = true;
-
-    a_mesh.data.capsule.radius = capsuleShape->radius;
-    a_mesh.data.capsule.point1.Set(capsuleShape->vertexA);
-    a_mesh.data.capsule.point2.Set(capsuleShape->vertexB);
-    a_mesh.data.capsule.height = capsuleShape->vertexA.GetDistance3(capsuleShape->vertexB);
-
-    a_mesh.data.Log();
-
-    return true;
-}
-
-RE::NiAVObject* Manager::FindCharacterBumper(RE::NiNode* a_root) const
-{
-    if (!a_root) {
-        return nullptr;
-    }
-
-    const RE::BSFixedString bumperName(kCharacterBumperNodeName.data());
-
-    if (a_root->name == bumperName) {
-        return a_root;
-    }
-
-    return a_root->GetObjectByName(bumperName);
-}
 
 RE::hkpCapsuleShape* Manager::FindWorldCharacterBumperShape(RE::bhkCharProxyController* a_controller) const
 {
@@ -287,6 +144,7 @@ RE::hkpCapsuleShape* Manager::FindCharacterBumperShape(RE::hkpShape* a_shape, co
         return skyrim_cast<RE::hkpCapsuleShape*>(a_shape);
     }
 
+    // Inspired by the DCA mod.
     if (a_shape->type == RE::hkpShapeType::kList) {
         auto* listShape = skyrim_cast<RE::hkpListShape*>(a_shape);
         if (!listShape) {
@@ -344,13 +202,10 @@ bool Manager::IsCharacterBumperShape(const RE::hkpShape* a_shape, const RE::hkpS
     return false;
 }
 
-bool Manager::AreAllPresetMeshesLoaded() const
+bool Manager::AreAllPresetsLoaded() const
 {
-    for (const auto& presetMesh : presetMeshes) {
-        if (!presetMesh.loaded ||
-            !presetMesh.foundCharacterBumper ||
-            !presetMesh.foundBhkSPCollisionObject ||
-            !presetMesh.foundCapsuleShape) {
+    for (const auto& presetConfig : presetConfigs) {
+        if (!presetConfig.loaded) {
             return false;
         }
     }
@@ -361,11 +216,8 @@ bool Manager::AreAllPresetMeshesLoaded() const
 std::size_t Manager::GetLoadedPresetCount() const
 {
     std::size_t count = 0;
-    for (const auto& presetMesh : presetMeshes) {
-        if (presetMesh.loaded &&
-            presetMesh.foundCharacterBumper &&
-            presetMesh.foundBhkSPCollisionObject &&
-            presetMesh.foundCapsuleShape) {
+    for (const auto& presetConfig : presetConfigs) {
+        if (presetConfig.loaded) {
             ++count;
         }
     }
@@ -373,24 +225,24 @@ std::size_t Manager::GetLoadedPresetCount() const
     return count;
 }
 
-const std::array<PresetMesh, 4>& Manager::GetPresetMeshes() const noexcept
+const std::array<PresetConfig, 4>& Manager::GetPresetConfigs() const noexcept
 {
-    return presetMeshes;
+    return presetConfigs;
 }
 
-const PresetMesh* Manager::GetPresetMesh(const VCD::Preset& a_preset) const
+const PresetConfig* Manager::GetPresetConfig(const VCD::Preset& a_preset) const
 {
     const auto index = static_cast<std::size_t>(ToUnderlying(a_preset));
-    if (index >= presetMeshes.size()) {
+    if (index >= presetConfigs.size()) {
         return nullptr;
     }
 
-    return &presetMeshes[index];
+    return &presetConfigs[index];
 }
 
-RE::hkpCapsuleShape* Manager::GetPresetShape(const VCD::Preset& a_preset)
+PresetConfig* Manager::GetPresetConfig(const VCD::Preset& a_preset)
 {
-    return const_cast<RE::hkpCapsuleShape*>(static_cast<const Manager*>(this)->GetPresetShape(a_preset));
+    return const_cast<PresetConfig*>(static_cast<const Manager*>(this)->GetPresetConfig(a_preset));
 }
 
 void Manager::DrawPlayerBumper()
@@ -446,37 +298,3 @@ void Manager::DrawPlayerBumper()
     globals::g_trueHUD->DrawCapsule(a, b, radius, 0.f, 0xFF4087FF, 1.f);
 }
 
-const RE::hkpCapsuleShape* Manager::GetPresetShape(const VCD::Preset& a_preset) const
-{
-    const auto* mesh = GetPresetMesh(a_preset);
-    if (!mesh || !mesh->loaded || !mesh->foundCapsuleShape) {
-        return nullptr;
-    }
-
-    const auto* spCollisionObject = mesh->spCollisionObject.get();
-    if (!spCollisionObject || !spCollisionObject->body) {
-        return nullptr;
-    }
-
-    const auto* bhkPhantom = static_cast<const RE::bhkShapePhantom*>(spCollisionObject->body.get());
-    if (!bhkPhantom) {
-        return nullptr;
-    }
-
-    const auto* referencedObject = bhkPhantom->referencedObject.get();
-    if (!referencedObject) {
-        return nullptr;
-    }
-
-    const auto* simpleShapePhantom = skyrim_cast<const RE::hkpSimpleShapePhantom*>(referencedObject);
-    if (!simpleShapePhantom) {
-        return nullptr;
-    }
-
-    const auto* shape = simpleShapePhantom->collidable.shape;
-    if (!shape || shape->type != RE::hkpShapeType::kCapsule) {
-        return nullptr;
-    }
-
-    return skyrim_cast<const RE::hkpCapsuleShape*>(shape);
-}

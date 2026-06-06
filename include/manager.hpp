@@ -14,33 +14,34 @@ namespace VCD {
 
         static Manager& GetSingleton();
 
-        void LoadPresetMeshes();
-		void ClearLoadedMeshes();
+        void LoadPresets();
+		void ClearLoadedPresets();
 
         bool SetPreset(const RE::Actor* a_actor, const VCD::Preset& a_preset);
 
-        bool SetCollisionShape(RE::bhkCharProxyController* a_controller, const RE::hkpShape* a_shape);
+        bool AreAllPresetsLoaded() const;
 
-        bool AreAllPresetMeshesLoaded() const;
         std::size_t GetLoadedPresetCount() const;
-        const std::array<PresetMesh, 4>& GetPresetMeshes() const noexcept;
-        const PresetMesh* GetPresetMesh(const VCD::Preset& a_preset) const;
-        RE::hkpCapsuleShape* GetPresetShape(const VCD::Preset& a_preset);
-        const RE::hkpCapsuleShape* GetPresetShape(const VCD::Preset& a_preset) const;
+
+        const std::array<PresetConfig, 4>& GetPresetConfigs() const noexcept;
+
+        const PresetConfig* GetPresetConfig(const VCD::Preset& a_preset) const;
+
+        PresetConfig* GetPresetConfig(const VCD::Preset& a_preset);
+
         void DrawPlayerBumper(); 
+
         RE::hkpCapsuleShape* FindWorldCharacterBumperShape(RE::bhkCharProxyController* a_controller) const;
+
     private:
 
         Manager();
 
-        bool LoadPresetMesh(PresetMesh& a_mesh);
-
-        RE::NiAVObject* FindCharacterBumper(RE::NiNode* a_root) const;
-      
         RE::hkpCapsuleShape* FindCharacterBumperShape(RE::hkpShape* a_shape, const RE::hkpShapeKey& a_key) const;
+
         bool IsCharacterBumperShape(const RE::hkpShape* a_shape, const RE::hkpShapeKey& a_key) const;
 
-        std::array<PresetMesh, 4> presetMeshes;
+        std::array<PresetConfig, 4> presetConfigs;
     };
 
 }
