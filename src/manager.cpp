@@ -35,7 +35,9 @@ Manager::Manager() :
             "Bulky"
         }
     } }
-{ }
+{
+    defaultPresetConfigs = presetConfigs;
+}
 
 void Manager::LoadPresets()
 {
@@ -44,6 +46,7 @@ void Manager::LoadPresets()
     ClearLoadedPresets();
 
     LoadPresetConfigurations(presetConfigs);
+    defaultPresetConfigs = presetConfigs;
 }
 
 void Manager::ClearLoadedPresets()
@@ -248,6 +251,29 @@ const PresetConfig* Manager::GetPresetConfig(const VCD::Preset& a_preset) const
 PresetConfig* Manager::GetPresetConfig(const VCD::Preset& a_preset)
 {
     return const_cast<PresetConfig*>(static_cast<const Manager*>(this)->GetPresetConfig(a_preset));
+}
+
+const PresetConfig* Manager::GetDefaultPresetConfig(const VCD::Preset& a_preset) const
+{
+    const auto index = static_cast<std::size_t>(ToUnderlying(a_preset));
+    if (index >= defaultPresetConfigs.size()) {
+        return nullptr;
+    }
+
+    return &defaultPresetConfigs[index];
+}
+
+bool Manager::RestorePresetDefault(const VCD::Preset& a_preset)
+{
+    auto* presetConfig = GetPresetConfig(a_preset);
+    const auto* defaultPresetConfig = GetDefaultPresetConfig(a_preset);
+
+    if (!presetConfig || !defaultPresetConfig || !defaultPresetConfig->loaded) {
+        return false;
+    }
+
+    *presetConfig = *defaultPresetConfig;
+    return true;
 }
 
 void Manager::DrawPlayerBumper()

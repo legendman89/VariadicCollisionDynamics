@@ -1,12 +1,13 @@
 ﻿
 #include "plugin.hpp"
 #include "logger.hpp"
-#include "eventSinks.hpp"
+#include "dynamics.hpp"
 #include "manager.hpp"
 #include "Menu.hpp"
 #include "TrueHUDAPI.h"
 #include "hooks.hpp"
 #include "globals.hpp"
+#include "settings.hpp"
 
 static void MessageHandler(SKSE::MessagingInterface::Message* msg) {
     switch (msg->type) {
@@ -38,7 +39,8 @@ static void MessageHandler(SKSE::MessagingInterface::Message* msg) {
             logger::error("Presets Are Not Loaded Cant Continue");
         }
 
-        EventSinks::InstallEventSinks();
+        Settings::Load();
+        Dynamics::Install();
 
         break;
     }
