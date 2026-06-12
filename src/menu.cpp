@@ -224,7 +224,7 @@ namespace UI {
             return;
         }
 
-        SKSEMenuFramework::SetSection("VCD");
+        SKSEMenuFramework::SetSection("Variadic Collisions");
         SKSEMenuFramework::AddSectionItem("Dynamics", RenderDynamicsMenu);
         SKSEMenuFramework::AddSectionItem("Debug", RenderDebugMenu);
     }
