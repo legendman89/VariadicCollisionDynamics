@@ -26,7 +26,6 @@ namespace fs = std::filesystem;
 
 namespace VCD {
 
-    inline constexpr std::string_view kCharacterBumperNodeName = "CharacterBumper";
     inline constexpr std::string_view kPresetDir = "presets";
 
     enum class Preset
@@ -35,6 +34,29 @@ namespace VCD {
         kPersonalSpace,
         kCompact,
         kBulky
+    };
+
+    inline constexpr const char* PresetName(const Preset& a_preset)
+    {
+        switch (a_preset) {
+        case Preset::kVanillaLike:
+            return "Vanilla-like";
+        case Preset::kPersonalSpace:
+            return "Personal Space";
+        case Preset::kCompact:
+            return "Compact";
+        case Preset::kBulky:
+            return "Bulky";
+        default:
+            return "Unknown";
+        }
+    }
+
+    inline constexpr const char* kPresetNames[] = {
+        PresetName(Preset::kVanillaLike),
+        PresetName(Preset::kPersonalSpace),
+        PresetName(Preset::kCompact),
+        PresetName(Preset::kBulky)
     };
 
     struct Vec3

@@ -14,11 +14,91 @@ namespace Settings {
 
 	namespace fs = std::filesystem;
 
+	bool ToolsSettingsEqual(const VCDSettings& a_left, const VCDSettings& a_right)
+	{
+#define SETTING2EQ(S, D) a_left.S == a_right.S &&
+
+		if (!(FOREACH_BOOL_SETTING(SETTING2EQ) FOREACH_FLOAT_SETTING(SETTING2EQ) FOREACH_INT_SETTING(SETTING2EQ) true)) {
+#undef SETTING2EQ
+			return false;
+		}
+
+#undef SETTING2EQ
+		return a_left.drawColor == a_right.drawColor;
+	}
+
+	void CopyToolsSettings(VCDSettings& a_target, const VCDSettings& a_source)
+	{
+#define SETTING2COPY(S, D) a_target.S = a_source.S;
+
+		FOREACH_BOOL_SETTING(SETTING2COPY)
+		FOREACH_FLOAT_SETTING(SETTING2COPY)
+		FOREACH_INT_SETTING(SETTING2COPY)
+		a_target.drawColor = a_source.drawColor;
+#undef SETTING2COPY
+	}
+
+	bool DynamicsSettingsEqual(const VCDSettings& a_left, const VCDSettings& a_right)
+	{
+#define SETTING2EQ(S, D) a_left.S == a_right.S &&
+
+		if (!(FOREACH_PRESET_SETTING(SETTING2EQ) true)) {
+#undef SETTING2EQ
+			return false;
+		}
+
+#undef SETTING2EQ
+		for (std::size_t i = 0; i < a_left.presets.size(); ++i) {
+			if (!JSON::PresetOverridesEqual(a_left.presets[i], a_right.presets[i])) {
+				return false;
+			}
+		}
+
+		return true;
+	}
+
+	void CopyDynamicsSettings(VCDSettings& a_target, const VCDSettings& a_source)
+	{
+#define SETTING2COPY(S, D) a_target.S = a_source.S;
+
+		FOREACH_PRESET_SETTING(SETTING2COPY)
+		a_target.presets = a_source.presets;
+#undef SETTING2COPY
+	}
+
+	bool WriteSettings(const VCDSettings& a_settings)
+	{
+		const auto path = fs::path(GetSettingsPath());
+		std::error_code ec;
+		fs::create_directories(path.parent_path(), ec);
+
+		if (ec) {
+			logger::error("Failed to create settings directory {}: {}", path.parent_path().string(), ec.message());
+			return false;
+		}
+
+		std::ofstream file(path);
+		if (!file.is_open()) {
+			logger::error("Failed to open settings file for writing: {}", path.string());
+			return false;
+		}
+
+		file << JSON::ToJson(a_settings).dump(4);
+		logger::info("Settings saved: {}", path.string());
+		return true;
+	}
+
 	bool SettingsEqual(const VCDSettings& a_left, const VCDSettings& a_right)
 	{
 #define SETTING2EQ(S, D) a_left.S == a_right.S &&
 
-		if (!(FOREACH_BOOL_SETTING(SETTING2EQ) FOREACH_PRESET_SETTING(SETTING2EQ) true)) {
+		if (!(FOREACH_BOOL_SETTING(SETTING2EQ) FOREACH_FLOAT_SETTING(SETTING2EQ) FOREACH_INT_SETTING(SETTING2EQ) FOREACH_PRESET_SETTING(SETTING2EQ) true)) {
+#undef SETTING2EQ
+			return false;
+		}
+
+#undef SETTING2EQ
+		if (a_left.drawColor != a_right.drawColor) {
 			return false;
 		}
 
@@ -48,6 +128,9 @@ namespace Settings {
 		config.indoor = a_settings.indoor;
 		config.combat = a_settings.combat;
 		config.neutral = a_settings.neutral;
+		const auto logLevel = static_cast<spdlog::level::level_enum>(NormalizeLogLevel(a_settings.logLevel));
+		spdlog::set_level(logLevel);
+		spdlog::flush_on(logLevel);
 
 		for (std::size_t i = 0; i < a_settings.presets.size(); ++i) {
 			const auto preset = static_cast<VCD::Preset>(i);
@@ -91,7 +174,12 @@ namespace Settings {
 	bool IsDirty()
 	{
 		CaptureCurrent(GetSettings());
-		return !SettingsEqual(GetSettings(), GetSavedSettings());
+		return !DynamicsSettingsEqual(GetSettings(), GetSavedSettings());
+	}
+
+	bool IsToolsDirty()
+	{
+		return !ToolsSettingsEqual(GetSettings(), GetSavedSettings());
 	}
 
 	bool Load()
@@ -135,25 +223,27 @@ namespace Settings {
 	bool Save()
 	{
 		CaptureCurrent(GetSettings());
+		auto settings = GetSavedSettings();
+		CopyDynamicsSettings(settings, GetSettings());
 
-		const auto path = fs::path(GetSettingsPath());
-		std::error_code ec;
-		fs::create_directories(path.parent_path(), ec);
-
-		if (ec) {
-			logger::error("Failed to create settings directory {}: {}", path.parent_path().string(), ec.message());
+		if (!WriteSettings(settings)) {
 			return false;
 		}
 
-		std::ofstream file(path);
-		if (!file.is_open()) {
-			logger::error("Failed to open settings file for writing: {}", path.string());
+		CopyDynamicsSettings(GetSavedSettings(), GetSettings());
+		return true;
+	}
+
+	bool SaveTools()
+	{
+		auto settings = GetSavedSettings();
+		CopyToolsSettings(settings, GetSettings());
+
+		if (!WriteSettings(settings)) {
 			return false;
 		}
 
-		file << JSON::ToJson(GetSettings()).dump(4);
-		GetSavedSettings() = GetSettings();
-		logger::info("Settings saved: {}", path.string());
+		CopyToolsSettings(GetSavedSettings(), GetSettings());
 		return true;
 	}
 

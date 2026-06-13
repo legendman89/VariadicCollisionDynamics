@@ -2,6 +2,8 @@
 
 #include "manager.hpp"
 
+#include <chrono>
+
 namespace Dynamics {
 
 	struct PresetState
@@ -13,6 +15,17 @@ namespace Dynamics {
 		const RE::TESObjectCELL* lastCell{ nullptr };
 
 		const char* stateName{ "unknown" };
+	};
+
+	struct PreviewState
+	{
+		bool active{ false };
+
+		bool restorePending{ false };
+
+		VCD::Preset preset{ VCD::Preset::kVanillaLike };
+
+		std::chrono::steady_clock::time_point restoreAt{};
 	};
 
 	struct DynamicsConfig
@@ -35,15 +48,29 @@ namespace Dynamics {
 		return config;
 	}
 
+	inline PreviewState& GetPreviewState()
+	{
+		static PreviewState state{};
+		return state;
+	}
+
 	VCD::Preset GetCellPreset(const RE::TESObjectCELL* a_cell);
 
 	const char* GetCellStateName(const RE::TESObjectCELL* a_cell);
 
-	const char* PresetName(const VCD::Preset& a_preset);
+	bool IsPresetCurrent(const VCD::Preset& a_preset);
 
-	bool ApplyPreset(const RE::PlayerCharacter* a_player, const VCD::Preset& a_preset, const char* a_state);
+	bool IsPresetPreviewed(const VCD::Preset& a_preset);
 
-	bool ApplyEnvironmentPreset(const RE::PlayerCharacter* a_player);
+	bool ApplyPreset(const RE::PlayerCharacter* a_player, const VCD::Preset& a_preset, const char* a_state, const bool& a_force = false);
+
+	bool ApplyEnvironmentPreset(const RE::PlayerCharacter* a_player, const bool& a_force = false);
+
+	bool StartPresetPreview(const RE::PlayerCharacter* a_player, const VCD::Preset& a_preset);
+
+	void SchedulePreviewRestore(const float& a_delaySeconds);
+
+	void RestorePresetPreview(const RE::PlayerCharacter* a_player);
 
 	void Update(const RE::PlayerCharacter* a_player);
 

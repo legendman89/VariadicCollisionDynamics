@@ -6,6 +6,8 @@
 
 #include "nlohmann/json.hpp"
 
+#include <array>
+#include <cstddef>
 #include <filesystem>
 #include <string>
 
@@ -40,6 +42,45 @@ namespace Settings {
 		if (a_json.contains(a_key)) {
 			a_value = PresetFromString(a_json.at(a_key).get<std::string>());
 		}
+	}
+
+	inline void getFloat(const nlohmann::json& a_json, const char* a_key, float& a_value)
+	{
+		if (a_json.contains(a_key)) {
+			a_value = a_json.at(a_key).get<float>();
+		}
+	}
+
+	inline void getInt(const nlohmann::json& a_json, const char* a_key, int& a_value)
+	{
+		if (a_json.contains(a_key)) {
+			a_value = a_json.at(a_key).get<int>();
+		}
+	}
+
+	inline void getColor(const nlohmann::json& a_json, const char* a_key, std::array<float, 4>& a_value)
+	{
+		if (!a_json.contains(a_key) || !a_json.at(a_key).is_array()) {
+			return;
+		}
+
+		const auto& color = a_json.at(a_key);
+		for (std::size_t i = 0; i < a_value.size() && i < color.size(); ++i) {
+			a_value[i] = color[i].get<float>();
+		}
+	}
+
+	inline int NormalizeLogLevel(const int& a_level)
+	{
+		if (a_level < 0) {
+			return 0;
+		}
+
+		if (a_level > 6) {
+			return 6;
+		}
+
+		return a_level;
 	}
 
 	inline const char* PresetToString(const VCD::Preset& a_preset)
@@ -87,8 +128,12 @@ namespace Settings {
 
 	bool IsDirty();
 
+	bool IsToolsDirty();
+
 	bool Load();
 
 	bool Save();
+
+	bool SaveTools();
 
 }

@@ -1,6 +1,8 @@
 #pragma once
 #include <CLibUtilsQTR/DrawDebug.hpp>
 #include "helper.hpp"
+#include "manager.hpp"
+#include "settings.hpp"
 
 namespace DebugAPI_IMPL {
     namespace DebugAPI_Ext {
@@ -123,7 +125,7 @@ namespace DebugAPI_IMPL {
             float s = std::sin(yaw);
             auto rotate = [&](const RE::NiPoint3& p) {
                 return RE::NiPoint3(p.x * c - p.y * s, p.x * s + p.y * c, p.z);
-                };
+            };
 
             RE::NiPoint3 a = rotate(aLocal) + controllerPos;
             RE::NiPoint3 b = rotate(bLocal) + controllerPos;
@@ -131,10 +133,11 @@ namespace DebugAPI_IMPL {
             using namespace DebugAPI_IMPL;
 
             auto* api = DebugAPI::GetSingleton();
-            DebugAPI_Ext::DrawCapsule(a, b, radius, 1, RE::NiColorA(64.0f / 255.0f, 135.0f / 255.0f, 1.0f, 1.0f), 1.0f);
+            const auto& settings = Settings::GetSettings();
+            DebugAPI_Ext::DrawCapsule(a, b, radius, 1, VCD::ToNiColorA(settings.drawColor), settings.drawLineThickness);
             api->Update();
         } 
 
 
     } 
-} 
+}

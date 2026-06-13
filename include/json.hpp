@@ -150,13 +150,18 @@ namespace JSON {
 	inline json ToJson(const Settings::VCDSettings& a_settings)
 	{
 #define BOOL2JSON(S, D) { #S, a_settings.S },
+#define FLOAT2JSON(S, D) { #S, a_settings.S },
+#define INT2JSON(S, D) { #S, a_settings.S },
 #define PRESET2JSON(S, D) { #S, Settings::PresetToString(a_settings.S) },
 
 		auto data = json{
 			FOREACH_BOOL_SETTING(BOOL2JSON)
+			FOREACH_FLOAT_SETTING(FLOAT2JSON)
+			FOREACH_INT_SETTING(INT2JSON)
 			FOREACH_PRESET_SETTING(PRESET2JSON)
 		};
 
+		data["drawColor"] = a_settings.drawColor;
 		data["presets"] = PresetOverridesToJson(a_settings);
 		return data;
 	}
@@ -164,10 +169,15 @@ namespace JSON {
 	inline void FromJson(const json& a_json, Settings::VCDSettings& a_settings)
 	{
 #define BOOL2GETTER(S, D) Settings::getBool(a_json, #S, a_settings.S);
+#define FLOAT2GETTER(S, D) Settings::getFloat(a_json, #S, a_settings.S);
+#define INT2GETTER(S, D) Settings::getInt(a_json, #S, a_settings.S);
 #define PRESET2GETTER(S, D) Settings::getPreset(a_json, #S, a_settings.S);
 
 		FOREACH_BOOL_SETTING(BOOL2GETTER)
+		FOREACH_FLOAT_SETTING(FLOAT2GETTER)
+		FOREACH_INT_SETTING(INT2GETTER)
 		FOREACH_PRESET_SETTING(PRESET2GETTER)
+		Settings::getColor(a_json, "drawColor", a_settings.drawColor);
 		PresetOverridesFromJson(a_json, a_settings);
 	}
 

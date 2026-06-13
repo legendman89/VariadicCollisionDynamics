@@ -2,6 +2,7 @@
 
 #include "plugin.hpp"
 
+#include <array>
 #include <filesystem>
 #include <string>
 #include <type_traits>
@@ -43,6 +44,11 @@ namespace VCD {
     inline RE::NiPoint3 ToNiPoint3(const RE::hkVector4& a_vec)
     {
         return RE::NiPoint3(a_vec.quad.m128_f32[0], a_vec.quad.m128_f32[1], a_vec.quad.m128_f32[2]);
+    }
+
+    inline RE::NiColorA ToNiColorA(const std::array<float, 4>& a_color)
+    {
+        return RE::NiColorA(a_color[0], a_color[1], a_color[2], a_color[3]);
     }
 
 }

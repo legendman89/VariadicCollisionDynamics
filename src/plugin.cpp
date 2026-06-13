@@ -33,12 +33,13 @@ static void MessageHandler(SKSE::MessagingInterface::Message* msg) {
     case SKSE::MessagingInterface::kDataLoaded:
     {
         VCD::Manager::GetSingleton().LoadPresets();
-        if (!VCD::Manager::GetSingleton().AreAllPresetsLoaded()) {
+        if (VCD::Manager::GetSingleton().AreAllPresetsLoaded()) {
+            Settings::Load();
+            Dynamics::Install();
+        }
+		else {
             logger::error("Presets are not loaded. Mod is disabled.");
         }
-
-        Settings::Load();
-        Dynamics::Install();
 
         break;
     }

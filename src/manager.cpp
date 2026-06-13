@@ -19,19 +19,19 @@ Manager::Manager() :
     presetConfigs{ {
         PresetConfig{
             Preset::kVanillaLike,
-            "Vanilla-like"
+            PresetName(Preset::kVanillaLike)
         },
         PresetConfig{
             Preset::kPersonalSpace,
-            "Personal Space"
+            PresetName(Preset::kPersonalSpace)
         },
         PresetConfig{
             Preset::kCompact,
-            "Compact"
+            PresetName(Preset::kCompact)
         },
         PresetConfig{
             Preset::kBulky,
-            "Bulky"
+            PresetName(Preset::kBulky)
         }
     } }
 {

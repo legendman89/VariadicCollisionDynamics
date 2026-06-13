@@ -1,23 +1,9 @@
 #include "dynamics.hpp"
 #include "logger.hpp"
 
-namespace Dynamics {
+#include <chrono>
 
-	const char* PresetName(const VCD::Preset& a_preset)
-	{
-		switch (a_preset) {
-		case VCD::Preset::kVanillaLike:
-			return "Vanilla-like";
-		case VCD::Preset::kPersonalSpace:
-			return "Personal Space";
-		case VCD::Preset::kCompact:
-			return "Compact";
-		case VCD::Preset::kBulky:
-			return "Bulky";
-		default:
-			return "Unknown";
-		}
-	}
+namespace Dynamics {
 
 	VCD::Preset GetCellPreset(const RE::TESObjectCELL* a_cell)
 	{
@@ -38,14 +24,27 @@ namespace Dynamics {
 		return a_cell->IsInteriorCell() ? "indoor" : "outdoor";
 	}
 
-	bool ApplyPreset(const RE::PlayerCharacter* a_player, const VCD::Preset& a_preset, const char* a_state)
+	bool IsPresetCurrent(const VCD::Preset& a_preset)
+	{
+		const auto& state = GetPresetState();
+		return state.applied && state.current == a_preset;
+	}
+
+	bool IsPresetPreviewed(const VCD::Preset& a_preset)
+	{
+		const auto& preview = GetPreviewState();
+		return preview.active && preview.preset == a_preset;
+	}
+
+	bool ApplyPreset(const RE::PlayerCharacter* a_player, const VCD::Preset& a_preset, const char* a_state, const bool& a_force)
 	{
 		if (!a_player) {
 			return false;
 		}
 
 		auto& state = GetPresetState();
-		if (state.applied && state.current == a_preset) {
+		auto& preview = GetPreviewState();
+		if (!a_force && !preview.active && state.applied && state.current == a_preset) {
 			return true;
 		}
 
@@ -54,22 +53,76 @@ namespace Dynamics {
 			return false;
 		}
 
-		logger::info("Player: {} -> {}, applied preset [{}]", state.stateName, a_state, PresetName(a_preset));
+		logger::info("Player: {} -> {}, applied preset [{}]", state.stateName, a_state, VCD::PresetName(a_preset));
 
+		preview.active = false;
+		preview.restorePending = false;
 		state.current = a_preset;
 		state.applied = true;
 		state.stateName = a_state;
 		return true;
 	}
 
-	bool ApplyEnvironmentPreset(const RE::PlayerCharacter* a_player)
+	bool ApplyEnvironmentPreset(const RE::PlayerCharacter* a_player, const bool& a_force)
 	{
 		if (!a_player) {
 			return false;
 		}
 
 		auto* cell = a_player->GetParentCell();
-		return ApplyPreset(a_player, GetCellPreset(cell), GetCellStateName(cell));
+		return ApplyPreset(a_player, GetCellPreset(cell), GetCellStateName(cell), a_force);
+	}
+
+	bool StartPresetPreview(const RE::PlayerCharacter* a_player, const VCD::Preset& a_preset)
+	{
+		if (!a_player) {
+			return false;
+		}
+
+		if (!VCD::Manager::GetSingleton().SetPreset(a_player, a_preset)) {
+			return false;
+		}
+
+		auto& preview = GetPreviewState();
+		preview.active = true;
+		preview.restorePending = false;
+		preview.preset = a_preset;
+		logger::info("Player: previewing preset [{}]", VCD::PresetName(a_preset));
+		return true;
+	}
+
+	void SchedulePreviewRestore(const float& a_delaySeconds)
+	{
+		auto& preview = GetPreviewState();
+		if (!preview.active) {
+			return;
+		}
+
+		const auto delay = std::chrono::duration_cast<std::chrono::steady_clock::duration>(std::chrono::duration<float>(a_delaySeconds));
+		preview.restorePending = true;
+		preview.restoreAt = std::chrono::steady_clock::now() + delay;
+	}
+
+	void RestorePresetPreview(const RE::PlayerCharacter* a_player)
+	{
+		auto& preview = GetPreviewState();
+		if (!preview.active && !preview.restorePending) {
+			return;
+		}
+
+		preview.active = false;
+		preview.restorePending = false;
+
+		if (!a_player) {
+			return;
+		}
+
+		if (a_player->IsInCombat()) {
+			ApplyPreset(a_player, GetConfig().combat, "combat", true);
+		}
+		else {
+			ApplyEnvironmentPreset(a_player, true);
+		}
 	}
 
 	void Update(const RE::PlayerCharacter* a_player)
@@ -80,6 +133,11 @@ namespace Dynamics {
 
 		if (!VCD::Manager::GetSingleton().AreAllPresetsLoaded()) {
 			return;
+		}
+
+		auto& preview = GetPreviewState();
+		if (preview.restorePending && std::chrono::steady_clock::now() >= preview.restoreAt) {
+			RestorePresetPreview(a_player);
 		}
 
 		auto* cell = a_player->GetParentCell();
