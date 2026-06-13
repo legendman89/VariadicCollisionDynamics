@@ -1,13 +1,13 @@
 ﻿
+#include "menu.hpp"
+#include "hooks.hpp"
 #include "plugin.hpp"
 #include "logger.hpp"
-#include "dynamics.hpp"
 #include "manager.hpp"
-#include "Menu.hpp"
-#include "TrueHUDAPI.h"
-#include "hooks.hpp"
-#include "globals.hpp"
+#include "dynamics.hpp"
 #include "settings.hpp"
+#include "globals.hpp"
+#include "TrueHUDAPI.h"
 
 static void MessageHandler(SKSE::MessagingInterface::Message* msg) {
     switch (msg->type) {
@@ -36,7 +36,7 @@ static void MessageHandler(SKSE::MessagingInterface::Message* msg) {
     {
         VCD::Manager::GetSingleton().LoadPresets();
         if (!VCD::Manager::GetSingleton().AreAllPresetsLoaded()) {
-            logger::error("Presets Are Not Loaded Cant Continue");
+            logger::error("Presets are not loaded. Mod is disabled.");
         }
 
         Settings::Load();
@@ -49,13 +49,20 @@ static void MessageHandler(SKSE::MessagingInterface::Message* msg) {
     }
 }
 
-SKSEPluginLoad(const SKSE::LoadInterface* skse) {
+SKSEPluginLoad(const SKSE::LoadInterface* skse) 
+{
     SKSE::Init(skse);
+
     setupLog(spdlog::level::debug);
+
     logger::info("Variadic Collision Dynamics Plugin is Loaded");
+
     SKSE::GetMessagingInterface()->RegisterListener(MessageHandler);
+
     UI::Register(); 
-    hooks::PlayerCharacter_Update::Install();
+
+    Hook::PlayerUpdate::Install();
+
     auto* api = TRUEHUD_API::RequestPluginAPI(TRUEHUD_API::InterfaceVersion::V4);
 
     if (!api) {
@@ -65,5 +72,6 @@ SKSEPluginLoad(const SKSE::LoadInterface* skse) {
         globals::g_trueHUD = static_cast<TRUEHUD_API::IVTrueHUD4*>(api);
         logger::info("TrueHUD API acquired successfully");
     }
+
     return true;
 }

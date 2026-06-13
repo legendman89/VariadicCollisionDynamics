@@ -1,5 +1,6 @@
 #include "menu.hpp"
 #include "button.hpp"
+#include "color.hpp"
 #include "dynamics.hpp"
 #include "logger.hpp"
 #include "manager.hpp"
@@ -11,7 +12,7 @@
 
 namespace UI {
 
-    namespace {
+    namespace DynamicsPanel {
         constexpr const char* kPresetNames[] = {
             "Vanilla-like",
             "Personal Space",
@@ -42,22 +43,6 @@ namespace UI {
 
             a_preset = static_cast<VCD::Preset>(index);
             return true;
-        }
-
-        bool SamePresetData(const VCD::CollisionData& a_left, const VCD::CollisionData& a_right)
-        {
-            return a_left.bump.translation.x == a_right.bump.translation.x &&
-                a_left.bump.translation.y == a_right.bump.translation.y &&
-                a_left.bump.translation.z == a_right.bump.translation.z &&
-                a_left.bump.scale == a_right.bump.scale &&
-                a_left.capsule.radius == a_right.capsule.radius &&
-                a_left.capsule.height == a_right.capsule.height &&
-                a_left.capsule.point1.x == a_right.capsule.point1.x &&
-                a_left.capsule.point1.y == a_right.capsule.point1.y &&
-                a_left.capsule.point1.z == a_right.capsule.point1.z &&
-                a_left.capsule.point2.x == a_right.capsule.point2.x &&
-                a_left.capsule.point2.y == a_right.capsule.point2.y &&
-                a_left.capsule.point2.z == a_right.capsule.point2.z;
         }
 
         void SetCurrentHeight(VCD::CollisionData& a_data, const float& a_height)
@@ -91,50 +76,19 @@ namespace UI {
             GUI::Text("%s", a_label);
             GUI::TableNextColumn();
             GUI::SetNextItemWidth(180.0F);
-            PresetCombo(a_label, a_preset);
-            GUI::TableNextColumn();
+            if (PresetCombo((std::string("##") + a_label).c_str(), a_preset)) {
+                if (auto* player = RE::PlayerCharacter::GetSingleton()) {
+                    Dynamics::ApplyPreset(player, a_preset, "preview");
+                }
+            }
+            GUI::SameLine();
+            GUI::PushStyleColor(GUI::ImGuiCol_ButtonHovered, Color::kEditHover);
+            GUI::PushStyleColor(GUI::ImGuiCol_ButtonActive, Color::kEditActive);
             if (GUI::Button((std::string("Edit##") + a_label).c_str())) {
                 OpenPresetEditor(a_preset);
             }
-        }
-
-        void ApplyCurrentState()
-        {
-            auto* player = RE::PlayerCharacter::GetSingleton();
-            if (!player) {
-                return;
-            }
-
-            if (player->IsInCombat()) {
-                Dynamics::ApplyPreset(player, Dynamics::GetConfig().combat, "combat");
-            }
-            else {
-                Dynamics::ApplyEnvironmentPreset(player);
-            }
-        }
-
-        VCD::Preset GetCurrentStatePreset(const RE::PlayerCharacter* a_player)
-        {
-            if (!a_player) {
-                return Dynamics::GetConfig().neutral;
-            }
-
-            if (a_player->IsInCombat()) {
-                return Dynamics::GetConfig().combat;
-            }
-
-            return Dynamics::GetCellPreset(a_player->GetParentCell());
-        }
-
-        bool CanApplyCurrentState()
-        {
-            auto* player = RE::PlayerCharacter::GetSingleton();
-            if (!player || !VCD::Manager::GetSingleton().AreAllPresetsLoaded()) {
-                return false;
-            }
-
-            const auto& state = Dynamics::GetPresetState();
-            return !state.applied || state.current != GetCurrentStatePreset(player);
+            Tooltip("Open sliders for the preset assigned to this state.");
+            GUI::PopStyleColor(2);
         }
 
         void RenderPresetEditor()
@@ -152,7 +106,12 @@ namespace UI {
             }
 
             const auto title = std::string("Edit Preset: ") + Dynamics::PresetName(editor.preset);
-            GUI::SetNextWindowSize(GUI::ImVec2{ 520.0F, 320.0F }, GUI::ImGuiCond_Appearing);
+            constexpr auto windowSize = GUI::ImVec2{ 520.0F, 320.0F };
+            GUI::SetNextWindowSize(windowSize, GUI::ImGuiCond_Appearing);
+            if (const auto* io = GUI::GetIO()) {
+                GUI::SetNextWindowPos(GUI::ImVec2{ io->DisplaySize.x * 0.5F, io->DisplaySize.y * 0.5F }, GUI::ImGuiCond_Appearing, GUI::ImVec2{ 0.5F, 0.5F });
+            }
+
             if (!GUI::Begin(title.c_str(), &editor.open, 0)) {
                 GUI::End();
                 return;
@@ -182,12 +141,11 @@ namespace UI {
 
             GUI::PopItemWidth();
 
-            const bool dirty = !SamePresetData(editor.current, editor.defaults);
-            if (CTAButton("Apply Now", dirty)) {
+            const bool dirty = !editor.current.IsSame(editor.defaults);
+            if (CTAButton("Apply", dirty)) {
                 presetConfig->data = editor.current;
                 presetConfig->data.RecalculateHeight();
                 Settings::MarkPresetEdited(editor.preset, presetConfig->data);
-                Settings::Save();
                 editor.defaults = presetConfig->data;
                 editor.current = presetConfig->data;
 
@@ -195,24 +153,25 @@ namespace UI {
                     logger::info("Preset editor apply result: {}", manager.SetPreset(player, editor.preset));
                 }
             }
+            Tooltip("Apply this preset edit in-game without saving it to disk.");
 
             GUI::SameLine();
 
             const auto* defaultPresetConfig = manager.GetDefaultPresetConfig(editor.preset);
-            const bool differsFromDefault = defaultPresetConfig && !SamePresetData(editor.current, defaultPresetConfig->data);
+            const bool differsFromDefault = defaultPresetConfig && !editor.current.IsSame(defaultPresetConfig->data);
             if (CTAButton("Default", differsFromDefault)) {
-                Settings::ClearPresetEdited(editor.preset);
+                if (defaultPresetConfig) {
+                    presetConfig->data = defaultPresetConfig->data;
+                    Settings::ClearPresetEdited(editor.preset);
+                    editor.defaults = presetConfig->data;
+                    editor.current = presetConfig->data;
 
-                if (auto* restoredPresetConfig = manager.GetPresetConfig(editor.preset)) {
-                    editor.defaults = restoredPresetConfig->data;
-                    editor.current = restoredPresetConfig->data;
-                    Settings::Save();
-
-                    if (auto* player = RE::PlayerCharacter::GetSingleton()) {
+                    if (const auto* player = RE::PlayerCharacter::GetSingleton()) {
                         logger::info("Preset editor default result: {}", manager.SetPreset(player, editor.preset));
                     }
                 }
             }
+            Tooltip("Restore this preset from the preset JSON defaults without saving it to disk.");
 
             GUI::End();
         }
@@ -234,19 +193,17 @@ namespace UI {
         auto& config = Dynamics::GetConfig();
         auto& settings = Settings::GetSettings();
 
-        GUI::Checkbox("Draw Player Collision", &settings.drawCollision);
+        GUI::Checkbox("Draw Bump Collision", &settings.drawCollision);
         GUI::Separator();
 
-        if (GUI::BeginTable("DynamicsPresetTable", 3, GUI::ImGuiTableFlags_BordersInnerV | GUI::ImGuiTableFlags_RowBg)) {
-            GUI::TableSetupColumn("State");
-            GUI::TableSetupColumn("Preset");
-            GUI::TableSetupColumn("");
-            GUI::TableHeadersRow();
+        if (GUI::BeginTable("DynamicsPresetTable", 2)) {
+            GUI::TableSetupColumn("State", GUI::ImGuiTableColumnFlags_WidthFixed, 120.0F);
+            GUI::TableSetupColumn("Preset", GUI::ImGuiTableColumnFlags_WidthStretch);
 
-            RenderStateRow("Outdoor", config.outdoor);
-            RenderStateRow("Indoor", config.indoor);
-            RenderStateRow("Combat", config.combat);
-            RenderStateRow("Neutral", config.neutral);
+            DynamicsPanel::RenderStateRow("Outdoor", config.outdoor);
+            DynamicsPanel::RenderStateRow("Indoor", config.indoor);
+            DynamicsPanel::RenderStateRow("Combat", config.combat);
+            DynamicsPanel::RenderStateRow("Neutral", config.neutral);
 
             GUI::EndTable();
         }
@@ -256,12 +213,7 @@ namespace UI {
         if (CTAButton("Save Settings", Settings::IsDirty())) {
             Settings::Save();
         }
-
-        GUI::SameLine();
-
-        if (CTAButton("Apply Now", CanApplyCurrentState())) {
-            ApplyCurrentState();
-        }
+        Tooltip("Save draw collision, state mappings, and edited presets to disk.");
 
         GUI::SameLine();
 
@@ -272,8 +224,9 @@ namespace UI {
             Settings::GetSettings() = defaults;
             Settings::ApplySettings(Settings::GetSettings());
         }
+        Tooltip("Reset draw collision, state mappings, and preset overrides to defaults.");
 
-        RenderPresetEditor();
+        DynamicsPanel::RenderPresetEditor();
     }
 
     void __stdcall RenderDebugMenu()

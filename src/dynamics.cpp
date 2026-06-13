@@ -3,18 +3,6 @@
 
 namespace Dynamics {
 
-	PresetState& GetPresetState()
-	{
-		static PresetState state{};
-		return state;
-	}
-
-	DynamicsConfig& GetConfig()
-	{
-		static DynamicsConfig config{};
-		return config;
-	}
-
 	const char* PresetName(const VCD::Preset& a_preset)
 	{
 		switch (a_preset) {

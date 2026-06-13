@@ -7,8 +7,11 @@ namespace Dynamics {
 	struct PresetState
 	{
 		bool applied{ false };
+
 		VCD::Preset current{ VCD::Preset::kVanillaLike };
+
 		const RE::TESObjectCELL* lastCell{ nullptr };
+
 		const char* stateName{ "unknown" };
 	};
 
@@ -20,15 +23,23 @@ namespace Dynamics {
 		VCD::Preset neutral{ VCD::Preset::kVanillaLike };
 	};
 
-	PresetState& GetPresetState();
+	inline PresetState& GetPresetState()
+	{
+		static PresetState state{};
+		return state;
+	}
 
-	DynamicsConfig& GetConfig();
-
-	const char* PresetName(const VCD::Preset& a_preset);
+	inline DynamicsConfig& GetConfig()
+	{
+		static DynamicsConfig config{};
+		return config;
+	}
 
 	VCD::Preset GetCellPreset(const RE::TESObjectCELL* a_cell);
 
 	const char* GetCellStateName(const RE::TESObjectCELL* a_cell);
+
+	const char* PresetName(const VCD::Preset& a_preset);
 
 	bool ApplyPreset(const RE::PlayerCharacter* a_player, const VCD::Preset& a_preset, const char* a_state);
 

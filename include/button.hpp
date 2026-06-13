@@ -28,4 +28,9 @@ namespace UI {
         return clicked && a_enabled;
     }
 
+    inline void Tooltip(const char* a_text)
+    {
+        GUI::SetItemTooltip("%s", a_text);
+    }
+
 }

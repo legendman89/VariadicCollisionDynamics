@@ -1,5 +1,6 @@
 #pragma once
 
+#include "helper.hpp"
 #include "settings_def.hpp"
 #include "plugin.hpp"
 
@@ -71,8 +72,7 @@ namespace Settings {
 
 	inline std::string GetSettingsPath()
 	{
-		const auto root = std::filesystem::path(REL::Module::get().filename()).parent_path();
-		return (root / "Data" / "SKSE" / "Plugins" / PRODUCT_NAME / "Settings" / "VCDSettings.json").string();
+		return (VCD::GetPluginDataPath() / "Settings" / "VCDSettings.json").string();
 	}
 
 	bool SettingsEqual(const VCDSettings& a_left, const VCDSettings& a_right);

@@ -99,6 +99,7 @@ bool Manager::SetPreset(const RE::Actor* a_actor, const VCD::Preset& a_preset)
     const auto previousVertexB = worldCapsuleShape->vertexB;
     const auto previousHeight = worldCapsuleShape->vertexA.GetDistance3(worldCapsuleShape->vertexB);
     const auto previousCenter = (ToNiPoint3(previousVertexA) + ToNiPoint3(previousVertexB)) * 0.5F;
+    const auto previousPosition = previousCenter * GetPresetScale();
 
     const auto mappedRadius = presetConfig->data.capsule.radius;
     const auto mappedHeight = presetConfig->data.capsule.height;
@@ -106,6 +107,7 @@ bool Manager::SetPreset(const RE::Actor* a_actor, const VCD::Preset& a_preset)
     const auto mappedX = presetConfig->data.bump.translation.x * RE::bhkWorld::GetWorldScale();
     const auto mappedY = presetConfig->data.bump.translation.y * RE::bhkWorld::GetWorldScale();
     const auto mappedCenter = RE::NiPoint3(mappedX, mappedY, previousCenter.z);
+    const auto mappedPosition = mappedCenter * GetPresetScale();
     const auto mappedVertexA = ToHkVector(RE::NiPoint3(mappedCenter.x, mappedCenter.y, mappedCenter.z + mappedHalfHeight));
     const auto mappedVertexB = ToHkVector(RE::NiPoint3(mappedCenter.x, mappedCenter.y, mappedCenter.z - mappedHalfHeight));
 
@@ -113,12 +115,13 @@ bool Manager::SetPreset(const RE::Actor* a_actor, const VCD::Preset& a_preset)
     worldCapsuleShape->vertexA = mappedVertexA;
     worldCapsuleShape->vertexB = mappedVertexB;
 
-    logger::info("Applied preset [{}] to world CharacterBumper capsule. translation=({}, {}, {}), scale={}, radius {} -> {}, height {} -> {}",
-        presetConfig->name,
-        presetConfig->data.bump.translation.x,
-        presetConfig->data.bump.translation.y,
-        presetConfig->data.bump.translation.z,
-        presetConfig->data.bump.scale,
+    logger::info(" Position = ({}, {}, {}) -> ({}, {}, {}), radius {} -> {}, height {} -> {}",
+        previousPosition.x,
+        previousPosition.y,
+        previousPosition.z,
+        mappedPosition.x,
+        mappedPosition.y,
+        mappedPosition.z,
         previousRadius,
         worldCapsuleShape->radius,
         previousHeight,

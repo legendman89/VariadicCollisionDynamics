@@ -1,5 +1,6 @@
 #pragma once
 
+#include "helper.hpp"
 #include "logger.hpp"
 #include "preset.hpp"
 
@@ -16,16 +17,10 @@ namespace VCD {
 
     namespace fs = std::filesystem;
 
-    inline std::string ToUTF8(const fs::path& a_path)
-    {
-        auto u8 = a_path.u8string();
-        return std::string(reinterpret_cast<const char*>(u8.c_str()));
-    }
-
     inline std::string GetPresetDir()
     {
-        const auto root = fs::path(REL::Module::get().filename()).parent_path();
-        const auto dataPath = root / "Data" / "SKSE" / "Plugins" / PRODUCT_NAME / "Presets";
+        const auto root = GetGameRoot();
+        const auto dataPath = GetPluginDataPath() / "Presets";
 
         std::error_code ec;
         if (fs::exists(dataPath, ec) && fs::is_directory(dataPath, ec)) {

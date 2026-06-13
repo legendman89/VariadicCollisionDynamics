@@ -4,7 +4,7 @@ using json = nlohmann::json;
 
 namespace VCD {
 
-    namespace {
+    namespace PresetJSON {
         bool ReadVec3(Vec3& a_out, const json& a_data)
         {
             if (a_data.is_array()) {
@@ -107,11 +107,7 @@ namespace VCD {
             }
 
             if (a_data.contains("position")) {
-                ReadNiPoint3(a_preset.data.bump.translation, a_data["position"]);
-            }
-
-            if (a_data.contains("scale")) {
-                a_preset.data.bump.scale = a_data["scale"].get<float>();
+                PresetJSON::ReadNiPoint3(a_preset.data.bump.translation, a_data["position"]);
             }
 
             if (a_data.contains("radius")) {
@@ -119,11 +115,11 @@ namespace VCD {
             }
 
             if (a_data.contains("firstPoint")) {
-                ReadVec3(a_preset.data.capsule.point1, a_data["firstPoint"]);
+                PresetJSON::ReadVec3(a_preset.data.capsule.point1, a_data["firstPoint"]);
             }
 
             if (a_data.contains("secondPoint")) {
-                ReadVec3(a_preset.data.capsule.point2, a_data["secondPoint"]);
+                PresetJSON::ReadVec3(a_preset.data.capsule.point2, a_data["secondPoint"]);
             }
 
             a_preset.data.RecalculateHeight();
@@ -148,7 +144,7 @@ namespace VCD {
         std::size_t loadedCount = 0;
 
         for (const auto& path : paths) {
-            logger::info(" reading.. {}", path);
+            logger::info("Reading {}", path);
 
             std::ifstream presetFile(path);
             if (!presetFile.is_open()) {
@@ -180,7 +176,7 @@ namespace VCD {
             }
 
             for (auto entry : entries) {
-                const auto preset = PresetFromFileName(path);
+                const auto preset = PresetJSON::PresetFromFileName(path);
                 auto& presetConfig = a_presets[ToUnderlying(preset)];
                 presetConfig.preset = preset;
                 presetConfig.configPath = path;
@@ -192,7 +188,7 @@ namespace VCD {
             }
         }
 
-        logger::info("preset parsing finished: {}/{} loaded successfully", loadedCount, a_presets.size());
+        logger::info("Preset parsing finished: {}/{} loaded successfully", loadedCount, a_presets.size());
         return loadedCount == a_presets.size();
     }
 }

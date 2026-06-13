@@ -2,6 +2,7 @@
 
 #include "plugin.hpp"
 #include "logger.hpp"
+#include "helper.hpp"
 
 #include <string_view>
 #include <filesystem>
@@ -9,6 +10,19 @@
 #include <cmath>
 
 namespace fs = std::filesystem;
+
+#define FOREACH_COLLISION_DATA_FIELD(S) \
+    S(bump.translation.x) \
+    S(bump.translation.y) \
+    S(bump.translation.z) \
+    S(capsule.radius) \
+    S(capsule.height) \
+    S(capsule.point1.x) \
+    S(capsule.point1.y) \
+    S(capsule.point1.z) \
+    S(capsule.point2.x) \
+    S(capsule.point2.y) \
+    S(capsule.point2.z)
 
 namespace VCD {
 
@@ -42,7 +56,6 @@ namespace VCD {
         struct BumperNodeInfo
         {
             RE::NiPoint3 translation{};
-            float scale{ 1.0F };
         } bump;
 
         struct CapsuleInfo {
@@ -57,26 +70,17 @@ namespace VCD {
         } capsule;
 
         void Log() {
+
+#define COLLISION_FIELD2LOG(F) ,F
+
             logger::info(
                 " Collision Data:\n"
                 "  Translation: X={}, Y={}, Z={}\n"
-                "  Scale: {}\n"
                 "  Radius: {}\n"
                 "  Height: {}\n"
                 "  First Point:  X={}, Y={}, Z={}\n"
-                "  Second Point: X={}, Y={}, Z={}\n",
-                bump.translation.x,
-                bump.translation.y,
-                bump.translation.z,
-                bump.scale,
-                capsule.radius,
-                capsule.height,
-                capsule.point1.x,
-                capsule.point1.y,
-                capsule.point1.z,
-                capsule.point2.x,
-                capsule.point2.y,
-                capsule.point2.z);
+                "  Second Point: X={}, Y={}, Z={}\n"
+                FOREACH_COLLISION_DATA_FIELD(COLLISION_FIELD2LOG));
         }
 
         void RecalculateHeight()
@@ -85,6 +89,13 @@ namespace VCD {
             const auto y = capsule.point1.y - capsule.point2.y;
             const auto z = capsule.point1.z - capsule.point2.z;
             capsule.height = std::sqrt((x * x) + (y * y) + (z * z));
+        }
+
+        bool IsSame(const CollisionData& a_other) const
+        {
+#define COLLISION_FIELD2EQ(F) F == a_other.F &&
+
+            return FOREACH_COLLISION_DATA_FIELD(COLLISION_FIELD2EQ) true;
         }
     };
 
@@ -100,10 +111,4 @@ namespace VCD {
     };
 
     
-    template <class Enum>
-    constexpr auto ToUnderlying(const Enum& a_value) 
-    {
-        return static_cast<std::underlying_type_t<Enum>>(a_value);
-    }
-
 }

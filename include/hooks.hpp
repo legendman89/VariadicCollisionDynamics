@@ -1,13 +1,14 @@
 #pragma once
 
-namespace hooks{
+namespace Hook {
 
-struct PlayerCharacter_Update {
+    struct PlayerUpdate {
 
-    static void thunk(RE::PlayerCharacter* player, float delta);
+        static void thunk(RE::PlayerCharacter* player, float delta);
 
-    static inline REL::Relocation<decltype(thunk)> func;
+        static inline REL::Relocation<decltype(thunk)> func;
 
-    static void Install();
-};
+        static void Install();
+    };
+
 }

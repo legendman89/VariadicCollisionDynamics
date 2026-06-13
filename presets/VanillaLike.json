@@ -5,9 +5,6 @@
   // Position offset: [x, y, z].
   "position": [0.0, 17.0, 10.0],
 
-  // Multiplier reserved for future position/point mapping.
-  "scale": 1.0,
-
   // Collision radius.
   "radius": 0.28574997,
 

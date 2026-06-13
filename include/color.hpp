@@ -12,5 +12,7 @@ namespace UI::Color {
     inline constexpr GUI::ImVec4 kCTAOffHover{ 0.40F, 0.42F, 0.46F, 0.60F };
     inline constexpr GUI::ImVec4 kCTAOffActive{ 0.32F, 0.34F, 0.38F, 0.55F };
     inline constexpr GUI::ImVec4 kCTAOffText{ 0.60F, 0.62F, 0.68F, 1.00F };
+    inline constexpr GUI::ImVec4 kEditHover{ 0.28F, 0.38F, 0.50F, 0.85F };
+    inline constexpr GUI::ImVec4 kEditActive{ 0.34F, 0.48F, 0.64F, 0.95F };
 
 }

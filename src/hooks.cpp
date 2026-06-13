@@ -5,14 +5,14 @@
 #include "dynamics.hpp"
 #include "settings.hpp"
 
-using namespace hooks; 
+using namespace Hook; 
 
-void PlayerCharacter_Update::thunk(RE::PlayerCharacter* player, float delta) {
+void PlayerUpdate::thunk(RE::PlayerCharacter* player, float delta) {
 
 	func(player, delta);
 
 	if (!player) {
-		logger::warn("Player is null - can't check cell");
+		logger::warn("Player is null, cannot check cell");
 		return;
 	}
 
@@ -22,10 +22,9 @@ void PlayerCharacter_Update::thunk(RE::PlayerCharacter* player, float delta) {
 		VCD::Manager::GetSingleton().DrawPlayerBumper();
 	}
 
-
 }
 
-void PlayerCharacter_Update::Install()
+void PlayerUpdate::Install()
 {
 	func = REL::Relocation<std::uintptr_t>(RE::PlayerCharacter::VTABLE[0]).write_vfunc(0xAD, thunk);
 	logger::info("Player update hook installed");

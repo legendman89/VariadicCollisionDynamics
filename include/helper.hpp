@@ -2,7 +2,33 @@
 
 #include "plugin.hpp"
 
+#include <filesystem>
+#include <string>
+#include <type_traits>
+
 namespace VCD {
+
+    inline std::string ToUTF8(const std::filesystem::path& a_path)
+    {
+        auto u8 = a_path.u8string();
+        return std::string(reinterpret_cast<const char*>(u8.c_str()));
+    }
+
+    template <class Enum>
+    constexpr auto ToUnderlying(const Enum& a_value)
+    {
+        return static_cast<std::underlying_type_t<Enum>>(a_value);
+    }
+
+    inline std::filesystem::path GetGameRoot()
+    {
+        return std::filesystem::path(REL::Module::get().filename()).parent_path();
+    }
+
+    inline std::filesystem::path GetPluginDataPath()
+    {
+        return GetGameRoot() / "Data" / "SKSE" / "Plugins" / PRODUCT_NAME;
+    }
 
     inline float GetPresetScale()
     {
