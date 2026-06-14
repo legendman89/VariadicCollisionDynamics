@@ -3,7 +3,6 @@
 #include "logger.hpp"
 #include "helper.hpp"
 #include "plugin.hpp"
-#include "drawLines.hpp"
 
 #include <type_traits>
 
@@ -59,37 +58,22 @@ void Manager::ClearLoadedPresets()
 
 bool Manager::SetPreset(const RE::Actor* a_actor, const VCD::Preset& a_preset)
 {
-    if (!a_actor)
-        return false;
-
-    auto* playerController = skyrim_cast<RE::bhkCharProxyController*>(a_actor->GetCharController());
-
-    if (!playerController)
-        return false;
-
     const auto* presetConfig = GetPresetConfig(a_preset);
     if (!presetConfig) {
         return false;
     }
 
-    auto* cell = a_actor->GetParentCell();
-    if (!cell) {
+    ActorBumperContext context{};
+    if (!GetActorBumperContext(a_actor, context)) {
+        logger::error("Could not apply preset [{}]. CharacterBumper capsule unavailable", presetConfig->name);
         return false;
     }
 
-    auto* world = cell->GetbhkWorld();
-    if (!world) {
-        return false;
-    }
+    RE::BSWriteLockGuard lock(context.world->worldLock);
 
-    RE::BSWriteLockGuard lock(world->worldLock);
-
-    auto* worldCapsuleShape = FindWorldCharacterBumperShape(playerController);
+    auto* worldCapsuleShape = FindWorldCharacterBumperShape(context.controller);
     if (!worldCapsuleShape) {
-        auto* proxy = skyrim_cast<RE::hkpCharacterProxy*>(playerController->proxy.referencedObject.get());
-        const auto* worldShape = proxy && proxy->shapePhantom ? proxy->shapePhantom->collidable.shape : nullptr;
-        logger::error("Could not find world CharacterBumper capsule for preset [{}]. worldShapeType={}", 
-                        presetConfig->name, worldShape ? static_cast<std::uint32_t>(worldShape->type) : 0);
+        logger::error("Could not apply preset [{}]. CharacterBumper capsule unavailable", presetConfig->name);
         return false;
     }
 
@@ -132,16 +116,72 @@ bool Manager::SetPreset(const RE::Actor* a_actor, const VCD::Preset& a_preset)
 RE::hkpCapsuleShape* Manager::FindWorldCharacterBumperShape(RE::bhkCharProxyController* a_controller) const
 {
     if (!a_controller) {
+        LogCharacterBumperFailure("controller unavailable");
         return nullptr;
     }
 
     auto* proxy = skyrim_cast<RE::hkpCharacterProxy*>(a_controller->proxy.referencedObject.get());
-    if (!proxy || !proxy->shapePhantom) {
+    if (!proxy) {
+        LogCharacterBumperFailure("hkpCharacterProxy unavailable");
+        return nullptr;
+    }
+
+    if (!proxy->shapePhantom) {
+        LogCharacterBumperFailure("shapePhantom unavailable");
+        return nullptr;
+    }
+
+    if (!proxy->shapePhantom->collidable.shape) {
+        LogCharacterBumperFailure("root collision shape unavailable");
         return nullptr;
     }
 
     auto* shape = const_cast<RE::hkpShape*>(proxy->shapePhantom->collidable.shape);
-    return FindCharacterBumperShape(shape, RE::HK_INVALID_SHAPE_KEY);
+    if (auto* bumperShape = FindCharacterBumperShape(shape, RE::HK_INVALID_SHAPE_KEY)) {
+        ClearCharacterBumperFailure();
+        return bumperShape;
+    }
+
+    CapsuleCandidate candidate{};
+    FindLargestCapsuleShape(shape, candidate);
+    if (candidate.capsule) {
+        ClearCharacterBumperFailure();
+        logger::warn("Using fallback CharacterBumper capsule. radius={}, height={}", candidate.capsule->radius, candidate.height);
+        return candidate.capsule;
+    }
+
+    LogCharacterBumperFailure("CharacterBumper capsule not found", static_cast<std::uint32_t>(shape->type));
+    return nullptr;
+}
+
+bool Manager::GetActorBumperContext(const RE::Actor* a_actor, ActorBumperContext& a_context) const
+{
+    if (!a_actor) {
+        LogCharacterBumperFailure("actor unavailable");
+        return false;
+    }
+
+    auto* playerController = skyrim_cast<RE::bhkCharProxyController*>(a_actor->GetCharController());
+    if (!playerController) {
+        LogCharacterBumperFailure("controller unavailable");
+        return false;
+    }
+
+    auto* cell = a_actor->GetParentCell();
+    if (!cell) {
+        LogCharacterBumperFailure("parent cell unavailable");
+        return false;
+    }
+
+    auto* world = cell->GetbhkWorld();
+    if (!world) {
+        LogCharacterBumperFailure("bhkWorld unavailable");
+        return false;
+    }
+
+    a_context.controller = playerController;
+    a_context.world = world;
+    return true;
 }
 
 RE::hkpCapsuleShape* Manager::FindCharacterBumperShape(RE::hkpShape* a_shape, const RE::hkpShapeKey& a_key) const
@@ -195,21 +235,110 @@ RE::hkpCapsuleShape* Manager::FindCharacterBumperShape(RE::hkpShape* a_shape, co
     return nullptr;
 }
 
+void Manager::FindLargestCapsuleShape(RE::hkpShape* a_shape, CapsuleCandidate& a_candidate) const
+{
+    if (!a_shape) {
+        return;
+    }
+
+    if (a_shape->type == RE::hkpShapeType::kCapsule) {
+        auto* capsule = skyrim_cast<RE::hkpCapsuleShape*>(a_shape);
+        const auto height = capsule ? capsule->vertexA.GetDistance3(capsule->vertexB) : 0.0F;
+        if (capsule && height > a_candidate.height) {
+            a_candidate.capsule = capsule;
+            a_candidate.height = height;
+        }
+
+        return;
+    }
+
+    if (a_shape->type == RE::hkpShapeType::kList) {
+        auto* listShape = skyrim_cast<RE::hkpListShape*>(a_shape);
+        if (!listShape) {
+            return;
+        }
+
+        for (auto& childInfo : listShape->childInfo) {
+            FindLargestCapsuleShape(const_cast<RE::hkpShape*>(childInfo.shape), a_candidate);
+        }
+
+        return;
+    }
+
+    const auto* container = a_shape->GetContainer();
+    if (!container) {
+        return;
+    }
+
+    for (auto key = container->GetFirstKey(); key != RE::HK_INVALID_SHAPE_KEY; key = container->GetNextKey(key)) {
+        RE::hkpShapeBuffer buffer{};
+        auto* childShape = const_cast<RE::hkpShape*>(container->GetChildShape(key, buffer));
+        FindLargestCapsuleShape(childShape, a_candidate);
+    }
+}
+
 bool Manager::IsCharacterBumperShape(const RE::hkpShape* a_shape, const RE::hkpShapeKey& a_key) const
 {
     if (!a_shape || !a_shape->userData) {
         return false;
     }
 
-    if (a_shape->userData->materialID == RE::MATERIAL_ID::kCharacterBumper) {
+    if (IsCharacterBumperMaterial(a_shape->userData->materialID)) {
         return true;
     }
 
-    if (a_key != RE::HK_INVALID_SHAPE_KEY && a_shape->userData->GetMaterialID(a_key) == RE::MATERIAL_ID::kCharacterBumper) {
-        return true;
+    if (a_key != RE::HK_INVALID_SHAPE_KEY) {
+        return IsCharacterBumperMaterial(a_shape->userData->GetMaterialID(a_key));
     }
 
     return false;
+}
+
+bool Manager::IsCharacterBumperMaterial(const RE::MATERIAL_ID& a_materialID) const
+{
+    if (a_materialID == RE::MATERIAL_ID::kCharacterBumper) {
+        return true;
+    }
+
+    return a_materialID == RE::MATERIAL_ID::kTrap;
+}
+
+Manager::LookupFailureState& Manager::GetLookupFailureState()
+{
+    static LookupFailureState state{};
+    return state;
+}
+
+void Manager::LogCharacterBumperFailure(const char* a_reason) const
+{
+    auto& state = GetLookupFailureState();
+    const auto shapeType = std::numeric_limits<std::uint32_t>::max();
+    if (state.reason == a_reason && state.shapeType == shapeType) {
+        return;
+    }
+
+    logger::warn("CharacterBumper lookup failed: {}", a_reason);
+    state.reason = a_reason;
+    state.shapeType = shapeType;
+}
+
+void Manager::LogCharacterBumperFailure(const char* a_reason, const std::uint32_t& a_shapeType) const
+{
+    auto& state = GetLookupFailureState();
+    if (state.reason == a_reason && state.shapeType == a_shapeType) {
+        return;
+    }
+
+    logger::warn("CharacterBumper lookup failed: {}. rootShapeType={}", a_reason, a_shapeType);
+    state.reason = a_reason;
+    state.shapeType = a_shapeType;
+}
+
+void Manager::ClearCharacterBumperFailure() const
+{
+    auto& state = GetLookupFailureState();
+    state.reason = nullptr;
+    state.shapeType = std::numeric_limits<std::uint32_t>::max();
 }
 
 bool Manager::AreAllPresetsLoaded() const

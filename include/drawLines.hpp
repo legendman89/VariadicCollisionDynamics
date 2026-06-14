@@ -96,46 +96,38 @@ namespace DebugAPI_IMPL {
         inline void DrawPlayerBumper()
         {
             auto player = RE::PlayerCharacter::GetSingleton();
-            if (!player)
+            if (!player) {
                 return;
-            auto charController = skyrim_cast<RE::bhkCharProxyController*>(player->GetCharController());
-            if (!charController)
-                return;
-            auto cell = player->GetParentCell();
-            if (!cell)
-                return;
-            auto world = cell->GetbhkWorld();
-            if (!world)
-                return;
+            }
 
-            RE::BSReadLockGuard lock(world->worldLock);
-            auto* bumper = VCD::Manager::GetSingleton().FindWorldCharacterBumperShape(charController);
-            if (!bumper)
+            VCD::Manager::ActorBumperContext context{};
+            if (!VCD::Manager::GetSingleton().GetActorBumperContext(player, context)) {
                 return;
+            }
 
-            RE::hkVector4 controllerPosHK;
-            charController->GetPosition(controllerPosHK, false);
-            RE::NiPoint3 controllerPos = VCD::ToNiPoint3(controllerPosHK) * VCD::GetPresetScale();
-            RE::NiPoint3 aLocal = VCD::ToNiPoint3(bumper->vertexA) * VCD::GetPresetScale();
-            RE::NiPoint3 bLocal = VCD::ToNiPoint3(bumper->vertexB) * VCD::GetPresetScale();
+            RE::BSReadLockGuard lock(context.world->worldLock);
+
+            auto* bumper = VCD::Manager::GetSingleton().FindWorldCharacterBumperShape(context.controller);
+            if (!bumper) {
+                return;
+            }
+
+            RE::hkVector4 controllerPositionHK;
+            context.controller->GetPosition(controllerPositionHK, false);
+            RE::NiPoint3 controllerPosition = VCD::ToNiPoint3(controllerPositionHK) * VCD::GetPresetScale();
+            RE::NiPoint3 vertexA = VCD::ToNiPoint3(bumper->vertexA) * VCD::GetPresetScale();
+            RE::NiPoint3 vertexB = VCD::ToNiPoint3(bumper->vertexB) * VCD::GetPresetScale();
             float radius = bumper->radius * VCD::GetPresetScale();
-
             float yaw = -player->data.angle.z;
             float c = std::cos(yaw);
             float s = std::sin(yaw);
-            auto rotate = [&](const RE::NiPoint3& p) {
-                return RE::NiPoint3(p.x * c - p.y * s, p.x * s + p.y * c, p.z);
-            };
-
-            RE::NiPoint3 a = rotate(aLocal) + controllerPos;
-            RE::NiPoint3 b = rotate(bLocal) + controllerPos;
-
-            using namespace DebugAPI_IMPL;
+            RE::NiPoint3 a = VCD::RotatePoint(vertexA, c, s) + controllerPosition;
+            RE::NiPoint3 b = VCD::RotatePoint(vertexB, c, s) + controllerPosition;
 
             auto* api = DebugAPI::GetSingleton();
             const auto& settings = Settings::GetSettings();
-            DebugAPI_Ext::DrawCapsule(a, b, radius, 1, VCD::ToNiColorA(settings.drawColor), settings.drawLineThickness);
-            api->Update();
+            api->LinesToDraw.clear();
+            DebugAPI_IMPL::DebugAPI_Ext::DrawCapsule(a, b, radius, 1, VCD::ToNiColorA(settings.drawColor), settings.drawLineThickness);
         } 
 
 

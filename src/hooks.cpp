@@ -23,6 +23,7 @@ void PlayerUpdate::thunk(RE::PlayerCharacter* player, float delta) {
 
 	if (Settings::GetSettings().drawCollision) {
 		DebugAPI_IMPL::DebugAPI_Ext::DrawPlayerBumper();
+		DebugAPI_IMPL::DebugAPI::GetSingleton()->Update();
 	}
 }
 

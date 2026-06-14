@@ -51,4 +51,9 @@ namespace VCD {
         return RE::NiColorA(a_color[0], a_color[1], a_color[2], a_color[3]);
     }
 
+    inline RE::NiPoint3 RotatePoint(const RE::NiPoint3& a_point, const float& a_cos, const float& a_sin)
+    {
+        return RE::NiPoint3(a_point.x * a_cos - a_point.y * a_sin, a_point.x * a_sin + a_point.y * a_cos, a_point.z);
+    }
+
 }
