@@ -6,15 +6,6 @@
 
 namespace UI {
 
-    void SetCurrentHeight(VCD::CollisionData& a_data, const float& a_height)
-    {
-        const auto center = (a_data.capsule.point1.z + a_data.capsule.point2.z) * 0.5F;
-        const auto halfHeight = a_height * 0.5F;
-        a_data.capsule.point1.z = center + halfHeight;
-        a_data.capsule.point2.z = center - halfHeight;
-        a_data.RecalculateHeight();
-    }
-
     bool PresetCombo(const char* a_label, VCD::Preset& a_preset)
     {
         auto index = static_cast<int>(VCD::ToUnderlying(a_preset));
@@ -215,26 +206,35 @@ namespace UI {
 
         GUI::PushItemWidth(260.0F);
 
+        constexpr auto kOffsetLimit = 30.0F;
+		constexpr auto kHeightLimit = 3.0F;
+
         auto radius = editor.current.capsule.radius;
-        if (GUI::SliderFloat("Radius", &radius, 0.0F, 0.8F)) {
+        if (GUI::SliderFloat("Radius", &radius, 0.05F, 1.0F)) {
             editor.current.capsule.radius = radius;
             UpdateEditedPreset();
         }
 
-        auto height = editor.current.capsule.height;
-        if (GUI::SliderFloat("Height", &height, 0.1F, 1.5F)) {
-            SetCurrentHeight(editor.current, height);
+        auto topOffset = editor.current.capsule.point1.z;
+        if (GUI::SliderFloat("Top Offset", &topOffset, -kHeightLimit, kHeightLimit)) {
+            editor.current.capsule.point1.z = topOffset;
+            UpdateEditedPreset();
+        }
+
+        auto bottomOffset = editor.current.capsule.point2.z;
+        if (GUI::SliderFloat("Bottom Offset", &bottomOffset, -kHeightLimit, kHeightLimit)) {
+            editor.current.capsule.point2.z = bottomOffset;
             UpdateEditedPreset();
         }
 
         auto forward = editor.current.bump.translation.y;
-        if (GUI::SliderFloat("Forward Offset", &forward, -40.0F, 40.0F)) {
+        if (GUI::SliderFloat("Forward Offset", &forward, -kOffsetLimit, kOffsetLimit)) {
             editor.current.bump.translation.y = forward;
             UpdateEditedPreset();
         }
 
         auto side = editor.current.bump.translation.x;
-        if (GUI::SliderFloat("Side Offset", &side, -40.0F, 40.0F)) {
+        if (GUI::SliderFloat("Side Offset", &side, -kOffsetLimit, kOffsetLimit)) {
             editor.current.bump.translation.x = side;
             UpdateEditedPreset();
         }
@@ -281,6 +281,8 @@ namespace UI {
             RenderStateRow("Outdoor", config.outdoor);
             RenderStateRow("Indoor", config.indoor);
             RenderStateRow("Combat", config.combat);
+            RenderStateRow("Werewolf", config.werewolf);
+            RenderStateRow("Vampire Lord", config.vampireLord);
             RenderStateRow("Neutral", config.neutral);
 
             GUI::EndTable();

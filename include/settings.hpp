@@ -27,6 +27,14 @@ namespace Settings {
 			return VCD::Preset::kBulky;
 		}
 
+		if (a_preset == "Werewolf") {
+			return VCD::Preset::kWerewolf;
+		}
+
+		if (a_preset == "VampireLord" || a_preset == "Vampire Lord") {
+			return VCD::Preset::kVampireLord;
+		}
+
 		return VCD::Preset::kVanillaLike;
 	}
 
@@ -94,6 +102,10 @@ namespace Settings {
 			return "Compact";
 		case VCD::Preset::kBulky:
 			return "Bulky";
+		case VCD::Preset::kWerewolf:
+			return "Werewolf";
+		case VCD::Preset::kVampireLord:
+			return "VampireLord";
 		default:
 			return "VanillaLike";
 		}

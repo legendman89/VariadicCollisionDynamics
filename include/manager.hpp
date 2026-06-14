@@ -27,13 +27,13 @@ namespace VCD {
         void LoadPresets();
 		void ClearLoadedPresets();
 
-        bool SetPreset(const RE::Actor* a_actor, const VCD::Preset& a_preset);
+        bool SetPreset(const RE::Actor* a_actor, const VCD::Preset& a_preset, const bool& a_log = true);
 
         bool AreAllPresetsLoaded() const;
 
         std::size_t GetLoadedPresetCount() const;
 
-        const std::array<PresetConfig, 4>& GetPresetConfigs() const noexcept;
+        const std::array<PresetConfig, kPresetCount>& GetPresetConfigs() const noexcept;
 
         const PresetConfig* GetPresetConfig(const VCD::Preset& a_preset) const;
 
@@ -82,8 +82,8 @@ namespace VCD {
 
         void ClearCharacterBumperFailure() const;
 
-        std::array<PresetConfig, 4> presetConfigs;
-        std::array<PresetConfig, 4> defaultPresetConfigs;
+        std::array<PresetConfig, kPresetCount> presetConfigs;
+        std::array<PresetConfig, kPresetCount> defaultPresetConfigs;
     };
 
 }

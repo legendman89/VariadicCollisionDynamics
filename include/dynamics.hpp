@@ -15,6 +15,12 @@ namespace Dynamics {
 		const RE::TESObjectCELL* lastCell{ nullptr };
 
 		const char* stateName{ "unknown" };
+
+		bool transitionRetryActive{ false };
+
+		std::chrono::steady_clock::time_point transitionRetryUntil{};
+
+		std::chrono::steady_clock::time_point nextTransitionRetry{};
 	};
 
 	struct PreviewState
@@ -33,6 +39,8 @@ namespace Dynamics {
 		VCD::Preset outdoor{ VCD::Preset::kPersonalSpace };
 		VCD::Preset indoor{ VCD::Preset::kCompact };
 		VCD::Preset combat{ VCD::Preset::kBulky };
+		VCD::Preset werewolf{ VCD::Preset::kWerewolf };
+		VCD::Preset vampireLord{ VCD::Preset::kVampireLord };
 		VCD::Preset neutral{ VCD::Preset::kVanillaLike };
 	};
 
@@ -62,6 +70,10 @@ namespace Dynamics {
 
 	bool IsPresetPreviewed(const VCD::Preset& a_preset);
 
+	bool IsWerewolf(const RE::Actor* a_actor);
+
+	bool IsVampireLord(const RE::Actor* a_actor);
+
 	bool ApplyPreset(const RE::PlayerCharacter* a_player, const VCD::Preset& a_preset, const char* a_state, const bool& a_force = false);
 
 	bool ApplyEnvironmentPreset(const RE::PlayerCharacter* a_player, const bool& a_force = false);
@@ -73,49 +85,5 @@ namespace Dynamics {
 	void RestorePresetPreview(const RE::PlayerCharacter* a_player);
 
 	void Update(const RE::PlayerCharacter* a_player);
-
-	struct PlayerCellEvent : RE::BSTEventSink<RE::BGSActorCellEvent>
-	{
-		static void RegisterEventSink();
-
-		static PlayerCellEvent* GetSingleton()
-		{
-			static PlayerCellEvent singleton;
-			return &singleton;
-		}
-
-	private:
-		RE::BSEventNotifyControl ProcessEvent(
-			const RE::BGSActorCellEvent* a_event,
-			RE::BSTEventSource<RE::BGSActorCellEvent>*) override;
-	};
-
-
-	struct CombatEventSink : public RE::BSTEventSink<RE::TESCombatEvent>
-	{
-		CombatEventSink() = default;
-		CombatEventSink(const CombatEventSink&) = delete;
-		CombatEventSink(CombatEventSink&&) = delete;
-
-		CombatEventSink& operator=(const CombatEventSink&) = delete;
-		CombatEventSink& operator=(CombatEventSink&&) = delete;
-
-		static void RegisterEventSink();
-
-		static CombatEventSink* GetSingleton()
-		{
-			static CombatEventSink singleton;
-			return &singleton;
-		}
-
-	private:
-		RE::BSEventNotifyControl ProcessEvent(
-			const RE::TESCombatEvent* event,
-			RE::BSTEventSource<RE::TESCombatEvent>*) override;
-	};
-
-
-	void Install();
-
 
 }

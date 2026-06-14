@@ -8,6 +8,7 @@
 #include <filesystem>
 #include <string>
 #include <cmath>
+#include <cstddef>
 
 namespace fs = std::filesystem;
 
@@ -33,8 +34,12 @@ namespace VCD {
         kVanillaLike,
         kPersonalSpace,
         kCompact,
-        kBulky
+        kBulky,
+        kWerewolf,
+        kVampireLord
     };
+
+    inline constexpr std::size_t kPresetCount = 6;
 
     inline constexpr const char* PresetName(const Preset& a_preset)
     {
@@ -47,6 +52,10 @@ namespace VCD {
             return "Compact";
         case Preset::kBulky:
             return "Bulky";
+        case Preset::kWerewolf:
+            return "Werewolf";
+        case Preset::kVampireLord:
+            return "Vampire Lord";
         default:
             return "Unknown";
         }
@@ -56,7 +65,9 @@ namespace VCD {
         PresetName(Preset::kVanillaLike),
         PresetName(Preset::kPersonalSpace),
         PresetName(Preset::kCompact),
-        PresetName(Preset::kBulky)
+        PresetName(Preset::kBulky),
+        PresetName(Preset::kWerewolf),
+        PresetName(Preset::kVampireLord)
     };
 
     struct Vec3

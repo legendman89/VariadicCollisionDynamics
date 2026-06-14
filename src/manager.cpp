@@ -31,6 +31,14 @@ Manager::Manager() :
         PresetConfig{
             Preset::kBulky,
             PresetName(Preset::kBulky)
+        },
+        PresetConfig{
+            Preset::kWerewolf,
+            PresetName(Preset::kWerewolf)
+        },
+        PresetConfig{
+            Preset::kVampireLord,
+            PresetName(Preset::kVampireLord)
         }
     } }
 {
@@ -56,7 +64,7 @@ void Manager::ClearLoadedPresets()
     }
 }
 
-bool Manager::SetPreset(const RE::Actor* a_actor, const VCD::Preset& a_preset)
+bool Manager::SetPreset(const RE::Actor* a_actor, const VCD::Preset& a_preset, const bool& a_log)
 {
     const auto* presetConfig = GetPresetConfig(a_preset);
     if (!presetConfig) {
@@ -65,7 +73,6 @@ bool Manager::SetPreset(const RE::Actor* a_actor, const VCD::Preset& a_preset)
 
     ActorBumperContext context{};
     if (!GetActorBumperContext(a_actor, context)) {
-        logger::error("Could not apply preset [{}]. CharacterBumper capsule unavailable", presetConfig->name);
         return false;
     }
 
@@ -73,7 +80,9 @@ bool Manager::SetPreset(const RE::Actor* a_actor, const VCD::Preset& a_preset)
 
     auto* worldCapsuleShape = FindWorldCharacterBumperShape(context.controller);
     if (!worldCapsuleShape) {
-        logger::error("Could not apply preset [{}]. CharacterBumper capsule unavailable", presetConfig->name);
+        if (a_log) {
+            logger::error("Could not apply preset [{}]. CharacterBumper capsule unavailable", presetConfig->name);
+        }
         return false;
     }
 
@@ -85,30 +94,32 @@ bool Manager::SetPreset(const RE::Actor* a_actor, const VCD::Preset& a_preset)
     const auto previousPosition = previousCenter * GetPresetScale();
 
     const auto mappedRadius = presetConfig->data.capsule.radius;
-    const auto mappedHeight = presetConfig->data.capsule.height;
-    const auto mappedHalfHeight = mappedHeight * 0.5F;
     const auto mappedX = presetConfig->data.bump.translation.x * RE::bhkWorld::GetWorldScale();
     const auto mappedY = presetConfig->data.bump.translation.y * RE::bhkWorld::GetWorldScale();
-    const auto mappedCenter = RE::NiPoint3(mappedX, mappedY, previousCenter.z);
+    const auto mappedPoint1Z = presetConfig->data.capsule.point1.z;
+    const auto mappedPoint2Z = presetConfig->data.capsule.point2.z;
+    const auto mappedCenter = RE::NiPoint3(mappedX, mappedY, (mappedPoint1Z + mappedPoint2Z) * 0.5F);
     const auto mappedPosition = mappedCenter * GetPresetScale();
-    const auto mappedVertexA = ToHkVector(RE::NiPoint3(mappedCenter.x, mappedCenter.y, mappedCenter.z + mappedHalfHeight));
-    const auto mappedVertexB = ToHkVector(RE::NiPoint3(mappedCenter.x, mappedCenter.y, mappedCenter.z - mappedHalfHeight));
+    const auto mappedVertexA = ToHkVector(RE::NiPoint3(mappedCenter.x, mappedCenter.y, mappedPoint1Z));
+    const auto mappedVertexB = ToHkVector(RE::NiPoint3(mappedCenter.x, mappedCenter.y, mappedPoint2Z));
 
     worldCapsuleShape->radius = mappedRadius;
     worldCapsuleShape->vertexA = mappedVertexA;
     worldCapsuleShape->vertexB = mappedVertexB;
 
-    logger::info(" Position = ({}, {}, {}) -> ({}, {}, {}), radius {} -> {}, height {} -> {}",
-        previousPosition.x,
-        previousPosition.y,
-        previousPosition.z,
-        mappedPosition.x,
-        mappedPosition.y,
-        mappedPosition.z,
-        previousRadius,
-        worldCapsuleShape->radius,
-        previousHeight,
-        worldCapsuleShape->vertexA.GetDistance3(worldCapsuleShape->vertexB));
+    if (a_log) {
+        logger::info(" Position = ({}, {}, {}) -> ({}, {}, {}), radius {} -> {}, height {} -> {}",
+            previousPosition.x,
+            previousPosition.y,
+            previousPosition.z,
+            mappedPosition.x,
+            mappedPosition.y,
+            mappedPosition.z,
+            previousRadius,
+            worldCapsuleShape->radius,
+            previousHeight,
+            worldCapsuleShape->vertexA.GetDistance3(worldCapsuleShape->vertexB));
+    }
     return true;
 }
 
@@ -163,7 +174,6 @@ bool Manager::GetActorBumperContext(const RE::Actor* a_actor, ActorBumperContext
 
     auto* playerController = skyrim_cast<RE::bhkCharProxyController*>(a_actor->GetCharController());
     if (!playerController) {
-        LogCharacterBumperFailure("controller unavailable");
         return false;
     }
 
@@ -364,7 +374,7 @@ std::size_t Manager::GetLoadedPresetCount() const
     return count;
 }
 
-const std::array<PresetConfig, 4>& Manager::GetPresetConfigs() const noexcept
+const std::array<PresetConfig, kPresetCount>& Manager::GetPresetConfigs() const noexcept
 {
     return presetConfigs;
 }

@@ -70,5 +70,5 @@ namespace VCD {
 
     bool LoadPresetConfiguration(PresetConfig& a_preset, const nlohmann::json& a_data);
 
-    bool LoadPresetConfigurations(std::array<PresetConfig, 4>& a_presets);
+    bool LoadPresetConfigurations(std::array<PresetConfig, kPresetCount>& a_presets);
 }

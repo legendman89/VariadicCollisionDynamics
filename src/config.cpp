@@ -95,6 +95,14 @@ namespace VCD {
                 return Preset::kBulky;
             }
 
+            if (stem == "Werewolf") {
+                return Preset::kWerewolf;
+            }
+
+            if (stem == "VampireLord") {
+                return Preset::kVampireLord;
+            }
+
             return Preset::kVanillaLike;
         }
     }
@@ -132,7 +140,7 @@ namespace VCD {
         }
     }
 
-    bool LoadPresetConfigurations(std::array<PresetConfig, 4>& a_presets)
+    bool LoadPresetConfigurations(std::array<PresetConfig, kPresetCount>& a_presets)
     {
         logger::info("Parsing collision presets..");
 

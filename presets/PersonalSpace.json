@@ -2,8 +2,8 @@
   // Display name shown in logs and debug UI.
   "name": "Personal Space",
 
-  // Position offset: [x, y, z].
-  "position": [0.0, 25.0, 10.0],
+  // Position offset: [side, forward, unused z]. Keep z at 0.0.
+  "position": [0.0, 25.0, 0.0],
 
   // Collision radius.
   "radius": 0.31,

@@ -35,8 +35,6 @@ namespace UI {
         }
     }
 
-    void SetCurrentHeight(VCD::CollisionData& a_data, const float& a_height);
-
     bool PresetCombo(const char* a_label, VCD::Preset& a_preset);
 
     void OpenPresetEditor(const VCD::Preset& a_preset);

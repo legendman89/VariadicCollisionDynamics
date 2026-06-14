@@ -1,16 +1,16 @@
 {
   // Display name shown in logs and debug UI.
-  "name": "Compact",
+  "name": "Vampire Lord",
 
   // Position offset: [side, forward, unused z]. Keep z at 0.0.
-  "position": [0.0, 9.0, 0.0],
+  "position": [0.0, 5.8, 0.0],
 
   // Collision radius.
-  "radius": 0.28574997,
+  "radius": 0.397,
 
   // First endpoint: [x, y, z].
-  "firstPoint": [0.0, 0.0, 1.33],
+  "firstPoint": [0.0, 0.0, 0.766],
 
   // Second endpoint: [x, y, z].
-  "secondPoint": [0.0, 0.0, 0.31]
+  "secondPoint": [0.0, 0.0, -0.65]
 }

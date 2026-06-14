@@ -19,6 +19,8 @@
 	S(outdoor, VCD::Preset::kPersonalSpace) \
 	S(indoor, VCD::Preset::kCompact) \
 	S(combat, VCD::Preset::kBulky) \
+	S(werewolf, VCD::Preset::kWerewolf) \
+	S(vampireLord, VCD::Preset::kVampireLord) \
 	S(neutral, VCD::Preset::kVanillaLike)
 
 #define BOOL2DEF(S, D) bool S = D;
@@ -42,7 +44,7 @@ namespace Settings {
 		FOREACH_PRESET_SETTING(PRESET2DEF);
 
 		std::array<float, 4> drawColor{ 1.0F, 1.0F, 0.0F, 1.0F };
-		std::array<PresetOverride, 4> presets{};
+		std::array<PresetOverride, VCD::kPresetCount> presets{};
 	};
 
 }

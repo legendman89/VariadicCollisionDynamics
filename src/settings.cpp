@@ -117,6 +117,8 @@ namespace Settings {
 		a_settings.outdoor = config.outdoor;
 		a_settings.indoor = config.indoor;
 		a_settings.combat = config.combat;
+		a_settings.werewolf = config.werewolf;
+		a_settings.vampireLord = config.vampireLord;
 		a_settings.neutral = config.neutral;
 	}
 
@@ -127,6 +129,8 @@ namespace Settings {
 		config.outdoor = a_settings.outdoor;
 		config.indoor = a_settings.indoor;
 		config.combat = a_settings.combat;
+		config.werewolf = a_settings.werewolf;
+		config.vampireLord = a_settings.vampireLord;
 		config.neutral = a_settings.neutral;
 		const auto logLevel = static_cast<spdlog::level::level_enum>(NormalizeLogLevel(a_settings.logLevel));
 		spdlog::set_level(logLevel);
