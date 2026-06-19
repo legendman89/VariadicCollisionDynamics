@@ -79,9 +79,9 @@ namespace VCD {
             return true;
         }
 
-        Preset PresetFromFileName(const std::string& a_path)
+        Preset PresetFromFileName(const fs::path& a_path)
         {
-            const auto stem = fs::path(a_path).stem().string();
+            const auto stem = VCD::ToUTF8(a_path.stem());
 
             if (stem == "PersonalSpace") {
                 return Preset::kPersonalSpace;
@@ -149,14 +149,15 @@ namespace VCD {
             return false;
         }
 
-        std::size_t loadedCount = 0;
+        size_t loadedCount = 0;
 
         for (const auto& path : paths) {
-            logger::info("Reading {}", path);
+            const auto pathStr = ToUTF8(path);
+            logger::info("Reading {}", pathStr);
 
             std::ifstream presetFile(path);
             if (!presetFile.is_open()) {
-                logger::error("Failed to open preset file: {}", path);
+                logger::error("Failed to open preset file: {}", pathStr);
                 continue;
             }
 
@@ -166,7 +167,7 @@ namespace VCD {
                 data = json::parse(raw, nullptr, true, true);
             }
             catch (const json::exception& e) {
-                logger::error("Failed to parse preset file {}: {}", path, e.what());
+                logger::error("Failed to parse preset file {}: {}", pathStr, e.what());
                 continue;
             }
 
@@ -179,7 +180,7 @@ namespace VCD {
                 entries = json::array({ data });
             }
             else {
-                logger::error("Invalid JSON root in {}", path);
+                logger::error("Invalid JSON root in {}", pathStr);
                 continue;
             }
 
@@ -187,7 +188,7 @@ namespace VCD {
                 const auto preset = PresetJSON::PresetFromFileName(path);
                 auto& presetConfig = a_presets[ToUnderlying(preset)];
                 presetConfig.preset = preset;
-                presetConfig.configPath = path;
+                presetConfig.configPath = pathStr;
 
                 if (LoadPresetConfiguration(presetConfig, entry)) {
                     presetConfig.data.Log();

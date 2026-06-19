@@ -1,5 +1,6 @@
 #include "dynamics.hpp"
 #include "logger.hpp"
+#include "settings.hpp"
 
 #include <chrono>
 #include <cstring>
@@ -10,70 +11,158 @@ namespace Dynamics {
 	constexpr auto kTransitionRetryDuration = std::chrono::duration<float>(2.0F);
 	constexpr auto kTransitionRetryInterval = std::chrono::duration<float>(0.15F);
 
-	VCD::Preset GetCellPreset(const RE::TESObjectCELL* a_cell)
+	bool CanApplyNPCDynamics(RE::Actor* a_actor, const RE::PlayerCharacter* a_player, const float& a_radiusSquared)
+	{
+		if (!a_actor || !a_player || a_actor == a_player) {
+			return false;
+		}
+
+		if (a_actor->IsDead() || a_actor->IsDisabled() || !a_actor->Get3D() || (!a_actor->IsGuard() && !a_actor->HasKeywordString("ActorTypeNPC"))) {
+			return false;
+		}
+
+		const auto* actorCell = a_actor->GetParentCell();
+		const auto* playerCell = a_player->GetParentCell();
+		if (!actorCell || !playerCell || ((actorCell->IsInteriorCell() || playerCell->IsInteriorCell()) && actorCell != playerCell)) {
+			return false;
+		}
+
+		const auto x = a_actor->GetPosition().x - a_player->GetPosition().x;
+		const auto y = a_actor->GetPosition().y - a_player->GetPosition().y;
+		const auto z = a_actor->GetPosition().z - a_player->GetPosition().z;
+		return ((x * x) + (y * y) + (z * z)) <= a_radiusSquared;
+	}
+
+	VCD::Preset GetNPCPreset(const RE::Actor* a_actor, const char*& a_stateName)
 	{
 		auto& config = GetConfig();
-		if (!a_cell) {
-			return config.neutral;
+		const auto isCombat = a_actor && a_actor->IsInCombat();
+		const auto isGuard = a_actor && a_actor->IsGuard();
+
+		if (isGuard && isCombat) {
+			a_stateName = "guardCombat";
+			return config.guardCombat;
 		}
 
-		return a_cell->IsInteriorCell() ? config.indoor : config.outdoor;
-	}
-
-	const char* GetCellStateName(const RE::TESObjectCELL* a_cell)
-	{
-		if (!a_cell) {
-			return "unknown";
+		if (isGuard) {
+			a_stateName = "guardNeutral";
+			return config.guardNeutral;
 		}
 
-		return a_cell->IsInteriorCell() ? "indoor" : "outdoor";
-	}
-
-	bool IsPresetCurrent(const VCD::Preset& a_preset)
-	{
-		const auto& state = GetPresetState();
-		return state.applied && state.current == a_preset;
-	}
-
-	bool IsPresetPreviewed(const VCD::Preset& a_preset)
-	{
-		const auto& preview = GetPreviewState();
-		return preview.active && preview.preset == a_preset;
-	}
-
-	bool IsWerewolf(const RE::Actor* a_actor)
-	{
-		if (!a_actor) {
-			return false;
+		if (isCombat) {
+			a_stateName = "npcCombat";
+			return config.npcCombat;
 		}
 
-		const auto* race = a_actor->GetRace();
-		if (!race) {
-			return false;
-		}
-
-		const auto* editorID = race->GetFormEditorID();
-		return editorID && std::string_view(editorID) == "WerewolfBeastRace";
+		a_stateName = "npcNeutral";
+		return config.npcNeutral;
 	}
 
-	bool IsVampireLord(const RE::Actor* a_actor)
+	NPCPresetState* FindNPCPresetState(const RE::FormID& a_formID)
+	{
+		auto& state = GetNPCDynamicsState();
+		for (auto& actorState : state.actors) {
+			if (actorState.formID == a_formID) {
+				return &actorState;
+			}
+		}
+
+		return nullptr;
+	}
+
+	bool HasNearbyNPCHandle(const RE::Actor* a_actor)
 	{
 		if (!a_actor) {
 			return false;
 		}
 
-		const auto* race = a_actor->GetRace();
-		if (!race) {
+		auto& state = GetNPCDynamicsState();
+		for (auto& handle : state.nearbyActors) {
+			auto actorPtr = handle.get();
+			if (actorPtr.get() == a_actor) {
+				return true;
+			}
+		}
+
+		return false;
+	}
+
+	const VCD::CollisionData* GetNPCCollisionData(const RE::FormID& a_formID, const VCD::Preset& a_preset)
+	{
+		if (const auto* actorOverride = Settings::GetNPCActorPresetOverride(a_formID, a_preset)) {
+			return actorOverride;
+		}
+
+		if (const auto* npcOverride = Settings::GetNPCPresetOverride(a_preset)) {
+			return npcOverride;
+		}
+
+		const auto* defaultPresetConfig = VCD::Manager::GetSingleton().GetDefaultPresetConfig(a_preset);
+		return defaultPresetConfig ? &defaultPresetConfig->data : nullptr;
+	}
+
+	bool ApplyNPCPreset(RE::Actor* a_actor, const VCD::Preset& a_preset, const char* a_stateName)
+	{
+		if (!a_actor || GetNPCPreviewState().active) {
 			return false;
 		}
 
-		const auto* editorID = race->GetFormEditorID();
-		return editorID && std::string_view(editorID) == "DLC1VampireBeastRace";
+		const auto formID = a_actor->GetFormID();
+		auto* actorState = FindNPCPresetState(formID);
+		if (actorState && actorState->preset == a_preset && std::strcmp(actorState->stateName, a_stateName) == 0) {
+			return true;
+		}
+
+		auto& manager = VCD::Manager::GetSingleton();
+		const auto* collisionData = GetNPCCollisionData(formID, a_preset);
+		if (!collisionData || !manager.SetCollisionData(a_actor, *collisionData, a_preset, VCD::PresetName(a_preset), false)) {
+			return false;
+		}
+
+		if (!actorState) {
+			auto& state = GetNPCDynamicsState();
+			state.actors.push_back({});
+			actorState = &state.actors.back();
+		}
+
+		actorState->formID = formID;
+		actorState->actor = a_actor->CreateRefHandle();
+		actorState->preset = a_preset;
+		actorState->stateName = a_stateName;
+
+		const auto* name = a_actor->GetDisplayFullName();
+		logger::debug("NPC: {} [{:08X}] -> {}, applied preset [{}]", name ? name : "Actor", formID, a_stateName, VCD::PresetName(a_preset));
+		return true;
 	}
 
-	bool IsTransformationState(const char* a_state)
+	bool UpdateNPCHandle(const RE::ActorHandle& a_handle, const RE::PlayerCharacter* a_player, const float& a_radiusSquared)
 	{
-		return std::strcmp(a_state, "werewolf") == 0 || std::strcmp(a_state, "vampireLord") == 0;
+		auto actorPtr = a_handle.get();
+		auto* actor = actorPtr.get();
+		if (!CanApplyNPCDynamics(actor, a_player, a_radiusSquared)) {
+			return false;
+		}
+
+		if (!HasNearbyNPCHandle(actor)) {
+			GetNPCDynamicsState().nearbyActors.push_back(a_handle);
+		}
+
+		const char* stateName = "unknown";
+		const auto preset = GetNPCPreset(actor, stateName);
+		return ApplyNPCPreset(actor, preset, stateName);
+	}
+
+	bool UpdateNPCHandles(const RE::BSTArray<RE::ActorHandle>& a_handles, const RE::PlayerCharacter* a_player, const float& a_radiusSquared, const int& a_limit)
+	{
+		for (auto& handle : a_handles) {
+			if (a_limit > 0 && static_cast<int>(GetNPCDynamicsState().nearbyActors.size()) >= a_limit) {
+				return true;
+			}
+
+			UpdateNPCHandle(handle, a_player, a_radiusSquared);
+		}
+
+		return false;
 	}
 
 	void StartTransitionRetry(PresetState& a_state, const char* a_stateName)
@@ -167,6 +256,77 @@ namespace Dynamics {
 		return true;
 	}
 
+	bool StartNPCPresetPreview(RE::Actor* a_actor, const VCD::Preset& a_preset)
+	{
+		if (!a_actor) {
+			return false;
+		}
+
+		auto& manager = VCD::Manager::GetSingleton();
+		const auto* collisionData = GetNPCCollisionData(a_actor->GetFormID(), a_preset);
+		if (!collisionData || !manager.SetCollisionData(a_actor, *collisionData, a_preset, VCD::PresetName(a_preset), false)) {
+			return false;
+		}
+
+		auto& preview = GetNPCPreviewState();
+		preview.active = true;
+		preview.actor = a_actor->CreateRefHandle();
+		preview.preset = a_preset;
+
+		const auto* name = a_actor->GetDisplayFullName();
+		logger::debug("NPC: previewing preset [{}] on {} [{:08X}]", VCD::PresetName(a_preset), name ? name : "Actor", a_actor->GetFormID());
+		return true;
+	}
+
+	void StopNPCPresetPreview()
+	{
+		auto& preview = GetNPCPreviewState();
+		if (!preview.active) {
+			return;
+		}
+
+		auto actorPtr = preview.actor.get();
+		auto* actor = actorPtr.get();
+		preview.active = false;
+
+		if (!actor) {
+			return;
+		}
+
+		const char* stateName = "unknown";
+		auto& manager = VCD::Manager::GetSingleton();
+		const auto preset = Settings::GetSettings().enableNPCDynamics ? GetNPCPreset(actor, stateName) : VCD::Preset::kVanillaLike;
+		const auto* collisionData = Settings::GetSettings().enableNPCDynamics ? GetNPCCollisionData(actor->GetFormID(), preset) : nullptr;
+		if (!collisionData) {
+			const auto* defaultPresetConfig = manager.GetDefaultPresetConfig(preset);
+			collisionData = defaultPresetConfig ? &defaultPresetConfig->data : nullptr;
+		}
+		if (collisionData) {
+			manager.SetCollisionData(actor, *collisionData, preset, VCD::PresetName(preset), false);
+		}
+		if (auto* actorState = FindNPCPresetState(actor->GetFormID())) {
+			actorState->preset = preset;
+			actorState->stateName = stateName;
+		}
+	}
+
+	void RestoreNPCsToVanillaLike()
+	{
+		auto& state = GetNPCDynamicsState();
+		auto& manager = VCD::Manager::GetSingleton();
+		const auto* defaultPresetConfig = manager.GetDefaultPresetConfig(VCD::Preset::kVanillaLike);
+		for (auto& actorState : state.actors) {
+			auto actorPtr = actorState.actor.get();
+			auto* actor = actorPtr.get();
+			if (actor && defaultPresetConfig) {
+				manager.SetCollisionData(actor, defaultPresetConfig->data, VCD::Preset::kVanillaLike, VCD::PresetName(VCD::Preset::kVanillaLike), false);
+			}
+		}
+
+		state.actors.clear();
+		state.nearbyActors.clear();
+	}
+
 	void SchedulePreviewRestore(const float& a_delaySeconds)
 	{
 		auto& preview = GetPreviewState();
@@ -193,6 +353,7 @@ namespace Dynamics {
 			return;
 		}
 
+		// Ordered by priority: Werewolf > Vampire Lord > Combat > Environment
 		if (IsWerewolf(a_player)) {
 			ApplyPreset(a_player, GetConfig().werewolf, "werewolf", true);
 		}
@@ -251,6 +412,47 @@ namespace Dynamics {
 
 		state.lastCell = cell;
 		ApplyPreset(a_player, preset, stateName);
+	}
+
+	void UpdateNPCs(const RE::PlayerCharacter* a_player)
+	{
+		if (!a_player) {
+			return;
+		}
+
+		if (!Settings::GetSettings().enableNPCDynamics) {
+			if (!GetNPCDynamicsState().actors.empty()) {
+				RestoreNPCsToVanillaLike();
+			}
+			return;
+		}
+
+		if (!VCD::Manager::GetSingleton().AreAllPresetsLoaded()) {
+			return;
+		}
+
+		auto& state = GetNPCDynamicsState();
+		const auto now = std::chrono::steady_clock::now();
+		if (now < state.nextScan) {
+			return;
+		}
+
+		const auto& settings = Settings::GetSettings();
+		const auto interval = std::chrono::duration<float>(settings.nearbyActorScanInterval);
+		state.nextScan = now + std::chrono::duration_cast<std::chrono::steady_clock::duration>(interval);
+		state.nearbyActors.clear();
+
+		auto* processLists = RE::ProcessLists::GetSingleton();
+		if (!processLists) {
+			return;
+		}
+
+		const auto radiusSquared = settings.nearbyActorDrawRadius * settings.nearbyActorDrawRadius;
+		if (UpdateNPCHandles(processLists->highActorHandles, a_player, radiusSquared, settings.nearbyActorDrawLimit) ||
+			UpdateNPCHandles(processLists->middleHighActorHandles, a_player, radiusSquared, settings.nearbyActorDrawLimit) ||
+			UpdateNPCHandles(processLists->middleLowActorHandles, a_player, radiusSquared, settings.nearbyActorDrawLimit)) {
+			return;
+		}
 	}
 
 }

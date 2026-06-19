@@ -7,6 +7,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <limits>
+#include <unordered_map>
 
 namespace VCD {
 
@@ -18,7 +19,7 @@ namespace VCD {
         // Used by drawer or shape dynamics.
         struct ActorBumperContext
         {
-            RE::bhkCharProxyController* controller{ nullptr };
+            RE::bhkCharacterController* controller{ nullptr };
             RE::bhkWorld* world{ nullptr };
         };
 
@@ -29,9 +30,11 @@ namespace VCD {
 
         bool SetPreset(const RE::Actor* a_actor, const VCD::Preset& a_preset, const bool& a_log = true);
 
+        bool SetCollisionData(const RE::Actor* a_actor, const VCD::CollisionData& a_data, const VCD::Preset& a_anchorPreset, const char* a_name, const bool& a_log = true);
+
         bool AreAllPresetsLoaded() const;
 
-        std::size_t GetLoadedPresetCount() const;
+        size_t GetLoadedPresetCount() const;
 
         const std::array<PresetConfig, kPresetCount>& GetPresetConfigs() const noexcept;
 
@@ -43,9 +46,9 @@ namespace VCD {
 
         bool RestorePresetDefault(const VCD::Preset& a_preset);
 
-        RE::hkpCapsuleShape* FindWorldCharacterBumperShape(RE::bhkCharProxyController* a_controller) const;
+        RE::hkpCapsuleShape* FindWorldCharacterBumperShape(RE::bhkCharacterController* a_controller) const;
 
-        bool GetActorBumperContext(const RE::Actor* a_actor, ActorBumperContext& a_context) const;
+        bool GetActorBumperContext(const RE::Actor* a_actor, ActorBumperContext& a_context, const bool& a_log = true) const;
 
     private:
 
@@ -64,10 +67,21 @@ namespace VCD {
             std::uint32_t shapeType{ std::numeric_limits<std::uint32_t>::max() };
         };
 
+        // Track the state of the bumper anchor for an actor.
+        // Crucial for avoiding messing up the bumper center.
+        struct BumperAnchorState
+        {
+            Preset preset{ Preset::kVanillaLike };
+            float centerZ{ 0.0F };
+            bool valid{ false };
+        };
+
         Manager();
 
         RE::hkpCapsuleShape* FindCharacterBumperShape(RE::hkpShape* a_shape, const RE::hkpShapeKey& a_key) const;
 
+        // Some unique characters like Werewolf might have multiple capsule shapes, 
+        // so we need to find the largest one in the hierarchy as a fallback.
         void FindLargestCapsuleShape(RE::hkpShape* a_shape, CapsuleCandidate& a_candidate) const;
 
         bool IsCharacterBumperShape(const RE::hkpShape* a_shape, const RE::hkpShapeKey& a_key) const;
@@ -84,6 +98,10 @@ namespace VCD {
 
         std::array<PresetConfig, kPresetCount> presetConfigs;
         std::array<PresetConfig, kPresetCount> defaultPresetConfigs;
+
+		// Each actor including player should have their own
+        // anchor state to avoid messing up the bumper center.
+        std::unordered_map<RE::FormID, BumperAnchorState> bumperAnchorStates;
     };
 
 }

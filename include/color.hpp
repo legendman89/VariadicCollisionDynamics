@@ -14,5 +14,9 @@ namespace UI::Color {
     inline constexpr GUI::ImVec4 kCTAOffText{ 0.60F, 0.62F, 0.68F, 1.00F };
     inline constexpr GUI::ImVec4 kEditHover{ 0.28F, 0.38F, 0.50F, 0.85F };
     inline constexpr GUI::ImVec4 kEditActive{ 0.34F, 0.48F, 0.64F, 0.95F };
+    inline constexpr GUI::ImVec4 kEditWindowBg{ 0.08F, 0.10F, 0.12F, 0.96F };
+    inline constexpr GUI::ImVec4 kEditFrameBg{ 0.02F, 0.02F, 0.02F, 1.00F };
+    inline constexpr GUI::ImVec4 kEditFrameHover{ 0.08F, 0.08F, 0.08F, 1.00F };
+    inline constexpr GUI::ImVec4 kEditFrameActive{ 0.12F, 0.12F, 0.12F, 1.00F };
 
 }

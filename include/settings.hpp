@@ -1,8 +1,8 @@
 #pragma once
 
+#include "plugin.hpp"
 #include "helper.hpp"
 #include "settings_def.hpp"
-#include "plugin.hpp"
 
 #include "nlohmann/json.hpp"
 
@@ -10,8 +10,11 @@
 #include <cstddef>
 #include <filesystem>
 #include <string>
+#include <algorithm>
 
 namespace Settings {
+
+	namespace fs = std::filesystem;
 
 	inline VCD::Preset PresetFromString(const std::string& a_preset)
 	{
@@ -73,22 +76,14 @@ namespace Settings {
 		}
 
 		const auto& color = a_json.at(a_key);
-		for (std::size_t i = 0; i < a_value.size() && i < color.size(); ++i) {
+		for (size_t i = 0; i < a_value.size() && i < color.size(); ++i) {
 			a_value[i] = color[i].get<float>();
 		}
 	}
 
 	inline int NormalizeLogLevel(const int& a_level)
 	{
-		if (a_level < 0) {
-			return 0;
-		}
-
-		if (a_level > 6) {
-			return 6;
-		}
-
-		return a_level;
+		return std::clamp(a_level, 0, 6);
 	}
 
 	inline const char* PresetToString(const VCD::Preset& a_preset)
@@ -123,9 +118,24 @@ namespace Settings {
 		return settings;
 	}
 
-	inline std::string GetSettingsPath()
+	inline fs::path GetSettingsDirectory()
 	{
-		return (VCD::GetPluginDataPath() / "Settings" / "VCDSettings.json").string();
+		return VCD::GetPluginDataPath() / "Settings";
+	}
+
+	inline fs::path GetSettingsPath()
+	{
+		return GetSettingsDirectory() / "Settings.json";
+	}
+
+	inline fs::path GetPlayerStatePath()
+	{
+		return GetSettingsDirectory() / "PlayerState.json";
+	}
+
+	inline fs::path GetNPCStatePath()
+	{
+		return GetSettingsDirectory() / "NPCState.json";
 	}
 
 	bool SettingsEqual(const VCDSettings& a_left, const VCDSettings& a_right);
@@ -138,9 +148,29 @@ namespace Settings {
 
 	void ClearPresetEdited(const VCD::Preset& a_preset);
 
+	const VCD::CollisionData* GetNPCPresetOverride(const VCD::Preset& a_preset);
+
+	void MarkNPCPresetEdited(const VCD::Preset& a_preset, const VCD::CollisionData& a_data);
+
+	void ClearNPCPresetEdited(const VCD::Preset& a_preset);
+
+	const VCD::CollisionData* GetNPCActorPresetOverride(const RE::FormID& a_formID, const VCD::Preset& a_preset);
+
+	void MarkNPCActorPresetEdited(const RE::FormID& a_formID, const std::string& a_name, const VCD::Preset& a_preset, const VCD::CollisionData& a_data);
+
+	void ClearNPCActorPresetEdited(const RE::FormID& a_formID, const VCD::Preset& a_preset);
+
 	bool IsDirty();
 
 	bool IsToolsDirty();
+
+	bool IsDynamicsDefault();
+
+	bool IsToolsDefault();
+
+	void ResetDynamics();
+
+	void ResetTools();
 
 	bool Load();
 

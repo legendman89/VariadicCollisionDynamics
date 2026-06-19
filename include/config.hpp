@@ -17,23 +17,23 @@ namespace VCD {
 
     namespace fs = std::filesystem;
 
-    inline std::string GetPresetDir()
+    inline fs::path GetPresetDir()
     {
         const auto root = GetGameRoot();
         const auto dataPath = GetPluginDataPath() / "Presets";
 
         std::error_code ec;
         if (fs::exists(dataPath, ec) && fs::is_directory(dataPath, ec)) {
-            return dataPath.string();
+            return dataPath;
         }
 
-        return (root / PRODUCT_NAME / "Presets").string();
+        return root / PRODUCT_NAME / "Presets";
     }
 
-    inline std::vector<std::string> GetPresetPaths()
+    inline std::vector<fs::path> GetPresetPaths()
     {
-        const fs::path dir = GetPresetDir();
-        std::vector<std::string> paths;
+        const auto dir = GetPresetDir();
+        std::vector<fs::path> paths;
 
         std::error_code ec;
         if (!fs::exists(dir, ec) || !fs::is_directory(dir, ec)) {
@@ -53,7 +53,7 @@ namespace VCD {
 
             if (fs::is_regular_file(path, ec) && path.extension() == ".json") {
                 logger::info("Found preset file: {}", ToUTF8(path));
-                paths.push_back(ToUTF8(path));
+                paths.push_back(path);
             }
 
             ec.clear();

@@ -9,7 +9,9 @@
 
 namespace VCD {
 
-    inline std::string ToUTF8(const std::filesystem::path& a_path)
+    namespace fs = std::filesystem;
+
+    inline std::string ToUTF8(const fs::path& a_path)
     {
         auto u8 = a_path.u8string();
         return std::string(reinterpret_cast<const char*>(u8.c_str()));
@@ -21,12 +23,12 @@ namespace VCD {
         return static_cast<std::underlying_type_t<Enum>>(a_value);
     }
 
-    inline std::filesystem::path GetGameRoot()
+    inline fs::path GetGameRoot()
     {
-        return std::filesystem::path(REL::Module::get().filename()).parent_path();
+        return fs::path(REL::Module::get().filename()).parent_path();
     }
 
-    inline std::filesystem::path GetPluginDataPath()
+    inline fs::path GetPluginDataPath()
     {
         return GetGameRoot() / "Data" / "SKSE" / "Plugins" / PRODUCT_NAME;
     }

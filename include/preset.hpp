@@ -5,12 +5,9 @@
 #include "helper.hpp"
 
 #include <string_view>
-#include <filesystem>
 #include <string>
 #include <cmath>
 #include <cstddef>
-
-namespace fs = std::filesystem;
 
 #define FOREACH_COLLISION_DATA_FIELD(S) \
     S(bump.translation.x) \
@@ -39,7 +36,7 @@ namespace VCD {
         kVampireLord
     };
 
-    inline constexpr std::size_t kPresetCount = 6;
+    inline constexpr size_t kPresetCount = 6;
 
     inline constexpr const char* PresetName(const Preset& a_preset)
     {
@@ -107,7 +104,7 @@ namespace VCD {
 #define COLLISION_FIELD2LOG(F) ,F
 
             logger::info(
-                " Collision Data:\n"
+                "\n"
                 "  Translation: X={}, Y={}, Z={}\n"
                 "  Radius: {}\n"
                 "  Height: {}\n"

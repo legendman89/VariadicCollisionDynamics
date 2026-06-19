@@ -1,27 +1,43 @@
 
+#include "draw.hpp"
 #include "hooks.hpp"
 #include "logger.hpp"
 #include "manager.hpp"
 #include "dynamics.hpp"
 #include "settings.hpp"
-#include "drawLines.hpp"
 #include "raycast.hpp"
 
+#include <CLibUtilsQTR/DrawDebug.hpp>
+
 using namespace Hook; 
+using namespace DebugAPI_IMPL;
 
 void PlayerUpdate::thunk(RE::PlayerCharacter* player, float delta) {
 
 	func(player, delta);
 
 	if (!player) {
-		logger::warn("Player is null, cannot check cell");
+		logger::warn("Player is null, cannot update.");
 		return;
 	}
 
 	Dynamics::Update(player);
+	Dynamics::UpdateNPCs(player);
 
-	if (Settings::GetSettings().drawCollision) {
-		DebugAPI_IMPL::DebugAPI_Ext::DrawPlayerBumper();
+	const auto& settings = Settings::GetSettings();
+	if (settings.drawCollision || settings.drawNearbyActors) {
+		DebugAPI_IMPL::DebugAPI::GetSingleton()->LinesToDraw.clear();
+	}
+
+	if (settings.drawCollision) {
+		Draw::DrawPlayerBumper();
+	}
+
+	if (settings.drawNearbyActors) {
+		Draw::DrawNearbyActorBumpers();
+	}
+
+	if (settings.drawCollision || settings.drawNearbyActors) {
 		DebugAPI_IMPL::DebugAPI::GetSingleton()->Update();
 	}
 }
@@ -34,7 +50,7 @@ void PlayerUpdate::Install()
 
 bool SneakHandlerCanProcess::thunk(RE::InputEvent* a_event) {
 	
-	if (!raycast::canStandUp) {
+	if (!raycast::canStandUp()) {
 		return false; 
 	}
 
