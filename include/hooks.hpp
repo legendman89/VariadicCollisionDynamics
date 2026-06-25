@@ -20,4 +20,16 @@ namespace Hook {
         static void Install();
     };
 
+    struct SneakHandlerProcessButton {
+
+        static void thunk(
+            RE::SneakHandler* a_this,
+            RE::ButtonEvent* a_event,
+            RE::PlayerControlsData* a_data);
+
+        static inline REL::Relocation<decltype(thunk)> func;
+
+        static void Install();
+    };
+
 }

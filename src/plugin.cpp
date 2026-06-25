@@ -55,5 +55,7 @@ SKSEPluginLoad(const SKSE::LoadInterface* skse)
 
     Hook::SneakHandlerCanProcess::Install(); 
 
+    Hook::SneakHandlerProcessButton::Install(); 
+
     return true;
 }

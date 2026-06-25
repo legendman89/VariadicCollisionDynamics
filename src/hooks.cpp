@@ -7,11 +7,14 @@
 #include "settings.hpp"
 #include "raycast.hpp"
 #include "posefixes.hpp"
-
 #include <CLibUtilsQTR/DrawDebug.hpp>
 
 using namespace Hook; 
 using namespace DebugAPI_IMPL;
+
+namespace SneakGate {
+	std::atomic_bool blockSneak = false;
+}
 
 void PlayerUpdate::thunk(RE::PlayerCharacter* player, float delta) {
 
@@ -22,7 +25,24 @@ void PlayerUpdate::thunk(RE::PlayerCharacter* player, float delta) {
 		return;
 	}
 
-	// block if player is sneaking. Handled in SneakHandlerCanProcess hook
+	static bool initialized = false;
+
+	if (!initialized) {
+		initialized = true;
+
+		const auto playerIsSneaking = player->IsSneaking();
+
+		logger::info("player is sneaking on startup = {}", playerIsSneaking);
+
+		//set playerIsSneaking when first loaded
+		if (playerIsSneaking) {
+			auto& manager = VCD::Manager::GetSingleton();
+			const auto sittingFlags = PoseFixes::PlayerSitting(player); 
+			manager.FixSneakingPose(player, true, sittingFlags, false);
+		}
+	}
+
+	// block if player is sneaking. (we should think of situations where this might break stuff) 
 	if (!player->IsSneaking()) {
 		Dynamics::Update(player);
 	}
@@ -62,31 +82,81 @@ bool SneakHandlerCanProcess::thunk(RE::SneakHandler* a_this, RE::InputEvent* a_e
 	auto& manager = VCD::Manager::GetSingleton();
 	const auto sittingFlags = PoseFixes::PlayerSitting(player);
 
-	if (player->IsSneaking()) {
-		const auto canProcess = func(a_this, a_event);
-		if (canProcess) {
-			manager.FixSneakingPose(player, true, sittingFlags, false);
-		}
-		return canProcess;
-	}
+//  return if not sneaking 
+    if (!player->IsSneaking())
+        return func(a_this, a_event);
 
 	auto standingHeight = manager.GetStandingCapsuleHeight(player);
 	if (standingHeight <= 0.0F) {
 		standingHeight = player->GetHeight();
 	}
 
-	if (!raycast::canStandUp(standingHeight)) {
-		return false;
-	}
+    if (!raycast::canStandUp(standingHeight))
+    {
+        SneakGate::blockSneak.store(true); 
+        return false;
+    }
+    else {
+        SneakGate::blockSneak.store(false);
+    }
 
-	const auto canProcess = func(a_this, a_event);
-	if (canProcess) {
-		manager.FixSneakingPose(player, false, sittingFlags, false);
-	}
-	return canProcess;
+    return func(a_this, a_event);
 }
+
 void SneakHandlerCanProcess::Install()
 {
+	constexpr auto dllPath = "Data/SKSE/Plugins/DynamicCollisionAdjustment.dll";
+	// dont install if dynamic collision adjustment is installed
+	if (std::filesystem::exists(dllPath)) return;
 	func = REL::Relocation<std::uintptr_t>(RE::SneakHandler::VTABLE[0]).write_vfunc(0x01, thunk);
 	logger::info("Can Process Sneak hook installed");
+}
+
+// isUp() called only once per sneak key press
+void SneakHandlerProcessButton::thunk(
+	RE::SneakHandler* a_this,
+	RE::ButtonEvent* a_event,
+	RE::PlayerControlsData* a_data)
+{
+	if (!a_this || !a_event || !a_data)
+		return func(a_this, a_event, a_data);
+
+	if (a_event->IsUp() && !SneakGate::blockSneak.load()) {
+
+		// let game process button first so isSneaking() returns valid state
+		func(a_this, a_event, a_data);
+
+		auto* player = RE::PlayerCharacter::GetSingleton();
+		if (!player) return;
+
+		const bool gameIsSneaking = player->IsSneaking();
+
+		logger::info("ProcessButton fired, gameIsSneaking={}", gameIsSneaking);
+
+		auto& manager = VCD::Manager::GetSingleton();
+		const auto sittingFlags = PoseFixes::PlayerSitting(player);
+
+		if (gameIsSneaking) {
+			logger::info("player is sneaking, shrinking collision");
+			manager.FixSneakingPose(player, true, sittingFlags, false);
+		}
+		else {
+			logger::info("player stood up, restoring collision");
+			manager.FixSneakingPose(player, false, sittingFlags, false);
+		}
+
+		return; // already called func above
+	}
+
+	return func(a_this, a_event, a_data);
+}
+
+void SneakHandlerProcessButton::Install()
+{
+	constexpr auto dllPath = "Data/SKSE/Plugins/DynamicCollisionAdjustment.dll";
+
+	// dont install if dynamic collision adjustment is installed
+	if (std::filesystem::exists(dllPath)) return;
+	func = REL::Relocation<std::uintptr_t>(RE::SneakHandler::VTABLE[0]).write_vfunc(0x04, thunk);
+	logger::info("process sneak button hook installed");
 }
