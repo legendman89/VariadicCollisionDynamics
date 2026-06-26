@@ -48,9 +48,14 @@ namespace VCD {
         return fs::path(REL::Module::get().filename()).parent_path();
     }
 
+     inline fs::path GetPluginsDir()
+    {
+        return GetGameRoot() / "Data" / "SKSE" / "Plugins";
+    }
+
     inline fs::path GetPluginDataPath()
     {
-        return GetGameRoot() / "Data" / "SKSE" / "Plugins" / PRODUCT_NAME;
+        return GetPluginsDir() / PRODUCT_NAME;
     }
 
     inline float GetPresetScale()

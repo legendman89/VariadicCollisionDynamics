@@ -1,6 +1,7 @@
  
 #include "draw.hpp"
 #include "hooks.hpp"
+#include "helper.hpp"
 #include "logger.hpp"
 #include "manager.hpp"
 #include "dynamics.hpp"
@@ -121,10 +122,11 @@ void SneakHandlerProcessButton::thunk(
 
 void SneakHandlerProcessButton::Install()
 {
-	constexpr auto dllPath = "Data/SKSE/Plugins/DynamicCollisionAdjustment.dll";
+	const auto dllPath = VCD::GetPluginsDir() / "DynamicCollisionAdjustment.dll";
 
 	// dont install if dynamic collision adjustment is installed
 	if (std::filesystem::exists(dllPath)) return;
+	
 	func = REL::Relocation<std::uintptr_t>(RE::SneakHandler::VTABLE[0]).write_vfunc(0x04, thunk);
 	logger::info("process sneak button hook installed");
 }

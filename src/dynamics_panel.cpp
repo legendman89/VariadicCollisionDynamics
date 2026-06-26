@@ -472,6 +472,7 @@ namespace UI {
 
         constexpr auto kOffsetLimit = 30.0F;
         constexpr auto kHeightLimit = 4.0F;
+        constexpr auto kTolerance = 0.1F;
         const auto defaultTop = a_defaults.capsule.point1.z;
         const auto defaultBottom = a_defaults.capsule.point2.z;
 
@@ -481,16 +482,18 @@ namespace UI {
             changed = true;
         }
 
+        const auto topOffsetLimit = std::clamp((a_current.capsule.point2.z - defaultTop) * 0.5F + kTolerance, -kHeightLimit, kHeightLimit);
         auto topOffset = a_current.capsule.point1.z - defaultTop;
-        topOffset = std::clamp(topOffset, 0.0F, kHeightLimit);
-        if (GUI::SliderFloat(Trans::Tr("Dynamics.Editor.TopOffset").c_str(), &topOffset, 0.0F, kHeightLimit)) {
+        topOffset = std::clamp(topOffset, topOffsetLimit, kHeightLimit);
+        if (GUI::SliderFloat(Trans::Tr("Dynamics.Editor.TopOffset").c_str(), &topOffset, topOffsetLimit, kHeightLimit)) {
             a_current.capsule.point1.z = defaultTop + topOffset;
             changed = true;
         }
 
+        const auto bottomOffsetLimit = std::clamp((a_current.capsule.point1.z - defaultBottom) * 0.5F - kTolerance, -kHeightLimit, kHeightLimit);
         auto bottomOffset = a_current.capsule.point2.z - defaultBottom;
-        bottomOffset = std::clamp(bottomOffset, -kHeightLimit, 0.0F);
-        if (GUI::SliderFloat(Trans::Tr("Dynamics.Editor.BottomOffset").c_str(), &bottomOffset, -kHeightLimit, 0.0F)) {
+        bottomOffset = std::clamp(bottomOffset, -kHeightLimit, bottomOffsetLimit);
+        if (GUI::SliderFloat(Trans::Tr("Dynamics.Editor.BottomOffset").c_str(), &bottomOffset, -kHeightLimit, bottomOffsetLimit)) {
             a_current.capsule.point2.z = defaultBottom + bottomOffset;
             changed = true;
         }
