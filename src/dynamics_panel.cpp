@@ -2,6 +2,7 @@
 #include "config.hpp"
 #include "tools_panel.hpp"
 #include "draw.hpp"
+#include "translate.hpp"
 
 #include <algorithm>
 #include <cstring>
@@ -72,7 +73,7 @@ namespace UI {
         bool changed = false;
 
         SolidBackground(GUI::ImGuiCol_PopupBg);
-        if (GUI::BeginCombo(a_label, current ? current->name.c_str() : "Vanilla")) {
+        if (GUI::BeginCombo(a_label, current ? current->name.c_str() : Trans::Tr("Dynamics.Label.Vanilla").c_str())) {
             for (size_t i = 0; i < presetConfigs.size(); ++i) {
                 if (i == VCD::kBuiltInPresetCount) {
                     GUI::Separator();
@@ -475,33 +476,33 @@ namespace UI {
         const auto defaultBottom = a_defaults.capsule.point2.z;
 
         auto radius = a_current.capsule.radius;
-        if (GUI::SliderFloat("Radius", &radius, 0.05F, 1.0F)) {
+        if (GUI::SliderFloat(Trans::Tr("Dynamics.Editor.Radius").c_str(), &radius, 0.05F, 1.0F)) {
             a_current.capsule.radius = radius;
             changed = true;
         }
 
         auto topOffset = a_current.capsule.point1.z - defaultTop;
         topOffset = std::clamp(topOffset, 0.0F, kHeightLimit);
-        if (GUI::SliderFloat("Top Offset", &topOffset, 0.0F, kHeightLimit)) {
+        if (GUI::SliderFloat(Trans::Tr("Dynamics.Editor.TopOffset").c_str(), &topOffset, 0.0F, kHeightLimit)) {
             a_current.capsule.point1.z = defaultTop + topOffset;
             changed = true;
         }
 
         auto bottomOffset = a_current.capsule.point2.z - defaultBottom;
         bottomOffset = std::clamp(bottomOffset, -kHeightLimit, 0.0F);
-        if (GUI::SliderFloat("Bottom Offset", &bottomOffset, -kHeightLimit, 0.0F)) {
+        if (GUI::SliderFloat(Trans::Tr("Dynamics.Editor.BottomOffset").c_str(), &bottomOffset, -kHeightLimit, 0.0F)) {
             a_current.capsule.point2.z = defaultBottom + bottomOffset;
             changed = true;
         }
 
         auto forward = a_current.bump.translation.y;
-        if (GUI::SliderFloat("Forward Offset", &forward, -kOffsetLimit, kOffsetLimit)) {
+        if (GUI::SliderFloat(Trans::Tr("Dynamics.Editor.ForwardOffset").c_str(), &forward, -kOffsetLimit, kOffsetLimit)) {
             a_current.bump.translation.y = forward;
             changed = true;
         }
 
         auto side = a_current.bump.translation.x;
-        if (GUI::SliderFloat("Side Offset", &side, -kOffsetLimit, kOffsetLimit)) {
+        if (GUI::SliderFloat(Trans::Tr("Dynamics.Editor.SideOffset").c_str(), &side, -kOffsetLimit, kOffsetLimit)) {
             a_current.bump.translation.x = side;
             changed = true;
         }
@@ -525,7 +526,7 @@ namespace UI {
             GUI::SameLine();
             GUI::PushStyleColor(GUI::ImGuiCol_ButtonHovered, Color::kEditHover);
             GUI::PushStyleColor(GUI::ImGuiCol_ButtonActive, Color::kEditActive);
-            if (GUI::Button((std::string("Edit##") + a_label).c_str())) {
+            if (GUI::Button((Trans::Tr("Dynamics.Editor.Button.Edit") + "##" + a_label).c_str())) {
                 if (a_npcGlobal) {
                     OpenNPCGlobalPresetEditor(a_preset);
                 }
@@ -533,9 +534,9 @@ namespace UI {
                     OpenPresetEditor(a_preset);
                 }
             }
-            WrappedTooltip(a_npcGlobal ?
-                "Edit this preset globally for NPCs. To fine tune one actor, use Edit Selected Actor below." :
-                "Open sliders for the preset assigned to this state.");
+            WrappedTooltip(a_npcGlobal
+                ? Trans::Tr("Dynamics.Editor.Details.NPCGlobal").c_str()
+                : Trans::Tr("Dynamics.Editor.Details.StateLocal").c_str());
             GUI::PopStyleColor(2);
         }
     }
@@ -544,7 +545,7 @@ namespace UI {
     {
         auto options = GetNearbyNPCActorOptions();
         auto* selectedActor = GetSelectedNPCActorPtr();
-        std::string preview = "Select nearby actor";
+        std::string preview = Trans::Tr("Dynamics.NPC.SelectActorPreview");
 
         if (!selectedActor && !options.empty()) {
             GetSelectedNPCActor() = options.front().handle;
@@ -564,30 +565,39 @@ namespace UI {
 
         GUI::SetNextItemWidth(260.0F);
         SolidBackground(GUI::ImGuiCol_PopupBg);
-        if (GUI::BeginCombo("Actor", preview.c_str())) {
+
+        if (GUI::BeginCombo(Trans::Tr("Dynamics.NPC.ActorComboLabel").c_str(), preview.c_str())) {
             for (auto& option : options) {
                 auto actorPtr = option.handle.get();
                 const auto selected = selectedActor && actorPtr.get() == selectedActor;
+
                 if (GUI::Selectable(option.label.c_str(), selected)) {
                     GetSelectedNPCActor() = option.handle;
                 }
             }
             GUI::EndCombo();
         }
+
         GUI::PopStyleColor(); // Pop Bg color
-        Tooltip("Select one nearby actor for preset preview and editing.");
+
+        Tooltip(Trans::Tr("Dynamics.NPC.ActorComboTooltip").c_str());
 
         GUI::SameLine();
         GUI::SetNextItemWidth(180.0F);
-        PresetCombo("Preview Preset", a_selectedPreset);
+
+        PresetCombo(Trans::Tr("Dynamics.NPC.PreviewPresetLabel").c_str(), a_selectedPreset);
 
         GUI::SameLine();
+
         GUI::PushStyleColor(GUI::ImGuiCol_ButtonHovered, Color::kEditHover);
         GUI::PushStyleColor(GUI::ImGuiCol_ButtonActive, Color::kEditActive);
-        if (GUI::Button("Edit Selected Actor")) {
+
+        if (GUI::Button(Trans::Tr("Dynamics.NPC.EditSelectedActorButton").c_str())) {
             OpenNPCPresetEditor(a_selectedPreset, GetSelectedNPCActorPtr());
         }
-        Tooltip("Open sliders for this preset and preview them on the selected actor.");
+
+        Tooltip(Trans::Tr("Dynamics.NPC.EditSelectedActorTooltip").c_str());
+
         GUI::PopStyleColor(2);
     }
 
@@ -606,22 +616,40 @@ namespace UI {
         GUI::PushStyleColor(GUI::ImGuiCol_Text, UI::Color::kCreatePresetText);
         GUI::PushStyleColor(GUI::ImGuiCol_Border, UI::Color::kCreatePresetBorder);
 
-        const bool createPreset = GUI::Button("        Create New Preset##CreateNewPreset", GUI::ImVec2{ buttonWidth, buttonHeight });
-        WrappedTooltip("Create a reusable collision preset for players and NPCs, starting from the default vanilla shape.");
+        const bool createPreset =
+            GUI::Button(
+                (Trans::Tr("Dynamics.Preset.CreateButton") + "##CreateNewPreset").c_str(),
+                GUI::ImVec2{ buttonWidth, buttonHeight }
+            );
+
+        WrappedTooltip(
+            Trans::Tr("Dynamics.Preset.CreateTooltip").c_str()
+        );
 
         GUI::ImVec2 buttonMin{};
         GUI::ImVec2 buttonMax{};
         GUI::ImVec2 nextItemPosition{};
+
         GUI::GetItemRectMin(&buttonMin);
         GUI::GetItemRectMax(&buttonMax);
         GUI::GetCursorScreenPos(&nextItemPosition);
 
         FontAwesome::PushSolid();
+
         GUI::ImVec2 iconSize{};
         GUI::CalcTextSize(&iconSize, circlePlusText.c_str(), nullptr, false, -1.0F);
-        GUI::SetCursorScreenPos(GUI::ImVec2{ buttonMin.x + 13.0F, buttonMin.y + ((buttonMax.y - buttonMin.y - iconSize.y) * 0.5F) });
+
+        GUI::SetCursorScreenPos(
+            GUI::ImVec2{
+                buttonMin.x + 13.0F,
+                buttonMin.y + ((buttonMax.y - buttonMin.y - iconSize.y) * 0.5F)
+            }
+        );
+
         GUI::TextUnformatted(circlePlusText.c_str());
+
         FontAwesome::Pop();
+
         GUI::SetCursorScreenPos(nextItemPosition);
 
         if (createPreset) {
@@ -683,15 +711,16 @@ namespace UI {
         auto& config = Dynamics::GetConfig();
 
         if (GUI::BeginTable("PlayerDynamicsPresetTable", 2)) {
-            GUI::TableSetupColumn("State", GUI::ImGuiTableColumnFlags_WidthFixed, 120.0F);
-            GUI::TableSetupColumn("Preset", GUI::ImGuiTableColumnFlags_WidthStretch);
 
-            RenderStateRow("Outdoor", config.outdoor);
-            RenderStateRow("Indoor", config.indoor);
-            RenderStateRow("Combat", config.combat);
-            RenderStateRow("Werewolf", config.werewolf);
-            RenderStateRow("Vampire Lord", config.vampireLord);
-            RenderStateRow("Neutral", config.neutral);
+            GUI::TableSetupColumn(Trans::Tr("Dynamics.PlayerDynamics.Column.State").c_str(), GUI::ImGuiTableColumnFlags_WidthFixed, 120.0F);
+            GUI::TableSetupColumn(Trans::Tr("Dynamics.PlayerDynamics.Column.Preset").c_str(), GUI::ImGuiTableColumnFlags_WidthStretch);
+
+            RenderStateRow(Trans::Tr("Dynamics.PlayerDynamics.State.Outdoor").c_str(), config.outdoor);
+            RenderStateRow(Trans::Tr("Dynamics.PlayerDynamics.State.Indoor").c_str(), config.indoor);
+            RenderStateRow(Trans::Tr("Dynamics.PlayerDynamics.State.Combat").c_str(), config.combat);
+            RenderStateRow(Trans::Tr("Dynamics.PlayerDynamics.State.Werewolf").c_str(), config.werewolf);
+            RenderStateRow(Trans::Tr("Dynamics.PlayerDynamics.State.VampireLord").c_str(), config.vampireLord);
+            RenderStateRow(Trans::Tr("Dynamics.PlayerDynamics.State.Neutral").c_str(), config.neutral);
 
             GUI::EndTable();
         }
@@ -702,8 +731,11 @@ namespace UI {
         auto& config = Dynamics::GetConfig();
         auto& settings = Settings::GetSettings();
 
-        if (GUI::Checkbox("Enable NPC Dynamics", &settings.enableNPCDynamics) && !settings.enableNPCDynamics) {
+        if (GUI::Checkbox(Trans::Tr("Dynamics.NPC.EnableCheckbox").c_str(), &settings.enableNPCDynamics)
+            && !settings.enableNPCDynamics)
+        {
             Dynamics::RestoreNPCsToVanilla();
+
             auto& editor = GetPresetEditorState();
             if (editor.npcPreview || editor.npcGlobal) {
                 ClosePresetEditor();
@@ -714,13 +746,14 @@ namespace UI {
         GUI::BeginDisabled(!settings.enableNPCDynamics);
 
         if (GUI::BeginTable("NPCDynamicsPresetTable", 2)) {
-            GUI::TableSetupColumn("State", GUI::ImGuiTableColumnFlags_WidthFixed, 120.0F);
-            GUI::TableSetupColumn("Preset", GUI::ImGuiTableColumnFlags_WidthStretch);
 
-            RenderStateRow("NPC Neutral", config.npcNeutral, false, true, true);
-            RenderStateRow("NPC Combat", config.npcCombat, false, true, true);
-            RenderStateRow("Guard Neutral", config.guardNeutral, false, true, true);
-            RenderStateRow("Guard Combat", config.guardCombat, false, true, true);
+            GUI::TableSetupColumn(Trans::Tr("Dynamics.NPC.Column.State").c_str(), GUI::ImGuiTableColumnFlags_WidthFixed, 120.0F);
+            GUI::TableSetupColumn(Trans::Tr("Dynamics.NPC.Column.Preset").c_str(), GUI::ImGuiTableColumnFlags_WidthStretch);
+
+            RenderStateRow(Trans::Tr("Dynamics.NPC.State.NPCNeutral").c_str(), config.npcNeutral, false, true, true);
+            RenderStateRow(Trans::Tr("Dynamics.NPC.State.NPCCombat").c_str(), config.npcCombat, false, true, true);
+            RenderStateRow(Trans::Tr("Dynamics.NPC.State.GuardNeutral").c_str(), config.guardNeutral, false, true, true);
+            RenderStateRow(Trans::Tr("Dynamics.NPC.State.GuardCombat").c_str(), config.guardCombat, false, true, true);
 
             GUI::EndTable();
         }
@@ -730,7 +763,6 @@ namespace UI {
 
         GUI::EndDisabled();
     }
-
     void RenderPresetEditor()
     {
         auto& editor = GetPresetEditorState();
@@ -744,36 +776,64 @@ namespace UI {
             editor.open = false;
             return;
         }
+
         if ((editor.npcPreview || editor.npcGlobal) && !Settings::GetSettings().enableNPCDynamics) {
             ClosePresetEditor();
             editor.open = false;
             return;
         }
 
-        const auto actorName = editor.npcPreview ? GetActorName(GetSelectedNPCActorPtr()) : (editor.npcGlobal ? std::string("NPC") : std::string("Player"));
-        const auto title = std::string("Edit " + actorName + " Preset: ") + VCD::PresetName(editor.preset);
+        const auto actorName =
+            editor.npcPreview
+            ? GetActorName(GetSelectedNPCActorPtr())
+            : (editor.npcGlobal ? std::string("NPC") : std::string("Player"));
+
+        const auto title =
+            Trans::Tr("Dynamics.Editor.WindowTitlePrefix") + " " +
+            actorName +
+            " " +
+            Trans::Tr("Dynamics.Editor.WindowTitlePreset") + " " +
+            VCD::PresetName(editor.preset);
+
         constexpr auto windowSize = GUI::ImVec2{ 480.0F, 380.0F };
         GUI::SetNextWindowSize(windowSize, GUI::ImGuiCond_Appearing);
+
         if (const auto* io = GUI::GetIO()) {
-            GUI::SetNextWindowPos(GUI::ImVec2{ io->DisplaySize.x * 0.5F, io->DisplaySize.y * 0.5F }, GUI::ImGuiCond_Appearing, GUI::ImVec2{ 0.5F, 0.5F });
+            GUI::SetNextWindowPos(
+                GUI::ImVec2{ io->DisplaySize.x * 0.5F, io->DisplaySize.y * 0.5F },
+                GUI::ImGuiCond_Appearing,
+                GUI::ImVec2{ 0.5F, 0.5F }
+            );
         }
 
         const auto wasOpen = editor.open;
+
         GUI::PushStyleColor(GUI::ImGuiCol_WindowBg, Color::kEditWindowBg);
+
         const bool opened = GUI::Begin(title.c_str(), &editor.open, 0);
         if (!opened) {
             GUI::End();
+
             if (wasOpen && !editor.open) {
                 ClosePresetEditor();
             }
+
             GUI::PopStyleColor();
             return;
         }
 
         const auto isCurrentPreset = Dynamics::IsPresetCurrent(editor.preset);
+
         if (!isCurrentPreset) {
-            const std::string previewLabel = "Preview " + actorName + " Preset";
-            if (!editor.npcPreview && !editor.npcGlobal && GUI::Checkbox(previewLabel.c_str(), &editor.preview)) {
+            const std::string previewLabel =
+                Trans::Tr("Dynamics.Editor.PreviewPrefix") + " " +
+                actorName +
+                " " +
+                Trans::Tr("Dynamics.Editor.PresetLabel");
+
+            if (!editor.npcPreview && !editor.npcGlobal &&
+                GUI::Checkbox(previewLabel.c_str(), &editor.preview))
+            {
                 if (const auto* player = RE::PlayerCharacter::GetSingleton()) {
                     if (editor.preview) {
                         BeginAutoDraw();
@@ -785,7 +845,10 @@ namespace UI {
                     }
                 }
             }
-            WrappedTooltip("Temporarily applies this preset for tuning. Closing the editor restores the current dynamics state after a short delay.");
+
+            WrappedTooltip(
+                Trans::Tr("Dynamics.Editor.PreviewTooltip").c_str()
+            );
         }
 
         if (RenderCollisionSliders(editor.current, editor.defaults)) {
@@ -795,32 +858,49 @@ namespace UI {
         GUI::Spacing();
 
         const bool differsFromDefault = !editor.current.IsSame(editor.defaults);
-        if (CTAButton("Default", differsFromDefault)) {
+
+        if (CTAButton(Trans::Tr("Dynamics.Editor.ResetButton").c_str(), differsFromDefault)) {
             if (editor.npcPreview) {
                 auto actorPtr = editor.previewActor.get();
                 auto* actor = actorPtr.get();
+
                 if (actor) {
                     BeginAutoDraw();
+
                     Settings::ClearNPCActorPresetEdited(actor->GetFormID(), editor.preset);
                     editor.current = editor.defaults;
-                    manager.SetCollisionData(actor, editor.current, editor.preset, VCD::PresetName(editor.preset), PoseFixes::NPCPose(actor), false);
+
+                    manager.SetCollisionData(
+                        actor,
+                        editor.current,
+                        editor.preset,
+                        VCD::PresetName(editor.preset),
+                        PoseFixes::NPCPose(actor),
+                        false
+                    );
                 }
             }
             else if (editor.npcGlobal) {
                 Settings::ClearNPCPresetEdited(editor.preset);
+
                 editor.current = editor.defaults;
                 Dynamics::GetNPCDynamicsState().actors.clear();
+
                 if (auto* actor = GetSelectedNPCActorPtr()) {
                     BeginAutoDraw();
+
                     editor.preview = true;
                     editor.previewActor = actor->CreateRefHandle();
+
                     Dynamics::StartNPCPresetPreview(actor, editor.preset);
                 }
             }
             else if (const auto* player = RE::PlayerCharacter::GetSingleton()) {
                 presetConfig->data = editor.defaults;
+
                 Settings::ClearPresetEdited(editor.preset);
                 editor.current = editor.defaults;
+
                 if (Dynamics::IsPresetCurrent(editor.preset)) {
                     BeginAutoDraw();
                     manager.SetPreset(player, editor.preset, PoseFixes::PlayerPose(player), true);
@@ -831,12 +911,17 @@ namespace UI {
                 }
             }
         }
-        Tooltip("Restore this editor to its base preset values without saving it to disk.");
+
+        WrappedTooltip(
+            Trans::Tr("Dynamics.Editor.ResetTooltip").c_str()
+        );
 
         GUI::End();
+
         if (wasOpen && !editor.open) {
             ClosePresetEditor();
         }
+
         GUI::PopStyleColor();
     }
 
@@ -930,28 +1015,43 @@ namespace UI {
 
         constexpr auto windowSize = GUI::ImVec2{ 480.0F, 440.0F };
         GUI::SetNextWindowSize(windowSize, GUI::ImGuiCond_Appearing);
+
         if (const auto* io = GUI::GetIO()) {
-            GUI::SetNextWindowPos(GUI::ImVec2{ io->DisplaySize.x * 0.5F, io->DisplaySize.y * 0.5F }, GUI::ImGuiCond_Appearing, GUI::ImVec2{ 0.5F, 0.5F });
+            GUI::SetNextWindowPos(
+                GUI::ImVec2{ io->DisplaySize.x * 0.5F, io->DisplaySize.y * 0.5F },
+                GUI::ImGuiCond_Appearing,
+                GUI::ImVec2{ 0.5F, 0.5F }
+            );
         }
 
         const auto wasOpen = editor.open;
+
         GUI::PushStyleColor(GUI::ImGuiCol_WindowBg, Color::kEditWindowBg);
-        const bool opened = GUI::Begin("Create New Preset", &editor.open, 0);
+
+        const bool opened =
+            GUI::Begin(Trans::Tr("Dynamics.CreatePreset.WindowTitle").c_str(), &editor.open, 0);
+
         if (!opened) {
             GUI::End();
+
             if (wasOpen && !editor.open) {
                 CloseCreatePresetEditor();
             }
+
             GUI::PopStyleColor();
             return;
         }
 
         GUI::SetNextItemWidth(260.0F);
-        if (GUI::InputText("Name", editor.name.data(), editor.name.size())) {
+
+        if (GUI::InputText(Trans::Tr("Dynamics.CreatePreset.NameLabel").c_str(),
+            editor.name.data(),
+            editor.name.size()))
+        {
             editor.error.clear();
         }
 
-        if (GUI::Checkbox("Preview Player", &editor.preview)) {
+        if (GUI::Checkbox(Trans::Tr("Dynamics.CreatePreset.PreviewCheckbox").c_str(), &editor.preview)) {
             if (editor.preview) {
                 ApplyCreatePresetPreview();
             }
@@ -968,7 +1068,8 @@ namespace UI {
         GUI::Spacing();
 
         const bool differsFromDefault = !editor.current.IsSame(editor.defaults);
-        if (CTAButton("Default", differsFromDefault)) {
+
+        if (CTAButton(Trans::Tr("Dynamics.CreatePreset.DefaultButton").c_str(), differsFromDefault)) {
             editor.current = editor.defaults;
             ApplyCreatePresetPreview();
         }
@@ -978,31 +1079,41 @@ namespace UI {
         const std::string name = editor.name.data();
         const auto key = VCD::MakePresetKey(name);
         const auto duplicate = !key.empty() && VCD::Manager::GetSingleton().GetPresetConfig(key);
+
         const bool canSave = !key.empty() && !duplicate;
+
         std::string validationError{};
+
         if (key.empty() && !name.empty()) {
-            validationError = "The name must contain letters or numbers.";
+            validationError = Trans::Tr("Dynamics.CreatePreset.Error.InvalidName");
         }
         else if (duplicate) {
-            validationError = "A preset with this name already exists.";
+            validationError = Trans::Tr("Dynamics.CreatePreset.Error.Duplicate");
         }
 
-        if (CTAButton("Save", canSave)) {
+        if (CTAButton(Trans::Tr("Dynamics.CreatePreset.SaveButton").c_str(), canSave)) {
             VCD::Preset preset{};
+
             if (VCD::Manager::GetSingleton().CreatePreset(name, editor.current, preset, editor.error)) {
                 CloseCreatePresetEditor();
             }
         }
 
-        const auto& error = validationError.empty() ? editor.error : validationError;
+        const auto& error =
+            validationError.empty()
+            ? editor.error
+            : validationError;
+
         if (!error.empty()) {
             GUI::TextWrapped("%s", error.c_str());
         }
 
         GUI::End();
+
         if (wasOpen && !editor.open) {
             CloseCreatePresetEditor();
         }
+
         GUI::PopStyleColor();
     }
 
@@ -1011,47 +1122,69 @@ namespace UI {
         RenderCreateDeleteButtons();
 
         constexpr auto defaultOpen = GUI::ImGuiTreeNodeFlags_DefaultOpen;
-        if (GUI::CollapsingHeader("Player Dynamics", defaultOpen)) {
+
+        if (GUI::CollapsingHeader(Trans::Tr("Dynamics.Menu.PlayerDynamicsHeader").c_str(), defaultOpen)) {
             RenderPlayerDynamics();
         }
 
         GUI::Spacing();
 
-        if (GUI::CollapsingHeader("NPC Dynamics", defaultOpen)) {
+        if (GUI::CollapsingHeader(Trans::Tr("Dynamics.Menu.NPCDynamicsHeader").c_str(), defaultOpen)) {
             RenderNPCDynamics();
         }
 
         GUI::Separator();
 
-        if (CTAButton("Save Settings", Settings::IsDirty())) {
+        if (CTAButton(Trans::Tr("Dynamics.Menu.SaveSettingsButton").c_str(), Settings::IsDirty())) {
             Settings::Save();
         }
-        Tooltip("Save state mappings and edited presets to disk.");
+
+        WrappedTooltip(
+            Trans::Tr("Dynamics.Menu.SaveSettingsTooltip").c_str()
+        );
 
         GUI::SameLine();
 
         const bool changed = !Settings::IsDynamicsDefault();
 
-        if (CTAButton("Default", changed)) {
+        if (CTAButton(Trans::Tr("Dynamics.Menu.ResetDefaultsButton").c_str(), changed)) {
 
             const auto wasNPCDynamicsEnabled = Settings::GetSettings().enableNPCDynamics;
+
             Settings::ResetDynamics();
+
             if (wasNPCDynamicsEnabled) {
                 Dynamics::RestoreNPCsToVanilla();
             }
 
             if (RefreshPresetEditor()) {
                 auto& editor = GetPresetEditorState();
+
                 if (editor.npcPreview) {
                     auto actorPtr = editor.previewActor.get();
                     auto* actor = actorPtr.get();
+
                     if (actor) {
-                        VCD::Manager::GetSingleton().SetCollisionData(actor, editor.current, editor.preset, VCD::PresetName(editor.preset), PoseFixes::NPCPose(actor), false);
+                        VCD::Manager::GetSingleton().SetCollisionData(
+                            actor,
+                            editor.current,
+                            editor.preset,
+                            VCD::PresetName(editor.preset),
+                            PoseFixes::NPCPose(actor),
+                            false
+                        );
                     }
                 }
                 else if (editor.npcGlobal) {
                     if (auto* actor = GetSelectedNPCActorPtr()) {
-                        VCD::Manager::GetSingleton().SetCollisionData(actor, editor.current, editor.preset, VCD::PresetName(editor.preset), PoseFixes::NPCPose(actor), false);
+                        VCD::Manager::GetSingleton().SetCollisionData(
+                            actor,
+                            editor.current,
+                            editor.preset,
+                            VCD::PresetName(editor.preset),
+                            PoseFixes::NPCPose(actor),
+                            false
+                        );
                     }
                 }
                 else {
@@ -1059,7 +1192,10 @@ namespace UI {
                 }
             }
         }
-        Tooltip("Reset dynamics state and preset overrides to defaults without saving.");
+
+        WrappedTooltip(
+            Trans::Tr("Dynamics.Menu.ResetDefaultsTooltip").c_str()
+        );
 
         RenderPresetEditor();
         RenderCreatePresetEditor();

@@ -1,4 +1,4 @@
-
+ 
 #include "draw.hpp"
 #include "hooks.hpp"
 #include "logger.hpp"
@@ -71,27 +71,32 @@ void SneakHandlerProcessButton::thunk(
 	RE::ButtonEvent* a_event,
 	RE::PlayerControlsData* a_data)
 {
+
 	if (!a_this || !a_event || !a_data)
 		return func(a_this, a_event, a_data);
+
 	if (!Settings::GetSettings().fixPlayerSneaking) {
 		return func(a_this, a_event, a_data);
 	}
 
-	if (a_event->IsUp()) {
-		auto* player = RE::PlayerCharacter::GetSingleton();
-		if (!player) return func(a_this, a_event, a_data);
+	auto* player = RE::PlayerCharacter::GetSingleton();
+	if (!player) return func(a_this, a_event, a_data);
 
-		auto& manager = VCD::Manager::GetSingleton();
-		if (player->IsSneaking()) {
-			auto standingHeight = manager.GetStandingCapsuleHeight(player);
-			if (standingHeight <= 0.0F) {
-				standingHeight = player->GetHeight();
-			}
-			if (!raycast::canStandUp(standingHeight)) {
-				return;
-			}
+	auto& manager = VCD::Manager::GetSingleton();
+	if (player->IsSneaking()) {
+		auto standingHeight = manager.GetStandingCapsuleHeight(player);
+		if (standingHeight <= 0.0F) {
+			standingHeight = player->GetHeight();
 		}
 
+		if (!raycast::canStandUp(standingHeight)) {
+			return;
+		}
+	}
+
+
+	if (a_event->IsUp()) {
+	
 		// let game process button first so isSneaking() returns valid state
 		func(a_this, a_event, a_data);
 

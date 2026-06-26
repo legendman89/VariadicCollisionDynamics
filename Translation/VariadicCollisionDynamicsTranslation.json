@@ -1,0 +1,146 @@
+  
+  /* ============================================================
+     TOOLS TAB
+     ============================================================ */
+{
+  "Tools.CurrentDynamics.CurrentState": "Current State",
+  "Tools.CurrentDynamics.CurrentPreset": "Current Preset",
+  "Tools.CurrentDynamics.PreviewPreset": "Preview Preset",
+
+  "Tools.Visualization.DrawPlayerCollision": "Draw Player Collision",
+  "Tools.Visualization.DrawNearbyActors": "Draw Nearby Actors",
+
+  "Tools.Visualization.NearbyActorRadius": "Nearby Actor Radius",
+  "Tools.Visualization.NearbyActorScanInterval": "Nearby Actor Scan Interval",
+  "Tools.Visualization.NearbyActorLimit": "Nearby Actor Limit",
+
+  "Tools.Visualization.AutoDrawWhileEditing": "Auto Draw While Editing",
+  "Tools.Visualization.AutoDrawWhileEditing.Tooltip":
+    "Temporarily enables drawing when preset sliders are changed, then restores the previous draw setting when the editor closes.",
+
+  "Tools.Visualization.PlayerLineColor": "Player line Color",
+  "Tools.Visualization.NPCLineColor": "NPC line Color",
+
+  "Tools.Visualization.PlayerLineThickness": "Player line Thickness",
+  "Tools.Visualization.NPCLineThickness": "NPC line Thickness",
+
+  "Tools.Visualization.PreviewRestoreDelay": "Preview Restore Delay",
+  "Tools.Visualization.PreviewRestoreDelay.Tooltip":
+    "How long an inactive preset preview remains after closing the editor.",
+
+  "Tools.Logging.LogLevel": "Log Level",
+
+  "Tools.Save.Button": "Save Tools",
+  "Tools.Save.Tooltip": "Save Tools panel settings to disk.",
+
+  "Tools.Default.Button": "Default",
+  "Tools.Default.Tooltip": "Reset Tools panel settings to defaults without saving.",
+
+  
+  
+  /* ============================================================
+     DYNAMICS TAB
+     ============================================================ */
+
+  "Dynamics.Editor.Column.Fix": "Fix",
+  "Dynamics.Editor.Column.Scale": "Scale",
+
+  "Dynamics.Editor.Radius": "Radius",
+  "Dynamics.Editor.TopOffset": "Top Offset",
+  "Dynamics.Editor.BottomOffset": "Bottom Offset",
+  "Dynamics.Editor.ForwardOffset": "Forward Offset",
+  "Dynamics.Editor.SideOffset": "Side Offset",
+
+  "Dynamics.Editor.Button.Edit": "Edit",
+  "Dynamics.Editor.Details.NPCGlobal": "Edit this preset globally for NPCs. To fine tune one actor, use Edit Selected Actor below.",
+  "Dynamics.Editor.Details.StateLocal": "Open sliders for the preset assigned to this state.",
+
+  "Dynamics.NPC.SelectActorPreview": "Select nearby actor",
+  "Dynamics.NPC.ActorComboLabel": "Actor",
+  "Dynamics.NPC.ActorComboTooltip": "Select one nearby actor for preset preview and editing.",
+
+  "Dynamics.NPC.PreviewPresetLabel": "Preview Preset",
+
+  "Dynamics.NPC.EditSelectedActorButton": "Edit Selected Actor",
+  "Dynamics.NPC.EditSelectedActorTooltip": "Open sliders for this preset and preview them on the selected actor.",
+
+  "Dynamics.Preset.CreateButton": "Create New Preset",
+  "Dynamics.Preset.CreateTooltip": "Create a reusable collision preset for players and NPCs, starting from the default vanilla shape.",
+
+  "Dynamics.PlayerDynamics.Column.State": "State",
+  "Dynamics.PlayerDynamics.Column.Preset": "Preset",
+
+  "Dynamics.PlayerDynamics.State.Outdoor": "Outdoor",
+  "Dynamics.PlayerDynamics.State.Indoor": "Indoor",
+  "Dynamics.PlayerDynamics.State.Combat": "Combat",
+  "Dynamics.PlayerDynamics.State.Werewolf": "Werewolf",
+  "Dynamics.PlayerDynamics.State.VampireLord": "Vampire Lord",
+  "Dynamics.PlayerDynamics.State.Neutral": "Neutral",
+
+  "Dynamics.NPC.EnableCheckbox": "Enable NPC Dynamics",
+
+  "Dynamics.NPC.Column.State": "State",
+  "Dynamics.NPC.Column.Preset": "Preset",
+
+  "Dynamics.NPC.State.NPCNeutral": "NPC Neutral",
+  "Dynamics.NPC.State.NPCCombat": "NPC Combat",
+  "Dynamics.NPC.State.GuardNeutral": "Guard Neutral",
+  "Dynamics.NPC.State.GuardCombat": "Guard Combat",
+
+  "Dynamics.Menu.PlayerDynamicsHeader": "Player Dynamics",
+  "Dynamics.Menu.NPCDynamicsHeader": "NPC Dynamics",
+
+  "Dynamics.Menu.SaveSettingsButton": "Save Settings",
+  "Dynamics.Menu.SaveSettingsTooltip": "Save state mappings and edited presets to disk.",
+
+  "Dynamics.Menu.ResetDefaultsButton": "Default",
+  "Dynamics.Menu.ResetDefaultsTooltip": "Reset dynamics state and preset overrides to defaults without saving.",
+
+  "Dynamics.Editor.WindowTitlePrefix": "Edit",
+  "Dynamics.Editor.WindowTitlePreset": "Preset",
+
+  "Dynamics.Editor.PreviewPrefix": "Preview",
+  "Dynamics.Editor.PresetLabel": "Preset",
+
+  "Dynamics.Editor.PreviewTooltip": "Temporarily applies this preset for tuning. Closing the editor restores the current dynamics state after a short delay.",
+
+  "Dynamics.Editor.ResetButton": "Default",
+  "Dynamics.Editor.ResetTooltip": "Restore this editor to its base preset values without saving it to disk.",
+
+  "Dynamics.CreatePreset.WindowTitle": "Create New Preset",
+  "Dynamics.CreatePreset.NameLabel": "Name",
+  "Dynamics.CreatePreset.PreviewCheckbox": "Preview Player",
+
+  "Dynamics.CreatePreset.DefaultButton": "Default",
+  "Dynamics.CreatePreset.SaveButton": "Save",
+
+  "Dynamics.CreatePreset.Error.InvalidName": "The name must contain letters or numbers.",
+  "Dynamics.CreatePreset.Error.Duplicate": "A preset with this name already exists.",
+
+  /* ============================================================
+     POSE FIXES TAB
+     ============================================================ */
+
+  "Dynamics.PoseFix.Column.Fix": "Fix",
+  "Dynamics.PoseFix.Column.Scale": "Scale",
+
+  "Dynamics.PoseFix.PlayerSitting": "Fix Player Sitting",
+  "Dynamics.PoseFix.PlayerSittingTooltip": "Shrink the player collision capsule while sitting on supported furniture.",
+  "Dynamics.PoseFix.PlayerSittingScale": "Player Sitting Scale",
+
+  "Dynamics.PoseFix.NPCSitting": "Fix NPC Sitting",
+  "Dynamics.PoseFix.NPCSittingTooltip": "Shrink nearby NPC collision capsules while sitting on supported furniture.",
+  "Dynamics.PoseFix.NPCSittingScale": "NPC Sitting Scale",
+
+  "Dynamics.PoseFix.PlayerSneaking": "Fix Player Sneaking",
+  "Dynamics.PoseFix.PlayerSneakingScale": "Player Sneaking Scale",
+
+  "Dynamics.PoseFix.NPCSneaking": "Fix NPC Sneaking",
+  "Dynamics.PoseFix.NPCSneakingScale": "NPC Sneaking Scale",
+
+  "Dynamics.PoseFix.SaveButton": "Save Pose Fixes",
+  "Dynamics.PoseFix.SaveTooltip": "Save Pose Fixes settings to disk.",
+
+  "Dynamics.PoseFix.DefaultButton": "Default",
+  "Dynamics.PoseFix.DefaultTooltip": "Reset Pose Fixes settings to defaults without saving."
+}

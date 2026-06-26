@@ -2,6 +2,7 @@
 
 #include <CLibUtilsQTR/DrawDebug.hpp>
 #include <iterator>
+#include "translate.hpp"
 
 namespace UI {
 
@@ -23,11 +24,16 @@ namespace UI {
     {
         const auto& state = Dynamics::GetPresetState();
         const auto& preview = Dynamics::GetPreviewState();
-        GUI::Text("Current State: %s", state.stateName);
-        GUI::Text("Current Preset: %s", state.applied ? VCD::PresetName(state.current) : "unknown");
+
+        GUI::Text(Trans::Tr("Tools.CurrentDynamics.CurrentState").c_str(),
+            state.stateName);
+
+        GUI::Text(Trans::Tr("Tools.CurrentDynamics.CurrentPreset").c_str(),
+            state.applied ? VCD::PresetName(state.current) : Trans::Tr("Common.Unknown").c_str());
 
         if (preview.active) {
-            GUI::Text("Preview Preset: %s", VCD::PresetName(preview.preset));
+            GUI::Text(Trans::Tr("Tools.CurrentDynamics.PreviewPreset").c_str(),
+                VCD::PresetName(preview.preset));
         }
     }
 
@@ -35,41 +41,54 @@ namespace UI {
     {
         auto& settings = Settings::GetSettings();
 
-        if (GUI::Checkbox("Draw Player Collision", &settings.drawCollision)) {
+        if (GUI::Checkbox(Trans::Tr("Tools.Visualization.DrawPlayerCollision").c_str(), &settings.drawCollision)) {
             ClearDrawLines();
         }
 
-        if (GUI::Checkbox("Draw Nearby Actors", &settings.drawNearbyActors)) {
+        if (GUI::Checkbox(Trans::Tr("Tools.Visualization.DrawNearbyActors").c_str(), &settings.drawNearbyActors)) {
             ClearDrawLines();
         }
 
         GUI::SetNextItemWidth(260.0F);
-        GUI::SliderFloat("Nearby Actor Radius", &settings.nearbyActorDrawRadius, 256.0F, 8192.0F);
+        GUI::SliderFloat(Trans::Tr("Tools.Visualization.NearbyActorRadius").c_str(),
+            &settings.nearbyActorDrawRadius, 256.0F, 8192.0F);
 
         GUI::SetNextItemWidth(260.0F);
-        GUI::SliderFloat("Nearby Actor Scan Interval", &settings.nearbyActorScanInterval, 0.1F, 2.0F);
+        GUI::SliderFloat(Trans::Tr("Tools.Visualization.NearbyActorScanInterval").c_str(),
+            &settings.nearbyActorScanInterval, 0.1F, 2.0F);
 
         GUI::SetNextItemWidth(260.0F);
-        GUI::SliderInt("Nearby Actor Limit", &settings.nearbyActorDrawLimit, 1, 64);
+        GUI::SliderInt(Trans::Tr("Tools.Visualization.NearbyActorLimit").c_str(),
+            &settings.nearbyActorDrawLimit, 1, 64);
 
-        GUI::Checkbox("Auto Draw While Editing", &settings.autoDrawPreview);
-        WrappedTooltip("Temporarily enables drawing when preset sliders are changed, then restores the previous draw setting when the editor closes.");
+        GUI::Checkbox(Trans::Tr("Tools.Visualization.AutoDrawWhileEditing").c_str(),
+            &settings.autoDrawPreview);
 
-        GUI::SetNextItemWidth(260.0F);
-        GUI::ColorEdit4("Player line Color", settings.drawColor.data(), GUI::ImGuiColorEditFlags_DisplayRGB | GUI::ImGuiColorEditFlags_AlphaBar);
-
-        GUI::SetNextItemWidth(260.0F);
-        GUI::ColorEdit4("NPC line Color", settings.drawNPCColor.data(), GUI::ImGuiColorEditFlags_DisplayRGB | GUI::ImGuiColorEditFlags_AlphaBar);
+        WrappedTooltip(Trans::Tr("Tools.Visualization.AutoDrawWhileEditing.Tooltip").c_str());
 
         GUI::SetNextItemWidth(260.0F);
-        GUI::SliderFloat("Player line Thickness", &settings.drawLineThickness, 0.25F, 5.0F);
+        GUI::ColorEdit4(Trans::Tr("Tools.Visualization.PlayerLineColor").c_str(),
+            settings.drawColor.data(),
+            GUI::ImGuiColorEditFlags_DisplayRGB | GUI::ImGuiColorEditFlags_AlphaBar);
 
         GUI::SetNextItemWidth(260.0F);
-        GUI::SliderFloat("NPC line Thickness", &settings.drawNPCLineThickness, 0.25F, 5.0F);
+        GUI::ColorEdit4(Trans::Tr("Tools.Visualization.NPCLineColor").c_str(),
+            settings.drawNPCColor.data(),
+            GUI::ImGuiColorEditFlags_DisplayRGB | GUI::ImGuiColorEditFlags_AlphaBar);
 
         GUI::SetNextItemWidth(260.0F);
-        GUI::SliderFloat("Preview Restore Delay", &settings.previewRestoreDelay, 0.0F, 10.0F);
-        Tooltip("How long an inactive preset preview remains after closing the editor.");
+        GUI::SliderFloat(Trans::Tr("Tools.Visualization.PlayerLineThickness").c_str(),
+            &settings.drawLineThickness, 0.25F, 5.0F);
+
+        GUI::SetNextItemWidth(260.0F);
+        GUI::SliderFloat(Trans::Tr("Tools.Visualization.NPCLineThickness").c_str(),
+            &settings.drawNPCLineThickness, 0.25F, 5.0F);
+
+        GUI::SetNextItemWidth(260.0F);
+        GUI::SliderFloat(Trans::Tr("Tools.Visualization.PreviewRestoreDelay").c_str(),
+            &settings.previewRestoreDelay, 0.0F, 10.0F);
+
+        Tooltip(Trans::Tr("Tools.Visualization.PreviewRestoreDelay.Tooltip").c_str());
     }
 
     void RenderLogging()
@@ -79,10 +98,15 @@ namespace UI {
 
         GUI::SetNextItemWidth(180.0F);
         SolidBackground(GUI::ImGuiCol_PopupBg);
-        if (GUI::Combo("Log Level", &logLevel, kLogLevels, static_cast<int>(std::size(kLogLevels)))) {
+
+        if (GUI::Combo(Trans::Tr("Tools.Logging.LogLevel").c_str(),
+            &logLevel,
+            kLogLevels,
+            static_cast<int>(std::size(kLogLevels)))) {
             settings.logLevel = logLevel;
             ApplyLogLevel(settings.logLevel);
         }
+
         GUI::PopStyleColor();
     }
 
@@ -90,35 +114,38 @@ namespace UI {
     {
         constexpr auto defaultOpen = GUI::ImGuiTreeNodeFlags_DefaultOpen;
 
-        if (GUI::CollapsingHeader("Current Dynamics", defaultOpen)) {
+        if (GUI::CollapsingHeader(Trans::Tr("Tools.CurrentDynamics.Header").c_str(), defaultOpen)) {
             RenderReadout();
         }
 
         GUI::Spacing();
 
-        if (GUI::CollapsingHeader("Bump Visualization", defaultOpen)) {
+        if (GUI::CollapsingHeader(Trans::Tr("Tools.Visualization.Header").c_str(), defaultOpen)) {
             RenderVisualization();
         }
 
         GUI::Spacing();
 
-        if (GUI::CollapsingHeader("Logging", defaultOpen)) {
+        if (GUI::CollapsingHeader(Trans::Tr("Tools.Logging.Header").c_str(), defaultOpen)) {
             RenderLogging();
         }
 
         GUI::Spacing();
-        if (CTAButton("Save Tools", Settings::IsToolsDirty())) {
+
+        if (CTAButton(Trans::Tr("Tools.Save.Button").c_str(), Settings::IsToolsDirty())) {
             Settings::SaveTools();
         }
-        Tooltip("Save Tools panel settings to disk.");
+
+        Tooltip(Trans::Tr("Tools.Save.Tooltip").c_str());
 
         GUI::SameLine();
 
-        if (CTAButton("Default", !Settings::IsToolsDefault())) {
+        if (CTAButton(Trans::Tr("Tools.Default.Button").c_str(), !Settings::IsToolsDefault())) {
             Settings::ResetTools();
             ClearDrawLines();
         }
-        Tooltip("Reset Tools panel settings to defaults without saving.");
+
+        Tooltip(Trans::Tr("Tools.Default.Tooltip").c_str());
     }
 
 }

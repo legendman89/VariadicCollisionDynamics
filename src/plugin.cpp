@@ -6,6 +6,7 @@
 #include "manager.hpp"
 #include "dynamics.hpp"
 #include "settings.hpp"
+#include "translate.hpp"
 
 static void MessageHandler(SKSE::MessagingInterface::Message* msg) {
     switch (msg->type) {
@@ -48,6 +49,8 @@ SKSEPluginLoad(const SKSE::LoadInterface* skse)
     logger::info("Variadic Collision Dynamics Plugin is Loaded");
 
     SKSE::GetMessagingInterface()->RegisterListener(MessageHandler);
+
+    Trans::GetTranslator().load();
 
     UI::Register(); 
 

@@ -56,7 +56,7 @@ bool raycast::castRay(RE::bhkWorld* world, RE::NiPoint3 start, RE::NiPoint3 end,
 	return true; 
 }
 
- bool raycast::canStandUp(float a_standingHeight)
+ bool raycast::canStandUp(const float a_standingHeight)
 {
 	 auto player = RE::PlayerCharacter::GetSingleton();
 	 if (!player) return false;
@@ -70,28 +70,14 @@ bool raycast::castRay(RE::bhkWorld* world, RE::NiPoint3 start, RE::NiPoint3 end,
 	 // get current position
 	 RE::NiPoint3 playerPos = player->GetPosition();
 
-	 // Start the ray from players current position.
 	 RE::NiPoint3 start = playerPos;
-	 RE::NiPoint3 end = playerPos;
+	 start.z += 50.0f; // raise start to avoid floor and false positives
 
-	 // Height cannot be changed here to not intervene with dynamics.
-	 end.z += a_standingHeight;
+	 RE::NiPoint3 end = playerPos;
+	 end.z += a_standingHeight; // end at full standing height
 
 	 // see if anything blocking
 	 bool canNotStandUp = raycast::castRay(world, start, end, RE::COL_LAYER::kLOS);
-	 
-	 // DEBUG lines to view the ray 
-	 
-	/* if (canNotStandUp) {
-		
-		 RE::NiColorA rayColor = canNotStandUp ? RE::NiColorA{1.0f, 0.0f, 0.0f, 1.0f} : RE::NiColorA{0.0f, 1.0f, 0.0f, 1.0f};
-		 auto drawAPI = DebugAPI_IMPL::DebugAPI::GetSingleton();
-		 if (!drawAPI) return true;
-
-		 drawAPI->DrawLineForMS(start, end, 100, rayColor, 2.0f);
-		 drawAPI->Update();
-		 logger::info("drawing debug line");
-	 }*/
 
 	 return !canNotStandUp;
 }
