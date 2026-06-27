@@ -49,6 +49,10 @@ namespace UI {
             ClearDrawLines();
         }
 
+        if (GUI::Checkbox(Trans::Tr("Tools.Visualization.DrawCameraCollision").c_str(), &settings.drawCameraCollision)) {
+            ClearDrawLines();
+        }
+
         GUI::SetNextItemWidth(260.0F);
         GUI::SliderFloat(Trans::Tr("Tools.Visualization.NearbyActorRadius").c_str(),
             &settings.nearbyActorDrawRadius, 256.0F, 8192.0F);

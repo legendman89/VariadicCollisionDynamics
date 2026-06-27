@@ -151,6 +151,31 @@ namespace DebugAPI_IMPL::Draw {
         return true;
     }
 
+    void DrawCameraBumper()
+    {
+        auto* playerCamera = RE::PlayerCamera::GetSingleton();
+        if (!playerCamera) return;
+        auto& cameraRTD = playerCamera->GetRuntimeData();
+        if (!cameraRTD.unk120) return;
+        auto* api = DebugAPI_IMPL::DebugAPI::GetSingleton();
+
+        auto DrawSphere = [&](RE::bhkSimpleShapePhantom* bhkPhantom, RE::NiColorA color) {
+
+            static RE::NiPoint3 cameraPos = DebugAPI_IMPL::GetCameraPos();
+
+            auto manager = VCD::Manager::GetSingleton();
+            auto* sphere = manager.GetCameraPhantomShape(bhkPhantom);
+            if (!sphere) return;
+            constexpr float hkScale = 69.99125f;
+            float radius = sphere->radius * hkScale;
+            api->DrawSphere(cameraPos, radius, 100, color, 2.0f);
+            };
+
+        DrawSphere(cameraRTD.unk120->unk00.get(), RE::NiColorA(1.f, 0.f, 1.f, 1.f));
+        DrawSphere(cameraRTD.unk120->unk08.get(), RE::NiColorA(0.f, 1.f, 1.f, 1.f));
+    }
+
+
     bool HasCachedActor(const NearbyActorDrawState& a_state, const RE::Actor* a_actor)
     {
         if (!a_actor) {

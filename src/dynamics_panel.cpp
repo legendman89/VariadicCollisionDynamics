@@ -544,6 +544,26 @@ namespace UI {
         }
     }
 
+   void RenderCameraRow(const char* a_label, float& a_radius)
+    {
+        GUI::TableNextRow();
+        GUI::TableNextColumn();
+        GUI::Text("%s", a_label);
+        GUI::TableNextColumn();
+        GUI::SetNextItemWidth(180.0F);
+        if (GUI::SliderFloat((std::string("##") + a_label).c_str(), &a_radius, 1.0f, 70.0f)) {
+            Dynamics::ApplyCameraCollisionRadius(a_radius);
+        }
+        GUI::SameLine();
+        GUI::PushStyleColor(GUI::ImGuiCol_ButtonHovered, Color::kEditHover);
+        GUI::PushStyleColor(GUI::ImGuiCol_ButtonActive, Color::kEditActive);
+        if (GUI::Button((Trans::Tr("Dynamics.Camera.ResetButton") + "##" + a_label).c_str())) {
+            a_radius = 14.999999f;
+            Dynamics::RestoreCameraToVanilla();
+        }
+        GUI::PopStyleColor(2);
+    }
+
     void RenderNPCActorSelector(VCD::Preset& a_selectedPreset)
     {
         auto options = GetNearbyNPCActorOptions();
@@ -772,6 +792,29 @@ namespace UI {
 
         GUI::EndDisabled();
     }
+    void RenderCameraDynamics()
+    {
+        auto& config = Dynamics::GetConfig();
+        auto& settings = Settings::GetSettings();
+
+        if (GUI::Checkbox(Trans::Tr("Dynamics.Camera.EnableCheckbox").c_str(), &settings.enableCameraDynamics)
+            && !settings.enableCameraDynamics)
+        {
+            Dynamics::RestoreCameraToVanilla();
+        }
+
+        GUI::BeginDisabled(!settings.enableCameraDynamics);
+
+        if (GUI::BeginTable("CameraDynamicsTable", 2)) {
+            GUI::TableSetupColumn(Trans::Tr("Dynamics.Camera.Column.State").c_str(), GUI::ImGuiTableColumnFlags_WidthFixed, 120.0F);
+            GUI::TableSetupColumn(Trans::Tr("Dynamics.Camera.Column.Preset").c_str(), GUI::ImGuiTableColumnFlags_WidthStretch);
+            RenderStateRow(Trans::Tr("Dynamics.Camera.State.Vanilla").c_str(), config.cameraVanilla, false, true, false);
+            GUI::EndTable();
+        }
+
+        GUI::EndDisabled();
+    }
+
     void RenderPresetEditor()
     {
         auto& editor = GetPresetEditorState();
@@ -860,8 +903,24 @@ namespace UI {
             );
         }
 
-        if (RenderCollisionSliders(editor.current, editor.defaults)) {
-            UpdateEditedPreset();
+
+        if (editor.preset == VCD::Preset::kCameraVanilla) {
+            GUI::PushStyleColor(GUI::ImGuiCol_FrameBg, Color::kEditFrameBg);
+            GUI::PushStyleColor(GUI::ImGuiCol_FrameBgHovered, Color::kEditFrameHover);
+            GUI::PushStyleColor(GUI::ImGuiCol_FrameBgActive, Color::kEditFrameActive);
+            GUI::PushItemWidth(260.0F);
+            auto radius = editor.current.capsule.radius;
+            if (GUI::SliderFloat(Trans::Tr("Dynamics.Editor.Radius").c_str(), &radius, 0.05F, 1.0F)) {
+                editor.current.capsule.radius = radius;
+                Dynamics::ApplyCameraCollisionRadius(radius * 69.99125f);
+            }
+            GUI::PopItemWidth();
+            GUI::PopStyleColor(3);
+        }
+        else {
+            if (RenderCollisionSliders(editor.current, editor.defaults)) {
+                UpdateEditedPreset();
+            }
         }
 
         GUI::Spacing();
@@ -1151,10 +1210,17 @@ namespace UI {
 
         GUI::Separator();
 
+        if (GUI::CollapsingHeader(Trans::Tr("Dynamics.Menu.CameraDynamicsHeader").c_str(), defaultOpen)) {
+            RenderCameraDynamics();
+        }
+
+        GUI::Separator();
+
         if (CTAButton(Trans::Tr("Dynamics.Menu.SaveSettingsButton").c_str(), Settings::IsDirty())) {
             Settings::Save();
         }
 
+    
         WrappedTooltip(
             Trans::Tr("Dynamics.Menu.SaveSettingsTooltip").c_str()
         );

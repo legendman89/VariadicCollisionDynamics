@@ -243,6 +243,21 @@ RE::hkpShape* Manager::GetControllerRootShape(RE::bhkCharacterController* a_cont
     return shape;
 }
 
+RE::hkpSphereShape* Manager::GetCameraPhantomShape(RE::bhkSimpleShapePhantom* bhkPhantom)
+{
+    if (!bhkPhantom) return nullptr;
+    auto* asRefObject = reinterpret_cast<RE::bhkRefObject*>(bhkPhantom);
+    if (!asRefObject) return nullptr;
+    auto* hkpPhantom = static_cast<RE::hkpSimpleShapePhantom*>(
+        asRefObject->referencedObject.get()
+        );
+    if (!hkpPhantom) return nullptr;
+    auto* shape = const_cast<RE::hkpShape*>(hkpPhantom->collidable.shape);
+    if (!shape || shape->type != RE::hkpShapeType::kSphere) return nullptr;
+    return static_cast<RE::hkpSphereShape*>(shape);
+}
+
+
 bool Manager::FindWorldCharacterBumperShapeData(RE::bhkCharacterController* a_controller, CharacterBumperShape& a_bumper) const
 {
     auto* shape = GetControllerRootShape(a_controller);

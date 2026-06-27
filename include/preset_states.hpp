@@ -16,6 +16,10 @@
 	S(guardNeutral, VCD::Preset::kGuardNeutral) \
 	S(guardCombat, VCD::Preset::kGuardCombat)
 
+#define FOREACH_CAMERA_PRESET_STATE(S) \
+	S(cameraVanilla, VCD::Preset::kCameraVanilla) 
+
 #define FOREACH_PRESET_STATE(S) \
 	FOREACH_PLAYER_PRESET_STATE(S) \
-	FOREACH_NPC_PRESET_STATE(S)
+	FOREACH_NPC_PRESET_STATE(S) \
+	FOREACH_CAMERA_PRESET_STATE(S)

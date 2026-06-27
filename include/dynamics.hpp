@@ -180,6 +180,8 @@ namespace Dynamics {
 		return std::strcmp(a_state, "werewolf") == 0 || std::strcmp(a_state, "vampireLord") == 0;
 	}
 
+	void ApplyCameraCollisionRadius(float a_radiusSkyrim);
+
 	bool ApplyPreset(const RE::PlayerCharacter* a_player, const VCD::Preset& a_preset, const char* a_state, const bool& a_force = false);
 
 	bool ApplyEnvironmentPreset(const RE::PlayerCharacter* a_player, const bool& a_force = false);
@@ -195,6 +197,8 @@ namespace Dynamics {
 	void SchedulePreviewRestore(const float& a_delaySeconds);
 
 	void RestoreNPCsToVanilla();
+
+	void RestoreCameraToVanilla();
 
 	void RestorePresetPreview(const RE::PlayerCharacter* a_player);
 

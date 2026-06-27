@@ -55,7 +55,11 @@ void PlayerUpdate::thunk(RE::PlayerCharacter* player, float delta) {
 		Draw::DrawNearbyActorBumpers();
 	}
 
-	if (settings.drawCollision || settings.drawNearbyActors) {
+	if (settings.drawCameraCollision) {
+		Draw::DrawCameraBumper(); 
+	}
+
+	if (settings.drawCollision || settings.drawNearbyActors || settings.drawCameraCollision) {
 		DebugAPI::GetSingleton()->Update();
 	}
 }
@@ -129,4 +133,28 @@ void SneakHandlerProcessButton::Install()
 	
 	func = REL::Relocation<std::uintptr_t>(RE::SneakHandler::VTABLE[0]).write_vfunc(0x04, thunk);
 	logger::info("process sneak button hook installed");
+}
+
+RE::BSEventNotifyControl MenuTopicManagerHook::ProcessMenuOpenCloseEvent(
+	RE::MenuTopicManager* a_this,
+	const RE::MenuOpenCloseEvent* a_event,
+	RE::BSTEventSource<RE::MenuOpenCloseEvent>* a_eventSource)
+{
+	if (a_this && a_event &&
+		a_event->opening &&
+		a_event->menuName == RE::DialogueMenu::MENU_NAME) {
+
+		
+	}
+
+	return func(a_this, a_event, a_eventSource);
+}
+
+void MenuTopicManagerHook::Install()
+{
+	REL::Relocation<std::uintptr_t> vtbl{ RE::VTABLE_MenuTopicManager[0] };
+
+	func = vtbl.write_vfunc(1, ProcessMenuOpenCloseEvent);
+
+	logger::info("Installed MenuTopicManager MenuOpenCloseEvent hook");
 }

@@ -56,4 +56,6 @@ namespace DebugAPI_IMPL::Draw {
 
     void DrawNearbyActorBumpers();
 
+    void DrawCameraBumper();
+
 }

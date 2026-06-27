@@ -23,4 +23,16 @@ namespace Hook {
         static void Install();
     };
 
+    struct MenuTopicManagerHook
+    {
+        static void Install();
+
+        static RE::BSEventNotifyControl ProcessMenuOpenCloseEvent(
+            RE::MenuTopicManager* a_this,
+            const RE::MenuOpenCloseEvent* a_event,
+            RE::BSTEventSource<RE::MenuOpenCloseEvent>* a_eventSource);
+
+        static inline REL::Relocation<decltype(ProcessMenuOpenCloseEvent)> func;
+    };
+
 }

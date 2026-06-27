@@ -337,6 +337,21 @@ namespace Dynamics {
 		return true;
 	}
 
+	void ApplyCameraCollisionRadius(float a_radiusSkyrim)
+	{
+		auto* playerCamera = RE::PlayerCamera::GetSingleton();
+		if (!playerCamera) return;
+		auto& cameraRTD = playerCamera->GetRuntimeData();
+		if (!cameraRTD.unk120) return;
+		constexpr float hkScale = 69.99125f;
+		const float hkRadius = a_radiusSkyrim / hkScale;
+		auto& manager = VCD::Manager::GetSingleton();
+		auto* sphere00 = manager.GetCameraPhantomShape(cameraRTD.unk120->unk00.get());
+		auto* sphere08 = manager.GetCameraPhantomShape(cameraRTD.unk120->unk08.get());
+		if (sphere00) sphere00->radius = hkRadius;
+		if (sphere08) sphere08->radius = hkRadius;
+	}
+
 	bool ApplyEnvironmentPreset(const RE::PlayerCharacter* a_player, const bool& a_force)
 	{
 		if (!a_player) {
@@ -440,6 +455,24 @@ namespace Dynamics {
 
 		state.actors.clear();
 		state.nearbyActors.clear();
+	}
+
+	void RestoreCameraToVanilla() {
+
+		//accirding to logging
+		constexpr float vanillaCameraRadius = 0.214f;
+	
+		auto* playerCamera = RE::PlayerCamera::GetSingleton();
+		if (!playerCamera) return;
+		auto& cameraRTD = playerCamera->GetRuntimeData();
+		if (!cameraRTD.unk120) return;
+
+		auto manager = VCD::Manager::GetSingleton();
+		auto* sphere00 = manager.GetCameraPhantomShape(cameraRTD.unk120->unk00.get());
+		auto* sphere08 = manager.GetCameraPhantomShape(cameraRTD.unk120->unk08.get());
+
+		if (sphere00) sphere00->radius = vanillaCameraRadius;
+		if (sphere08) sphere08->radius = vanillaCameraRadius;
 	}
 
 	void SchedulePostLoadApply()
