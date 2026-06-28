@@ -16,6 +16,8 @@ namespace Dynamics {
 
 		VCD::Preset current{ VCD::Preset::kVanilla };
 
+		VCD::Preset currentCamera{ VCD::Preset::kCameraVanilla };
+
 		const RE::TESObjectCELL* lastCell{ nullptr };
 
 		const RE::bhkCharacterController* controller{ nullptr };
@@ -90,6 +92,7 @@ namespace Dynamics {
 		return state;
 	}
 
+
 	inline DynamicsConfig& GetConfig()
 	{
 		static DynamicsConfig config{};
@@ -122,6 +125,16 @@ namespace Dynamics {
 		}
 
 		return a_cell->IsInteriorCell() ? config.indoor : config.outdoor;
+	}
+
+	inline VCD::Preset GetCellCameraPreset(const RE::TESObjectCELL* a_cell)
+	{
+		auto& config = GetConfig();
+		if (!a_cell) {
+			return config.neutral;
+		}
+
+		return a_cell->IsInteriorCell() ? config.cameraIndoor : config.cameraOutdoor;
 	}
 
 	inline const char* GetCellStateName(const RE::TESObjectCELL* a_cell)
@@ -183,6 +196,8 @@ namespace Dynamics {
 	void ApplyCameraCollisionRadius(float a_radiusSkyrim);
 
 	bool ApplyPreset(const RE::PlayerCharacter* a_player, const VCD::Preset& a_preset, const char* a_state, const bool& a_force = false);
+
+	void ApplyCameraPreset(const VCD::Preset& a_preset);
 
 	bool ApplyEnvironmentPreset(const RE::PlayerCharacter* a_player, const bool& a_force = false);
 

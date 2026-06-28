@@ -62,6 +62,7 @@ namespace UI {
 
     inline CreatePresetEditorState& GetCreatePresetEditorState()
     {
+
         static CreatePresetEditorState state{};
         return state;
     }
@@ -128,6 +129,8 @@ namespace UI {
     }
 
     bool PresetCombo(const char* a_label, VCD::Preset& a_preset);
+
+    bool CameraPresetCombo(const char* a_label, VCD::Preset& a_preset);
 
     void OpenPresetEditor(const VCD::Preset& a_preset);
 

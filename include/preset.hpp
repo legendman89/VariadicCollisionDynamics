@@ -37,7 +37,10 @@
     S(NPCCombat, "NPC Combat") \
     S(GuardNeutral, "Guard Neutral") \
     S(GuardCombat, "Guard Combat") \
-    S(CameraVanilla, "Camera Vanilla")
+    S(CameraVanilla, "Camera Vanilla") \
+    S(CameraDialogue, "Camera Dialogue") \
+    S(CameraIndoor, "Camera Indoor") \
+    S(CameraOutdoor, "Camera Outdoor")
 
 namespace VCD {
 

@@ -257,7 +257,6 @@ RE::hkpSphereShape* Manager::GetCameraPhantomShape(RE::bhkSimpleShapePhantom* bh
     return static_cast<RE::hkpSphereShape*>(shape);
 }
 
-
 bool Manager::FindWorldCharacterBumperShapeData(RE::bhkCharacterController* a_controller, CharacterBumperShape& a_bumper) const
 {
     auto* shape = GetControllerRootShape(a_controller);
@@ -698,5 +697,18 @@ void Manager::RebuildPresetIndex()
     for (size_t i = 0; i < presetConfigs.size(); ++i) {
         presetIndices[presetConfigs[i].key] = i;
     }
+}
+
+bool Manager::IsCameraPreset(VCD::Preset a_preset) const
+{
+    static constexpr std::array cameraPresets = {
+#define CAMERA_PRESET_COLLECT(S, D) D,
+        FOREACH_CAMERA_PRESET_STATE(CAMERA_PRESET_COLLECT)
+#undef CAMERA_PRESET_COLLECT
+    };
+    for (const auto& p : cameraPresets) {
+        if (p == a_preset) return true;
+    }
+    return false;
 }
 

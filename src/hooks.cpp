@@ -99,7 +99,6 @@ void SneakHandlerProcessButton::thunk(
 		}
 	}
 
-
 	if (a_event->IsUp()) {
 	
 		// let game process button first so isSneaking() returns valid state
@@ -135,18 +134,36 @@ void SneakHandlerProcessButton::Install()
 	logger::info("process sneak button hook installed");
 }
 
+// called on dialogue menu open and close
 RE::BSEventNotifyControl MenuTopicManagerHook::ProcessMenuOpenCloseEvent(
 	RE::MenuTopicManager* a_this,
 	const RE::MenuOpenCloseEvent* a_event,
 	RE::BSTEventSource<RE::MenuOpenCloseEvent>* a_eventSource)
 {
-	if (a_this && a_event &&
-		a_event->opening &&
-		a_event->menuName == RE::DialogueMenu::MENU_NAME) {
+	if (!a_this || !a_event ||
+		a_event->menuName != RE::DialogueMenu::MENU_NAME) return func(a_this, a_event, a_eventSource);
 
-		
+	if (a_event->opening) {
+		auto& state = Dynamics::GetPresetState();
+
+		Dynamics::ApplyCameraPreset(VCD::Preset::kCameraDialogue); 
 	}
 
+	// menu closed
+	else {
+
+		auto player = RE::PlayerCharacter::GetSingleton(); 
+
+		auto* cell = player->GetParentCell();
+		if (!cell) {
+			return func(a_this, a_event, a_eventSource);
+		}
+		// put correct camrea preset back after convo ended
+		auto cameraPreset = Dynamics::GetCellCameraPreset(cell);
+
+		Dynamics::ApplyCameraPreset(cameraPreset);
+	}
+	
 	return func(a_this, a_event, a_eventSource);
 }
 
@@ -157,4 +174,15 @@ void MenuTopicManagerHook::Install()
 	func = vtbl.write_vfunc(1, ProcessMenuOpenCloseEvent);
 
 	logger::info("Installed MenuTopicManager MenuOpenCloseEvent hook");
+}
+
+void Hook::Install() {
+
+
+	Hook::PlayerUpdate::Install();
+
+	Hook::SneakHandlerProcessButton::Install();
+
+	MenuTopicManagerHook::Install();
+
 }

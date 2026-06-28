@@ -161,7 +161,9 @@ namespace DebugAPI_IMPL::Draw {
 
         auto DrawSphere = [&](RE::bhkSimpleShapePhantom* bhkPhantom, RE::NiColorA color) {
 
-            static RE::NiPoint3 cameraPos = DebugAPI_IMPL::GetCameraPos();
+            // static position becaue otherwise you cannot look at the debug sphere 
+            // of the camera while actively looking through it 
+          static  RE::NiPoint3 cameraPos = DebugAPI_IMPL::GetCameraPos();
 
             auto manager = VCD::Manager::GetSingleton();
             auto* sphere = manager.GetCameraPhantomShape(bhkPhantom);

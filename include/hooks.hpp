@@ -35,4 +35,7 @@ namespace Hook {
         static inline REL::Relocation<decltype(ProcessMenuOpenCloseEvent)> func;
     };
 
+    
+    void Install(); 
+
 }

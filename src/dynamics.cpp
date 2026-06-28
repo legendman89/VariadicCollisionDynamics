@@ -337,19 +337,29 @@ namespace Dynamics {
 		return true;
 	}
 
-	void ApplyCameraCollisionRadius(float a_radiusSkyrim)
+	void ApplyCameraPreset(const VCD::Preset& a_preset)
 	{
-		auto* playerCamera = RE::PlayerCamera::GetSingleton();
-		if (!playerCamera) return;
-		auto& cameraRTD = playerCamera->GetRuntimeData();
-		if (!cameraRTD.unk120) return;
-		constexpr float hkScale = 69.99125f;
-		const float hkRadius = a_radiusSkyrim / hkScale;
-		auto& manager = VCD::Manager::GetSingleton();
-		auto* sphere00 = manager.GetCameraPhantomShape(cameraRTD.unk120->unk00.get());
-		auto* sphere08 = manager.GetCameraPhantomShape(cameraRTD.unk120->unk08.get());
-		if (sphere00) sphere00->radius = hkRadius;
-		if (sphere08) sphere08->radius = hkRadius;
+		auto& state = GetPresetState();
+
+		const auto* presetConfig = VCD::Manager::GetSingleton().GetPresetConfig(a_preset);
+		if (!presetConfig) return;
+		ApplyCameraCollisionRadius(presetConfig->data.capsule.radius);
+
+		// update current camera preset state
+		state.currentCamera = a_preset;  
+		logger::info("set camera state to {}", VCD::PresetName(a_preset));
+	}
+
+	void ApplyCameraCollisionRadius(float a_radius)
+	{
+
+		auto* setting = RE::INISettingCollection::GetSingleton()->GetSetting("fCameraCasterSize:Camera");
+		if (setting) {
+			logger::info("fCameraCasterSize current = {}", setting->data.f);
+
+			// no need to convert to hkp scale for some reason
+			setting->data.f = a_radius; 
+		}
 	}
 
 	bool ApplyEnvironmentPreset(const RE::PlayerCharacter* a_player, const bool& a_force)
@@ -459,20 +469,7 @@ namespace Dynamics {
 
 	void RestoreCameraToVanilla() {
 
-		//accirding to logging
-		constexpr float vanillaCameraRadius = 0.214f;
-	
-		auto* playerCamera = RE::PlayerCamera::GetSingleton();
-		if (!playerCamera) return;
-		auto& cameraRTD = playerCamera->GetRuntimeData();
-		if (!cameraRTD.unk120) return;
-
-		auto manager = VCD::Manager::GetSingleton();
-		auto* sphere00 = manager.GetCameraPhantomShape(cameraRTD.unk120->unk00.get());
-		auto* sphere08 = manager.GetCameraPhantomShape(cameraRTD.unk120->unk08.get());
-
-		if (sphere00) sphere00->radius = vanillaCameraRadius;
-		if (sphere08) sphere08->radius = vanillaCameraRadius;
+		ApplyCameraCollisionRadius(15.0f);
 	}
 
 	void SchedulePostLoadApply()
@@ -586,6 +583,7 @@ namespace Dynamics {
 		const auto poseFlags = PoseFixes::PlayerPose(a_player);
 		const auto* stateName = GetCellStateName(cell);
 		auto preset = GetCellPreset(cell);
+		auto cameraPreset = GetCellCameraPreset(cell);
 
 		if (IsWerewolf(a_player)) {
 			stateName = "werewolf";
@@ -610,6 +608,12 @@ namespace Dynamics {
 			state.postLoadApplyPending = false;
 			logger::debug("Post-load preset timer expired");
 		}
+
+		// camera is handeled through a sepearte hook
+		if (state.currentCamera != VCD::Preset::kCameraDialogue) {
+			ApplyCameraPreset(cameraPreset);
+		}
+		return;
 	}
 
 	void UpdateNPCs(const RE::PlayerCharacter* a_player)

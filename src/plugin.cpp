@@ -54,9 +54,12 @@ SKSEPluginLoad(const SKSE::LoadInterface* skse)
 
     UI::Register(); 
 
-    Hook::PlayerUpdate::Install();
+    Hook::Install(); 
 
-    Hook::SneakHandlerProcessButton::Install(); 
+    logger::info(
+        "scale={} inverse={}",
+        RE::bhkWorld::GetWorldScale(),
+        RE::bhkWorld::GetWorldScaleInverse());
 
     return true;
 }

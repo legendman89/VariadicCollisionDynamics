@@ -124,6 +124,8 @@ namespace VCD {
 
         RE::hkpSphereShape* GetCameraPhantomShape(RE::bhkSimpleShapePhantom* bhkPhantom);
 
+        bool IsCameraPreset(VCD::Preset a_preset) const;
+
     private:
 
         Manager();
