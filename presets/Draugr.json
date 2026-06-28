@@ -1,0 +1,7 @@
+{
+  "name": "Draugr",
+  "position": [0.0, 20.0, 0.0],
+  "radius": 0.32,
+  "firstPoint": [0.0, 0.0, 1.36],
+  "secondPoint": [0.0, 0.0, 0.27]
+}

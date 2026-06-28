@@ -9,7 +9,7 @@ namespace UI {
 		auto& settings = Settings::GetSettings();
 
 		if (GUI::BeginTable("PoseFixSettings", 2)) {
-			GUI::TableSetupColumn(Trans::Tr("Dynamics.PoseFix.Column.Fix").c_str(), GUI::ImGuiTableColumnFlags_WidthFixed, 180.0F);
+			GUI::TableSetupColumn(Trans::Tr("Dynamics.PoseFix.Column.Fix").c_str(), GUI::ImGuiTableColumnFlags_WidthFixed, 220.0F);
 			GUI::TableSetupColumn(Trans::Tr("Dynamics.PoseFix.Column.Scale").c_str(), GUI::ImGuiTableColumnFlags_WidthStretch);
 
 			GUI::TableNextRow();
@@ -88,14 +88,14 @@ namespace UI {
 
 		GUI::Spacing();
 
-		if (CTAButton(Trans::Tr("Dynamics.PoseFix.SaveButton").c_str(), Settings::IsPoseFixesDirty())) {
+		if (IconCTAButton(Trans::Tr("Dynamics.PoseFix.SaveButton").c_str(), Settings::IsPoseFixesDirty(), Icons::kSave)) {
 			Settings::SavePoseFixes();
 		}
 		Tooltip(Trans::Tr("Dynamics.PoseFix.SaveTooltip").c_str());
 
-		GUI::SameLine();
+		GUI::SameLine(0.0F, 6.0F);
 
-		if (CTAButton(Trans::Tr("Dynamics.PoseFix.DefaultButton").c_str(), !Settings::IsPoseFixesDefault())) {
+		if (IconCTAButton(Trans::Tr("Dynamics.PoseFix.DefaultButton").c_str(), !Settings::IsPoseFixesDefault(), Icons::kReset)) {
 			Settings::ResetPoseFixes();
 			Dynamics::GetNPCDynamicsState().actors.clear();
 

@@ -526,10 +526,8 @@ namespace UI {
             PreviewPreset(a_preset);
         }
         if (a_showEdit) {
-            GUI::SameLine();
-            GUI::PushStyleColor(GUI::ImGuiCol_ButtonHovered, Color::kEditHover);
-            GUI::PushStyleColor(GUI::ImGuiCol_ButtonActive, Color::kEditActive);
-            if (GUI::Button((Trans::Tr("Dynamics.Editor.Button.Edit") + "##" + a_label).c_str())) {
+            GUI::SameLine(0, 12.0F);
+            if (EditButton(a_label)) {
                 if (a_npcGlobal) {
                     OpenNPCGlobalPresetEditor(a_preset);
                 }
@@ -540,7 +538,6 @@ namespace UI {
             WrappedTooltip(a_npcGlobal
                 ? Trans::Tr("Dynamics.Editor.Details.NPCGlobal").c_str()
                 : Trans::Tr("Dynamics.Editor.Details.StateLocal").c_str());
-            GUI::PopStyleColor(2);
         }
     }
 
@@ -592,24 +589,18 @@ namespace UI {
 
         GUI::SameLine();
 
-        GUI::PushStyleColor(GUI::ImGuiCol_ButtonHovered, Color::kEditHover);
-        GUI::PushStyleColor(GUI::ImGuiCol_ButtonActive, Color::kEditActive);
-
-        if (GUI::Button(Trans::Tr("Dynamics.NPC.EditSelectedActorButton").c_str())) {
+        if (EditTextButton(Trans::Tr("Dynamics.NPC.EditSelectedActorButton").c_str())) {
             OpenNPCPresetEditor(a_selectedPreset, GetSelectedNPCActorPtr());
         }
 
         Tooltip(Trans::Tr("Dynamics.NPC.EditSelectedActorTooltip").c_str());
-
-        GUI::PopStyleColor(2);
     }
 
     void RenderCreateDeleteButtons()
     {
-        constexpr unsigned kCirclePlusIcon = 0xF055;
         constexpr auto buttonWidth = 220.0F;
         constexpr auto buttonHeight = 50.0F;
-        static const auto circlePlusText = FontAwesome::UnicodeToUtf8(kCirclePlusIcon);
+        static const auto circlePlusText = FontAwesome::UnicodeToUtf8(Icons::kCirclePlus);
 
         GUI::PushStyleVar(GUI::ImGuiStyleVar_FrameRounding, 5.0F);
         GUI::PushStyleVar(GUI::ImGuiStyleVar_FrameBorderSize, 1.0F);
@@ -665,8 +656,7 @@ namespace UI {
         const auto* style = GUI::GetStyle();
         GUI::SetCursorScreenPos(GUI::ImVec2{ buttonMax.x + (style ? style->ItemSpacing.x : 8.0F), buttonMin.y });
 
-        constexpr unsigned kCircleMinusIcon = 0xF056;
-        static const auto circleMinusText = FontAwesome::UnicodeToUtf8(kCircleMinusIcon);
+        static const auto circleMinusText = FontAwesome::UnicodeToUtf8(Icons::kCircleMinus);
         const auto& presetConfigs = VCD::Manager::GetSingleton().GetPresetConfigs();
         const auto hasCustomPresets = std::any_of(presetConfigs.begin(), presetConfigs.end(),
             [](const VCD::PresetConfig& a_config) {
@@ -868,7 +858,7 @@ namespace UI {
 
         const bool differsFromDefault = !editor.current.IsSame(editor.defaults);
 
-        if (CTAButton(Trans::Tr("Dynamics.Editor.ResetButton").c_str(), differsFromDefault)) {
+        if (IconCTAButton(Trans::Tr("Dynamics.Editor.ResetButton").c_str(), differsFromDefault, Icons::kReset)) {
             if (editor.npcPreview) {
                 auto actorPtr = editor.previewActor.get();
                 auto* actor = actorPtr.get();
@@ -1004,7 +994,7 @@ namespace UI {
             }
         }
         GUI::SameLine();
-        GUI::SetCursorPosX(GUI::GetCursorPosX() + 12.0F);
+        GUI::SetCursorPosX(GUI::GetCursorPosX() + 14.0F);
         if (GUI::Button(Trans::Tr("Dynamics.DeletePreset.CancelButton").c_str())) {
             CloseDeletePresetEditor();
         }
@@ -1085,12 +1075,12 @@ namespace UI {
 
         const bool differsFromDefault = !editor.current.IsSame(editor.defaults);
 
-        if (CTAButton(Trans::Tr("Dynamics.CreatePreset.DefaultButton").c_str(), differsFromDefault)) {
+        if (IconCTAButton(Trans::Tr("Dynamics.CreatePreset.DefaultButton").c_str(), differsFromDefault, Icons::kReset)) {
             editor.current = editor.defaults;
             ApplyCreatePresetPreview();
         }
 
-        GUI::SameLine();
+        GUI::SameLine(0.0F, 6.0F);
 
         const std::string name = editor.name.data();
         const auto key = VCD::MakePresetKey(name);
@@ -1107,7 +1097,7 @@ namespace UI {
             validationError = Trans::Tr("Dynamics.CreatePreset.Error.Duplicate");
         }
 
-        if (CTAButton(Trans::Tr("Dynamics.CreatePreset.SaveButton").c_str(), canSave)) {
+        if (IconCTAButton(Trans::Tr("Dynamics.CreatePreset.SaveButton").c_str(), canSave, Icons::kSave)) {
             VCD::Preset preset{};
 
             if (VCD::Manager::GetSingleton().CreatePreset(name, editor.current, preset, editor.error)) {
@@ -1151,7 +1141,7 @@ namespace UI {
 
         GUI::Separator();
 
-        if (CTAButton(Trans::Tr("Dynamics.Menu.SaveSettingsButton").c_str(), Settings::IsDirty())) {
+        if (IconCTAButton(Trans::Tr("Dynamics.Menu.SaveSettingsButton").c_str(), Settings::IsDirty(), Icons::kSave)) {
             Settings::Save();
         }
 
@@ -1159,11 +1149,11 @@ namespace UI {
             Trans::Tr("Dynamics.Menu.SaveSettingsTooltip").c_str()
         );
 
-        GUI::SameLine();
+        GUI::SameLine(0.0F, 6.0F);
 
         const bool changed = !Settings::IsDynamicsDefault();
 
-        if (CTAButton(Trans::Tr("Dynamics.Menu.ResetDefaultsButton").c_str(), changed)) {
+        if (IconCTAButton(Trans::Tr("Dynamics.Menu.ResetDefaultsButton").c_str(), changed, Icons::kReset)) {
 
             const auto wasNPCDynamicsEnabled = Settings::GetSettings().enableNPCDynamics;
 

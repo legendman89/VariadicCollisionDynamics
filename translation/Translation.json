@@ -1,5 +1,8 @@
   
 {
+
+  "Common.Unknown" : "Unknown",
+
   /* ============================================================
     TOOLS TAB
     ============================================================ */
@@ -20,11 +23,10 @@
   "Tools.Visualization.AutoDrawWhileEditing": "Auto Draw While Editing",
   "Tools.Visualization.AutoDrawWhileEditing.Tooltip": "Temporarily enables drawing when preset sliders are changed, then restores the previous draw setting when the editor closes.",
 
-  "Tools.Visualization.PlayerLineColor": "Player line Color",
-  "Tools.Visualization.NPCLineColor": "NPC line Color",
-
-  "Tools.Visualization.PlayerLineThickness": "Player line Thickness",
-  "Tools.Visualization.NPCLineThickness": "NPC line Thickness",
+  "Tools.Visualization.Line.Player": "Player",
+  "Tools.Visualization.Line.NPC": "NPC",
+  "Tools.Visualization.Line.Color": "Color",
+  "Tools.Visualization.Line.Thickness": "Thickness",
 
   "Tools.Visualization.PreviewRestoreDelay": "Preview Restore Delay",
   "Tools.Visualization.PreviewRestoreDelay.Tooltip": "How long an inactive preset preview remains after closing the editor.",
@@ -53,7 +55,6 @@
   "Dynamics.Editor.ForwardOffset": "Forward Offset",
   "Dynamics.Editor.SideOffset": "Side Offset",
 
-  "Dynamics.Editor.Button.Edit": "Edit",
   "Dynamics.Editor.Details.NPCGlobal": "Edit this preset globally for NPCs. To fine tune one actor, use Edit Selected Actor below.",
   "Dynamics.Editor.Details.StateLocal": "Open sliders for the preset assigned to this state.",
 
@@ -89,8 +90,8 @@
   "Dynamics.Menu.PlayerDynamicsHeader": "Player Dynamics",
   "Dynamics.Menu.NPCDynamicsHeader": "NPC Dynamics",
 
-  "Dynamics.Menu.SaveSettingsButton": "Save Settings",
-  "Dynamics.Menu.SaveSettingsTooltip": "Save state mappings and edited presets to disk.",
+  "Dynamics.Menu.SaveSettingsButton": "Save Dynamics",
+  "Dynamics.Menu.SaveSettingsTooltip": "Save dynamics state and preset overrides to disk.",
 
   "Dynamics.Menu.ResetDefaultsButton": "Default",
   "Dynamics.Menu.ResetDefaultsTooltip": "Reset dynamics state and preset overrides to defaults without saving.",

@@ -1,0 +1,7 @@
+{
+  "name": "Giant",
+  "position": [0.0, 38.0, 0.0],
+  "radius": 0.75,
+  "firstPoint": [0.0, 0.0, 2.35],
+  "secondPoint": [0.0, 0.0, 0.55]
+}

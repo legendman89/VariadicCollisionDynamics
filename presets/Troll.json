@@ -1,0 +1,7 @@
+{
+  "name": "Troll",
+  "position": [0.0, 28.0, 0.0],
+  "radius": 0.55,
+  "firstPoint": [0.0, 0.0, 1.55],
+  "secondPoint": [0.0, 0.0, 0.38]
+}

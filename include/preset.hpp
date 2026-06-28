@@ -36,7 +36,10 @@
     S(NPCNeutral, "NPC Neutral") \
     S(NPCCombat, "NPC Combat") \
     S(GuardNeutral, "Guard Neutral") \
-    S(GuardCombat, "Guard Combat")
+    S(GuardCombat, "Guard Combat") \
+    S(Giant, "Giant") \
+    S(Troll, "Troll") \
+    S(Draugr, "Draugr")
 
 namespace VCD {
 
