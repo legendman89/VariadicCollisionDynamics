@@ -56,10 +56,5 @@ SKSEPluginLoad(const SKSE::LoadInterface* skse)
 
     Hook::Install(); 
 
-    logger::info(
-        "scale={} inverse={}",
-        RE::bhkWorld::GetWorldScale(),
-        RE::bhkWorld::GetWorldScaleInverse());
-
     return true;
 }

@@ -198,6 +198,23 @@ namespace JSON {
 		NPCActorPresetsFromJson(a_json, a_settings);
 	}
 
+	json CameraStateToJson(const Settings::VCDSettings& a_settings)
+	{
+		auto data = json{
+			FOREACH_CAMERA_PRESET_STATE(PRESET2JSON)
+		};
+
+		data["presets"] = PresetOverridesToJson(a_settings.cameraPresets);
+
+		return data;
+	}
+
+	void CameraStateFromJson(const json& a_json, Settings::VCDSettings& a_settings)
+	{
+		FOREACH_CAMERA_PRESET_STATE(PRESET2GETTER)
+			PresetOverridesFromJson(a_json, "presets", a_settings.cameraPresets);
+	}
+
 	json ToJson(const Settings::VCDSettings& a_settings)
 	{
 		auto data = json{

@@ -156,6 +156,7 @@ namespace Settings {
 		return WriteJsonFile(GetSettingsPath(), JSON::ToolsToJson(a_settings), "Settings") &&
 			WriteJsonFile(GetPlayerStatePath(), JSON::PlayerStateToJson(a_settings), "Player state") &&
 			WriteJsonFile(GetNPCStatePath(), JSON::NPCStateToJson(a_settings), "NPC state");
+			WriteJsonFile(GetCameraStatePath(), JSON::CameraStateToJson(a_settings), "Camera state");
 	}
 
 	bool SettingsEqual(const VCDSettings& a_left, const VCDSettings& a_right)

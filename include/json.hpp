@@ -30,6 +30,10 @@ namespace JSON {
 
 	void NPCStateFromJson(const json& a_json, Settings::VCDSettings& a_settings);
 
+	void CameraStateFromJson(const json& a_json, Settings::VCDSettings& a_settings);
+
+	json CameraStateToJson(const Settings::VCDSettings& a_settings);
+
 	json ToJson(const Settings::VCDSettings& a_settings);
 
 	void FromJson(const json& a_json, Settings::VCDSettings& a_settings);

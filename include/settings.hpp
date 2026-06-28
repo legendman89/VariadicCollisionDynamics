@@ -111,6 +111,11 @@ namespace Settings {
 		return GetSettingsDirectory() / "NPCState.json";
 	}
 
+	inline fs::path GetCameraStatePath()
+	{
+		return GetSettingsDirectory() / "CameraState.json";
+	}
+
 	bool SettingsEqual(const VCDSettings& a_left, const VCDSettings& a_right);
 
 	void CaptureCurrent(VCDSettings& a_settings);

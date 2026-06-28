@@ -85,6 +85,7 @@ namespace Settings {
 
 		std::unordered_map<std::string, PresetOverride> presets{};
 		std::unordered_map<std::string, PresetOverride> npcPresets{};
+		std::unordered_map<std::string, PresetOverride> cameraPresets{};
 
 		std::vector<NPCActorPresetOverride> npcActorPresets{};
 	};
