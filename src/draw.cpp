@@ -132,19 +132,38 @@ namespace DebugAPI_IMPL::Draw {
 
     void DrawSphere(RE::bhkSimpleShapePhantom* a_phantom, const RE::NiColorA& a_color, float a_lineThickness)
     {
-        static RE::NiPoint3 cameraPos = DebugAPI_IMPL::GetCameraPos();
+         RE::NiPoint3 cameraPos = DebugAPI_IMPL::GetCameraPos();
+
+         auto* playerCamera = RE::PlayerCamera::GetSingleton();
+         if (!playerCamera) return;
+
+         auto& rt = playerCamera->GetRuntimeData2();
+
+         float yaw = rt.yaw;
+
+         RE::NiPoint3 forward{
+             std::cos(yaw),
+             std::sin(yaw),
+             0.0f
+         };
+
+         //push camera draw in front of player so they can actually see it
+         RE::NiPoint3 projectedPos = cameraPos + forward * 100.0f;
 
         auto* sphere = VCD::Manager::GetSingleton().GetCameraPhantomShape(a_phantom);
         if (!sphere) return;
 
         const auto radius = sphere->radius * VCD::GetPresetScale();
-        DebugAPI_IMPL::DebugAPI::GetSingleton()->DrawSphere(cameraPos, radius, 100, a_color, a_lineThickness);
+        DebugAPI_IMPL::DebugAPI::GetSingleton()->DrawSphere(projectedPos, radius, 100, a_color, a_lineThickness);
     }
 
     void DrawCameraBumper()
     {
         auto* playerCamera = RE::PlayerCamera::GetSingleton();
         if (!playerCamera) return;
+
+
+
         auto& cameraRTD = playerCamera->GetRuntimeData();
         if (!cameraRTD.unk120) return;
 

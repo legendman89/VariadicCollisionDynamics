@@ -193,6 +193,8 @@ namespace UI {
         }
 
         Tooltip(Trans::Tr("Tools.Default.Tooltip").c_str());
+
+
     }
 
 }

@@ -112,6 +112,8 @@ namespace VCD {
 
         bool SetCollisionData(const RE::Actor* a_actor, const CollisionData& a_data, const Preset& a_anchorPreset, const char* a_name, const PoseFlags& a_poseFlags, const bool& a_log);
 
+        bool SetCameraCollisionData(const VCD::CollisionData& a_data);
+
         bool FixSittingPose(const RE::Actor* a_actor, const PoseFlags& a_poseFlags, const bool& a_log = false);
 
         bool FixSneakingPose(const RE::Actor* a_actor, const PoseFlags& a_poseFlags, const bool& a_log = false);
