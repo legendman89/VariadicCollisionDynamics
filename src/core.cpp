@@ -1,6 +1,7 @@
 #include "manager.hpp"
 #include "havok.hpp"
 #include "settings.hpp"
+#include "dynamics.hpp"
 
 using namespace VCD;
 
@@ -140,6 +141,55 @@ bool Manager::SetCollisionData(const RE::Actor* a_actor, const CollisionData& a_
             convexRebuild
         );
     }
+    return true;
+}
+//apply radius and xy collision only
+bool Manager::SetCameraCollisionData(const VCD::CollisionData& a_data)
+{
+    auto* playerCamera = RE::PlayerCamera::GetSingleton();
+    if (!playerCamera) {
+        return false;
+    }
+
+    auto& cameraRTD = playerCamera->GetRuntimeData();
+    if (!cameraRTD.unk120) {
+        return false;
+    }
+
+    auto Apply = [&](RE::bhkSimpleShapePhantom* cameraPhantom)
+        {
+            if (!cameraPhantom)
+                return;
+
+            auto* asRefObject = reinterpret_cast<RE::bhkRefObject*>(cameraPhantom);
+
+            auto* hkpPhantom = static_cast<RE::hkpSimpleShapePhantom*>(
+                asRefObject->referencedObject.get());
+
+            if (!hkpPhantom)
+                return;
+
+            auto* shape = const_cast<RE::hkpShape*>(hkpPhantom->collidable.shape);
+
+            if (!shape || shape->type != RE::hkpShapeType::kSphere)
+                return;
+
+            auto* sphere = static_cast<RE::hkpSphereShape*>(shape);
+
+            sphere->radius = a_data.capsule.radius;
+
+            hkpPhantom->motionState.transform.translation.quad.m128_f32[0] =
+                a_data.bump.translation.x * RE::bhkWorld::GetWorldScale();
+
+            hkpPhantom->motionState.transform.translation.quad.m128_f32[1] =
+                a_data.bump.translation.y * RE::bhkWorld::GetWorldScale();
+        };
+
+    Apply(cameraRTD.unk120->unk00.get());
+    Apply(cameraRTD.unk120->unk08.get());
+
+    Dynamics::ApplyCameraCollisionRadius(a_data.capsule.radius);
+
     return true;
 }
 

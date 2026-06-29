@@ -339,6 +339,8 @@ namespace Dynamics {
 
 	void ApplyCameraPreset(const VCD::Preset& a_preset)
 	{
+		auto manger = VCD::Manager::GetSingleton(); 
+
 		auto& state = GetPresetState();
 		if (!Settings::GetSettings().enableCameraDynamics) {
 			RestoreCameraToVanilla();
@@ -351,8 +353,9 @@ namespace Dynamics {
 		if (!collisionData) {
 			collisionData = &presetConfig->data;
 		}
-		ApplyCameraCollisionRadius(collisionData->capsule.radius);
 
+		manger.SetCameraCollisionData(*collisionData);
+		
 		state.currentCamera = a_preset;  
 		logger::info("set camera state to {}", VCD::PresetName(a_preset));
 	}

@@ -469,7 +469,7 @@ namespace UI {
             editor.current.RecalculateHeight();
             Settings::MarkCameraPresetEdited(editor.preset, editor.current);
             if (editor.preview) {
-                Dynamics::ApplyCameraCollisionRadius(editor.current.capsule.radius);
+                manager.SetCameraCollisionData(editor.current);
             }
         }
         else if (editor.npcPreview) {
@@ -599,8 +599,9 @@ namespace UI {
         GetDeletePresetEditorState() = {};
     }
 
-    bool RenderCollisionSliders(VCD::CollisionData& a_current, const VCD::CollisionData& a_defaults)
+    bool RenderCollisionSliders(VCD::CollisionData& a_current, const VCD::CollisionData& a_defaults, bool isCamera)
     {
+
         bool changed = false;
         GUI::PushStyleColor(GUI::ImGuiCol_FrameBg, Color::kEditFrameBg);
         GUI::PushStyleColor(GUI::ImGuiCol_FrameBgHovered, Color::kEditFrameHover);
@@ -609,15 +610,20 @@ namespace UI {
 
         constexpr auto kOffsetLimit = 30.0F;
         constexpr auto kHeightLimit = 4.0F;
+        const auto kradiusLimit = isCamera ? 30 : 1.0f; 
+        const auto kradiusTolerance = isCamera ? 0.05f : 5.0f;
         constexpr auto kTolerance = 0.1F;
         const auto defaultTop = a_defaults.capsule.point1.z;
         const auto defaultBottom = a_defaults.capsule.point2.z;
 
         auto radius = a_current.capsule.radius;
-        if (GUI::SliderFloat(Trans::Tr("Dynamics.Editor.Radius").c_str(), &radius, 0.05F, 1.0F)) {
+        if (GUI::SliderFloat(Trans::Tr("Dynamics.Editor.Radius").c_str(), &radius, kradiusTolerance, kradiusLimit)) {
             a_current.capsule.radius = radius;
             changed = true;
         }
+
+        //grey out top / bottom offset if camera
+        GUI::BeginDisabled(isCamera); 
 
         const auto topOffsetLimit = std::clamp((a_current.capsule.point2.z - defaultTop) * 0.5F + kTolerance, -kHeightLimit, kHeightLimit);
         auto topOffset = a_current.capsule.point1.z - defaultTop;
@@ -634,6 +640,8 @@ namespace UI {
             a_current.capsule.point2.z = defaultBottom + bottomOffset;
             changed = true;
         }
+
+        GUI::EndDisabled(); 
 
         auto forward = a_current.bump.translation.y;
         if (GUI::SliderFloat(Trans::Tr("Dynamics.Editor.ForwardOffset").c_str(), &forward, -kOffsetLimit, kOffsetLimit)) {
@@ -1052,7 +1060,7 @@ namespace UI {
             );
         }
 
-        if (editor.camera) {
+        /*if (editor.camera) {
             GUI::PushStyleColor(GUI::ImGuiCol_FrameBg, Color::kEditFrameBg);
             GUI::PushStyleColor(GUI::ImGuiCol_FrameBgHovered, Color::kEditFrameHover);
             GUI::PushStyleColor(GUI::ImGuiCol_FrameBgActive, Color::kEditFrameActive);
@@ -1062,15 +1070,17 @@ namespace UI {
                 editor.current.capsule.radius = radius;
                 UpdateEditedPreset();
             }
+
+
             GUI::PopItemWidth();
             GUI::PopStyleColor(3);
 
         }
-        else {
-            if (RenderCollisionSliders(editor.current, editor.defaults)) {
+        else {*/
+            if (RenderCollisionSliders(editor.current, editor.defaults, editor.camera)) {
                 UpdateEditedPreset();
             }
-        }
+      //  }
 
         GUI::Spacing();
 
@@ -1290,7 +1300,8 @@ namespace UI {
                 RestoreCreatePresetPreview();
         }
 
-        if (RenderCollisionSliders(editor.current, editor.defaults)) {
+                                                                       //LEGENDMAN (safe to pass false for is camera here ?) 
+        if (RenderCollisionSliders(editor.current, editor.defaults, false)) {
             ApplyCreatePresetPreview();
         }
 
