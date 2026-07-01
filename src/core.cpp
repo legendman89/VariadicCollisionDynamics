@@ -161,8 +161,8 @@ void Manager::CaptureActorVanillaCollisionData(const RE::FormID& a_formID, const
     const auto vertexB = ToNiPoint3(a_shape->vertexB);
     data.bump.translation = ((vertexA + vertexB) * 0.5F) * GetPresetScale();
     data.capsule.radius = a_shape->radius;
-    data.capsule.point1 = vertexA;
-    data.capsule.point2 = vertexB;
+    data.capsule.point1 = { vertexA.x, vertexA.y, vertexA.z };
+    data.capsule.point2 = { vertexB.x, vertexB.y, vertexB.z };
     data.RecalculateHeight();
 }
 
