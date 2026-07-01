@@ -181,6 +181,64 @@ void MenuTopicManagerHook::Install()
 	logger::info("Installed MenuTopicManager MenuOpenCloseEvent hook");
 }
 
+//best hook I could find that would let me set camera collision position 
+// without my changes being overwritten by camera update hooks next frame
+void ThirdPersonState_SetRotation::thunk(
+	RE::ThirdPersonState* a_state,
+	RE::NiPoint3* rotation,
+	bool a_flag,
+	bool a_someFlag)
+{
+	// Call original first - this calculates everything
+	func(a_state, rotation, a_flag, a_someFlag);
+
+	auto manager = VCD::Manager::GetSingleton(); 
+
+	auto* playerCamera = RE::PlayerCamera::GetSingleton();
+	if (!playerCamera) return;
+
+	auto& cameraRTD = playerCamera->GetRuntimeData();
+	if (!cameraRTD.unk120) return;
+
+	auto* phantom = cameraRTD.unk120->unk00.get();
+	if (!phantom) return;
+
+	auto hkpPhantom = manager.GetCameraSimpleShapePhantom(phantom); 
+
+	// Modify ONLY the phantom's motion state
+	auto& translation = hkpPhantom->motionState.transform.translation;
+
+	logger::info("Phantom BEFORE Z: {:.2f}", translation.quad.m128_f32[2]);
+
+	// Apply your offset - ONLY to the phantom!
+	translation.quad.m128_f32[0] += cameraGlobals::CollisionPosX;
+	translation.quad.m128_f32[1] += cameraGlobals::CollisionPosY;
+
+	logger::info("Phantom AFTER Z: {:.2f}", translation.quad.m128_f32[2]);
+}
+
+void ThirdPersonState_SetRotation::Install()
+{
+	SKSE::AllocTrampoline(1 << 7);
+	auto& trampoline = SKSE::GetTrampoline();
+
+	// Hook BOTH call sites to FUN_1408e8640
+	std::vector<REL::Offset> sites = {
+		REL::Offset(0x8E79F8),  // Call site 1
+		REL::Offset(0x8E7CAB)   // Call site 2
+	};
+
+	// Hook the first one to get the function pointer
+	REL::Relocation<std::uintptr_t> firstSite{ sites[0] };
+	func = trampoline.write_call<5>(firstSite.address(), thunk);
+
+	// Hook the second one
+	REL::Relocation<std::uintptr_t> secondSite{ sites[1] };
+	trampoline.write_call<5>(secondSite.address(), thunk);
+
+	logger::info("ThirdPersonState_SetRotation hook installed");
+}
+
 void Hook::Install() {
 
 
@@ -190,4 +248,5 @@ void Hook::Install() {
 
 	MenuTopicManagerHook::Install();
 
+	ThirdPersonState_SetRotation::Install();
 }

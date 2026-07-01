@@ -5,6 +5,11 @@
 
 using namespace VCD;
 
+//Legendman please organize this how you want
+// these globals are set in the menu editor for camera,
+// then are used in thirdperson_SetRotation hook to apply camera collision pos
+
+
 // Core logic of capsule shaping based on actor's preset and pose.
 bool Manager::SetCollisionData(const RE::Actor* a_actor, const CollisionData& a_data, const Preset& a_anchorPreset, const char* a_name, const PoseFlags& a_poseFlags, const bool& a_log, const bool& a_rebuildConvex)
 {
@@ -157,36 +162,17 @@ bool Manager::SetCameraCollisionData(const VCD::CollisionData& a_data)
         return false;
     }
 
-    auto Apply = [&](RE::bhkSimpleShapePhantom* cameraPhantom)
-        {
-            if (!cameraPhantom)
-                return;
-
-            auto* asRefObject = reinterpret_cast<RE::bhkRefObject*>(cameraPhantom);
-
-            auto* hkpPhantom = static_cast<RE::hkpSimpleShapePhantom*>(
-                asRefObject->referencedObject.get());
-
-            if (!hkpPhantom)
-                return;
-
-            auto* shape = const_cast<RE::hkpShape*>(hkpPhantom->collidable.shape);
-
-            if (!shape || shape->type != RE::hkpShapeType::kSphere)
-                return;
-
-            auto* sphere = static_cast<RE::hkpSphereShape*>(shape);
-
-            sphere->radius = a_data.capsule.radius;
-
-            hkpPhantom->motionState.transform.translation.quad.m128_f32[0] =
-                a_data.bump.translation.x;
-
-            hkpPhantom->motionState.transform.translation.quad.m128_f32[1] =
-                a_data.bump.translation.y;
-        };
+    //set globals that are used in ThirdPersonState_SetRotation hook 
+    // applying changes here results in the changes being overwritten next frame
+    auto Apply = [&]()
+    {
+       cameraGlobals::CollisionPosX = a_data.bump.translation.x;
+       cameraGlobals::CollisionPosY = a_data.bump.translation.y;
+    };
   
-    Apply(cameraRTD.unk120->unk00.g
+    Apply(); 
+
+    //I still dont know when unk08 is used its not used at all normally
     //Apply(cameraRTD.unk120->unk08.get());
 
     Dynamics::ApplyCameraCollisionRadius(a_data.capsule.radius);

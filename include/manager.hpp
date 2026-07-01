@@ -14,6 +14,13 @@
 #include <unordered_map>
 #include <vector>
 
+namespace cameraGlobals {
+
+    inline float CollisionPosX = 0.0f;
+
+    inline float CollisionPosY = 0.0f;
+}
+
 namespace VCD {
 
     struct PresetKeyHash
