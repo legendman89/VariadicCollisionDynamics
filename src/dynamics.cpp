@@ -147,6 +147,12 @@ namespace Dynamics {
 			return actorOverride;
 		}
 
+		if (a_preset == VCD::Preset::kVanilla) {
+			if (const auto* actorVanilla = VCD::Manager::GetSingleton().GetActorVanillaCollisionData(a_formID)) {
+				return actorVanilla;
+			}
+		}
+
 		if (const auto* npcOverride = Settings::GetNPCPresetOverride(a_preset)) {
 			return npcOverride;
 		}
@@ -486,9 +492,16 @@ namespace Dynamics {
 		for (auto& actorState : state.actors) {
 			auto actorPtr = actorState.actor.get();
 			auto* actor = actorPtr.get();
-			if (actor && defaultPresetConfig) {
+			if (actor) {
+				const auto* collisionData = manager.GetActorVanillaCollisionData(actorState.formID);
+				if (!collisionData && defaultPresetConfig) {
+					collisionData = &defaultPresetConfig->data;
+				}
+				if (!collisionData) {
+					continue;
+				}
 				const auto poseFlags = PoseFixes::NPCPose(actor);
-				manager.SetCollisionData(actor, defaultPresetConfig->data, VCD::Preset::kVanilla, VCD::PresetName(VCD::Preset::kVanilla), poseFlags, false);
+				manager.SetCollisionData(actor, *collisionData, VCD::Preset::kVanilla, VCD::PresetName(VCD::Preset::kVanilla), poseFlags, false);
 			}
 		}
 

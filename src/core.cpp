@@ -37,6 +37,7 @@ bool Manager::SetCollisionData(const RE::Actor* a_actor, const CollisionData& a_
     }
 
     const auto actorFormID = a_actor->GetFormID();
+    CaptureActorVanillaCollisionData(actorFormID, worldCapsuleShape);
     const auto previousCenter = (ToNiPoint3(worldCapsuleShape->vertexA) + ToNiPoint3(worldCapsuleShape->vertexB)) * 0.5F;
     const auto previousPosition = previousCenter * GetPresetScale();
     auto& lastActorState = actorStates[actorFormID];
@@ -146,6 +147,44 @@ bool Manager::SetCollisionData(const RE::Actor* a_actor, const CollisionData& a_
             convexRebuild
         );
     }
+    return true;
+}
+
+void Manager::CaptureActorVanillaCollisionData(const RE::FormID& a_formID, const RE::hkpCapsuleShape* a_shape)
+{
+    if (!a_shape || actorVanillaCollisionData.contains(a_formID)) {
+        return;
+    }
+
+    auto& data = actorVanillaCollisionData[a_formID];
+    const auto vertexA = ToNiPoint3(a_shape->vertexA);
+    const auto vertexB = ToNiPoint3(a_shape->vertexB);
+    data.bump.translation = ((vertexA + vertexB) * 0.5F) * GetPresetScale();
+    data.capsule.radius = a_shape->radius;
+    data.capsule.point1 = vertexA;
+    data.capsule.point2 = vertexB;
+    data.RecalculateHeight();
+}
+
+bool Manager::CaptureActorVanillaCollisionData(const RE::Actor* a_actor)
+{
+    if (!a_actor) {
+        return false;
+    }
+
+    ActorBumperContext context{};
+    if (!GetActorBumperContext(a_actor, context, false)) {
+        return false;
+    }
+
+    RE::BSReadLockGuard lock(context.world->worldLock);
+
+    auto* bumper = FindWorldCharacterBumperShape(context.controller);
+    if (!bumper) {
+        return false;
+    }
+
+    CaptureActorVanillaCollisionData(a_actor->GetFormID(), bumper);
     return true;
 }
 

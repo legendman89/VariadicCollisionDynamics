@@ -119,6 +119,10 @@ namespace VCD {
 
         bool SetCollisionData(const RE::Actor* a_actor, const CollisionData& a_data, const Preset& a_anchorPreset, const char* a_name, const PoseFlags& a_poseFlags, const bool& a_log, const bool& a_rebuildConvex = true);
 
+        const CollisionData* GetActorVanillaCollisionData(const RE::FormID& a_formID) const;
+
+        bool CaptureActorVanillaCollisionData(const RE::Actor* a_actor);
+
         bool SetCameraCollisionData(const VCD::CollisionData& a_data);
 
         bool FixSittingPose(const RE::Actor* a_actor, const PoseFlags& a_poseFlags, const bool& a_log = false);
@@ -272,6 +276,8 @@ namespace VCD {
         // Recompute convex vertices based on capsule shape.
         bool SetConvexShape(const RE::Actor* a_actor, RE::bhkCharacterController* a_controller, const float& a_radius, const float& a_point1Z, const float& a_point2Z, const RE::NiPoint3& a_translation, const char* a_name, const bool& a_log);
 
+        void CaptureActorVanillaCollisionData(const RE::FormID& a_formID, const RE::hkpCapsuleShape* a_shape);
+
         RE::hkpShape* GetControllerRootShape(RE::bhkCharacterController* a_controller) const;
 
         bool FindWorldCharacterBumperShapeData(RE::bhkCharacterController* a_controller, CharacterBumperShape& a_bumper) const;
@@ -311,6 +317,7 @@ namespace VCD {
         std::unordered_map<RE::FormID, BumperAnchorState> bumperAnchorStates;
         std::unordered_map<RE::FormID, ConvexShapeState> convexShapeStates;
         std::unordered_map<RE::FormID, LastActorState> actorStates;
+        std::unordered_map<RE::FormID, CollisionData> actorVanillaCollisionData;
     };
 
     inline const char* PresetKey(const Preset& a_preset)

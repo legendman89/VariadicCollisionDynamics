@@ -43,6 +43,7 @@ void Manager::ClearRuntimeState()
     bumperAnchorStates.clear();
     convexShapeStates.clear();
     actorStates.clear();
+    actorVanillaCollisionData.clear();
 }
 
 void Manager::ClearActorRuntimeState(const RE::FormID& a_formID)
@@ -50,6 +51,7 @@ void Manager::ClearActorRuntimeState(const RE::FormID& a_formID)
     bumperAnchorStates.erase(a_formID);
     convexShapeStates.erase(a_formID);
     actorStates.erase(a_formID);
+    actorVanillaCollisionData.erase(a_formID);
 }
 
 void Manager::ClearActorTransientState(const RE::FormID& a_formID)
@@ -66,6 +68,12 @@ bool Manager::SetPreset(const RE::Actor* a_actor, const Preset& a_preset, const 
     }
 
     return SetCollisionData(a_actor, presetConfig->data, a_preset, presetConfig->name.c_str(), a_poseFlags, a_log);
+}
+
+const CollisionData* Manager::GetActorVanillaCollisionData(const RE::FormID& a_formID) const
+{
+    const auto it = actorVanillaCollisionData.find(a_formID);
+    return it != actorVanillaCollisionData.end() ? &it->second : nullptr;
 }
 
 bool Manager::FixSittingPose(const RE::Actor* a_actor, const PoseFlags& a_poseFlags, const bool& a_log)

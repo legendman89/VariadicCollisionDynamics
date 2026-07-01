@@ -101,6 +101,19 @@ namespace UI {
         return VCD::Preset::kVanilla;
     }
 
+    const VCD::CollisionData* GetDefaultNPCActorPresetData(const VCD::Preset& a_preset, const RE::Actor* a_actor)
+    {
+        if (a_preset == VCD::Preset::kVanilla && a_actor) {
+            auto& manager = VCD::Manager::GetSingleton();
+            manager.CaptureActorVanillaCollisionData(a_actor);
+            if (const auto* actorVanilla = manager.GetActorVanillaCollisionData(a_actor->GetFormID())) {
+                return actorVanilla;
+            }
+        }
+
+        return GetDefaultNPCPresetData(a_preset);
+    }
+
     VCD::Race::CollisionLimitClass GetPresetCollisionLimitClass(const VCD::Preset& a_preset, const RE::Actor* a_actor = nullptr)
     {
         if (a_actor) {
@@ -558,7 +571,7 @@ namespace UI {
             return;
         }
 
-        const auto* defaultData = GetDefaultNPCPresetData(a_preset);
+        const auto* defaultData = GetDefaultNPCActorPresetData(a_preset, a_actor);
         if (!defaultData || !a_actor) {
             return;
         }
@@ -630,12 +643,12 @@ namespace UI {
         }
 
         if (editor.npcPreview) {
-            if (const auto* defaultNPCData = GetDefaultNPCPresetData(editor.preset)) {
+            auto actorPtr = editor.previewActor.get();
+            auto* actor = actorPtr.get();
+            if (const auto* defaultNPCData = GetDefaultNPCActorPresetData(editor.preset, actor)) {
                 editor.defaults = *defaultNPCData;
             }
 
-            auto actorPtr = editor.previewActor.get();
-            auto* actor = actorPtr.get();
             editor.limits = GetCollisionEditorLimits(GetPresetCollisionLimitClass(editor.preset, actor));
             if (actor) {
                 if (const auto* actorOverride = Settings::GetNPCActorPresetOverride(actor->GetFormID(), editor.preset)) {
