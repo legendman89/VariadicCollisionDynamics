@@ -1,5 +1,5 @@
 {
-  // Display name shown in logs and debug UI.
+  // Display name shown in logs and debug UI. Name-based preset matching uses this value.
   "name": "Camera Indoor",
 
   // Position offset: [side, forward, unused z]. Keep z at 0.0.

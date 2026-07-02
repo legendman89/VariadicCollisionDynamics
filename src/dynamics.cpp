@@ -43,8 +43,8 @@ namespace Dynamics {
 		const auto isGuard = a_actor && a_actor->IsGuard();
 
 		// Ordered by priority: Specialized presets > Guard in combat > guard > combat > neutral.
-		if (const auto presetKey = VCD::Race::GetSupportedNPCPresetKey(a_actor); !presetKey.empty()) {
-			if (const auto* presetConfig = VCD::Manager::GetSingleton().GetPresetConfig(presetKey)) {
+		if (const auto presetName = VCD::Race::GetSupportedNPCPresetName(a_actor); !presetName.empty()) {
+			if (const auto* presetConfig = VCD::Manager::GetSingleton().GetPresetConfigByName(presetName)) {
 				if (presetConfig->fileBacked) {
 					a_stateName = presetConfig->key.c_str();
 					return presetConfig->preset;

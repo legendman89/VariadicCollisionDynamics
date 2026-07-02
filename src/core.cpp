@@ -38,6 +38,7 @@ bool Manager::SetCollisionData(const RE::Actor* a_actor, const CollisionData& a_
 
     const auto actorFormID = a_actor->GetFormID();
     CaptureActorVanillaCollisionData(actorFormID, worldCapsuleShape);
+    const auto* actorVanillaData = GetActorVanillaCollisionData(actorFormID);
     const auto previousCenter = (ToNiPoint3(worldCapsuleShape->vertexA) + ToNiPoint3(worldCapsuleShape->vertexB)) * 0.5F;
     const auto previousPosition = previousCenter * GetPresetScale();
     auto& lastActorState = actorStates[actorFormID];
@@ -50,7 +51,8 @@ bool Manager::SetCollisionData(const RE::Actor* a_actor, const CollisionData& a_
             logger::debug("Actor: {} [{:08X}] refreshed standing anchor after initial sitting anchor", name ? name : "Actor", actorFormID);
         }
         bumperAnchorState.preset = a_anchorPreset;
-        bumperAnchorState.centerZ = useStandingAnchor ? (lastActorState.standingPoint1Z + lastActorState.standingPoint2Z) * 0.5F : previousCenter.z;
+        bumperAnchorState.centerZ = useStandingAnchor ? (lastActorState.standingPoint1Z + lastActorState.standingPoint2Z) * 0.5F :
+            (actorVanillaData ? actorVanillaData->bump.translation.z * RE::bhkWorld::GetWorldScale() : previousCenter.z);
         bumperAnchorState.valid = true;
         bumperAnchorState.fromSitting = a_poseFlags.isSitting && !lastActorState.hasStandingCapsule;
     }
@@ -159,10 +161,16 @@ void Manager::CaptureActorVanillaCollisionData(const RE::FormID& a_formID, const
     auto& data = actorVanillaCollisionData[a_formID];
     const auto vertexA = ToNiPoint3(a_shape->vertexA);
     const auto vertexB = ToNiPoint3(a_shape->vertexB);
-    data.bump.translation = ((vertexA + vertexB) * 0.5F) * GetPresetScale();
+    const auto center = (vertexA + vertexB) * 0.5F;
+    const auto* defaultPresetConfig = GetDefaultPresetConfig(Preset::kVanilla);
+    const auto defaultCenterZ = defaultPresetConfig ?
+        (defaultPresetConfig->data.capsule.point1.z + defaultPresetConfig->data.capsule.point2.z) * 0.5F :
+        center.z;
+
+    data.bump.translation = center * GetPresetScale();
     data.capsule.radius = a_shape->radius;
-    data.capsule.point1 = { vertexA.x, vertexA.y, vertexA.z };
-    data.capsule.point2 = { vertexB.x, vertexB.y, vertexB.z };
+    data.capsule.point1 = { vertexA.x, vertexA.y, defaultCenterZ + (vertexA.z - center.z) };
+    data.capsule.point2 = { vertexB.x, vertexB.y, defaultCenterZ + (vertexB.z - center.z) };
     data.RecalculateHeight();
 }
 

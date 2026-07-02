@@ -69,6 +69,12 @@ namespace VCD {
             return it != presetIndices.end() && it->second < presetConfigs.size() ? &presetConfigs[it->second] : nullptr;
         }
 
+        inline const PresetConfig* GetPresetConfigByName(std::string_view a_name) const
+        {
+            const auto it = presetNameIndices.find(a_name);
+            return it != presetNameIndices.end() && it->second < presetConfigs.size() ? &presetConfigs[it->second] : nullptr;
+        }
+
         inline PresetConfig* GetPresetConfig(const Preset& a_preset)
         {
             return const_cast<PresetConfig*>(static_cast<const Manager*>(this)->GetPresetConfig(a_preset));
@@ -77,6 +83,11 @@ namespace VCD {
         inline PresetConfig* GetPresetConfig(std::string_view a_key)
         {
             return const_cast<PresetConfig*>(static_cast<const Manager*>(this)->GetPresetConfig(a_key));
+        }
+
+        inline PresetConfig* GetPresetConfigByName(std::string_view a_name)
+        {
+            return const_cast<PresetConfig*>(static_cast<const Manager*>(this)->GetPresetConfigByName(a_name));
         }
 
         inline const PresetConfig* GetDefaultPresetConfig(const Preset& a_preset) const
@@ -312,6 +323,7 @@ namespace VCD {
         // Implicitly it maps key to indeger index which
         // is used later to index presetConfigs vector.
         std::unordered_map<std::string, size_t, PresetKeyHash, std::equal_to<>> presetIndices;
+        std::unordered_map<std::string, size_t, PresetKeyHash, std::equal_to<>> presetNameIndices;
 
 		// Each actor including player should have their own state to avoid messing up each other.
         std::unordered_map<RE::FormID, BumperAnchorState> bumperAnchorStates;

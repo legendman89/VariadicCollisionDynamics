@@ -675,6 +675,7 @@ bool Manager::CreatePreset(const std::string& a_name, const CollisionData& a_dat
     presetConfigs.push_back(config);
     defaultPresetConfigs.push_back(config);
     presetIndices.emplace(config.key, presetConfigs.size() - 1);
+    presetNameIndices.emplace(config.name, presetConfigs.size() - 1);
     a_preset = config.preset;
     return true;
 }
@@ -717,9 +718,12 @@ bool Manager::DeletePreset(const Preset& a_preset, std::string& a_key, std::stri
 void Manager::RebuildPresetIndex()
 {
     presetIndices.clear();
+    presetNameIndices.clear();
     presetIndices.reserve(presetConfigs.size());
+    presetNameIndices.reserve(presetConfigs.size());
     for (size_t i = 0; i < presetConfigs.size(); ++i) {
         presetIndices[presetConfigs[i].key] = i;
+        presetNameIndices.emplace(presetConfigs[i].name, i);
     }
 }
 

@@ -92,8 +92,8 @@ namespace UI {
 
     VCD::Preset GetDefaultNPCActorEditorPreset(const RE::Actor* a_actor)
     {
-        if (const auto presetKey = VCD::Race::GetSupportedNPCPresetKey(a_actor); !presetKey.empty()) {
-            if (const auto* presetConfig = VCD::Manager::GetSingleton().GetPresetConfig(presetKey); presetConfig && presetConfig->fileBacked) {
+        if (const auto presetName = VCD::Race::GetSupportedNPCPresetName(a_actor); !presetName.empty()) {
+            if (const auto* presetConfig = VCD::Manager::GetSingleton().GetPresetConfigByName(presetName); presetConfig && presetConfig->fileBacked) {
                 return presetConfig->preset;
             }
         }
@@ -1028,12 +1028,7 @@ namespace UI {
 
         Tooltip(Trans::Tr("Dynamics.NPC.ActorComboTooltip").c_str());
 
-        GUI::SameLine();
-        GUI::SetNextItemWidth(180.0F);
-
-        PresetCombo(Trans::Tr("Dynamics.NPC.PreviewPresetLabel").c_str(), a_selectedPreset);
-
-        GUI::SameLine();
+        GUI::SameLine(0.0F, 12.0F);
 
         if (EditTextButton(Trans::Tr("Dynamics.NPC.EditSelectedActorButton").c_str())) {
             OpenNPCPresetEditor(a_selectedPreset, GetSelectedNPCActorPtr());
@@ -1276,7 +1271,8 @@ namespace UI {
         const auto title = Trans::Tr("Dynamics.Editor.WindowTitlePrefix") + " " +
             actorName + " " + 
             Trans::Tr("Dynamics.Editor.WindowTitlePreset") + " " + 
-            VCD::PresetName(editor.preset);
+            VCD::PresetName(editor.preset) +
+            "###VCDPresetEditor";
 
         constexpr auto windowSize = GUI::ImVec2{ 480.0F, 380.0F };
         GUI::SetNextWindowSize(windowSize, GUI::ImGuiCond_Appearing);
@@ -1369,6 +1365,29 @@ namespace UI {
             WrappedTooltip(
                 Trans::Tr("Dynamics.Editor.PreviewTooltip").c_str()
             );
+        }
+
+        if (editor.npcPreview) {
+            auto actorPtr = editor.previewActor.get();
+            auto* actor = actorPtr.get();
+            auto preset = editor.preset;
+
+            GUI::SetNextItemWidth(260.0F);
+            if (PresetCombo(Trans::Tr("Dynamics.NPC.PreviewPresetLabel").c_str(), preset) && actor) {
+                if (const auto* defaultData = GetDefaultNPCActorPresetData(preset, actor)) {
+                    editor.preset = preset;
+                    editor.defaults = *defaultData;
+                    editor.limits = GetCollisionEditorLimits(GetPresetCollisionLimitClass(preset, actor));
+                    if (const auto* actorOverride = Settings::GetNPCActorPresetOverride(actor->GetFormID(), preset)) {
+                        editor.current = *actorOverride;
+                    }
+                    else {
+                        editor.current = *defaultData;
+                    }
+                    StartNPCEditorPreview(actor);
+                    ScheduleEditorCollisionApply(false);
+                }
+            }
         }
 
         /*if (editor.camera) {

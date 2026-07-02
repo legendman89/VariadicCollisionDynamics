@@ -62,7 +62,7 @@
   "Dynamics.NPC.PreviewPresetLabel": "Preview Preset",
 
   "Dynamics.NPC.EditSelectedActorButton": "Edit Selected Actor",
-  "Dynamics.NPC.EditSelectedActorTooltip": "Open sliders for this preset and preview them on the selected actor.",
+  "Dynamics.NPC.EditSelectedActorTooltip": "Open sliders and preset preview for the selected actor.",
 
   "Dynamics.PlayerDynamics.Column.State": "State",
   "Dynamics.PlayerDynamics.Column.Preset": "Preset",

@@ -52,7 +52,7 @@ namespace VCD::Race {
 	{
 		SupportedNPCPresetRace race{};
 		std::string_view editorID{};
-		std::string_view presetKey{};
+		std::string_view presetName{};
 		CollisionLimitClass limitClass{ CollisionLimitClass::kDefault };
 	};
 
@@ -73,10 +73,10 @@ namespace VCD::Race {
 		return std::nullopt;
 	}
 
-	inline std::string_view SupportedNPCPresetKey(const SupportedNPCPresetRace& a_race)
+	inline std::string_view SupportedNPCPresetName(const SupportedNPCPresetRace& a_race)
 	{
 		const auto index = static_cast<size_t>(a_race);
-		return index < kSupportedNPCPresetRaces.size() ? kSupportedNPCPresetRaces[index].presetKey : std::string_view{};
+		return index < kSupportedNPCPresetRaces.size() ? kSupportedNPCPresetRaces[index].presetName : std::string_view{};
 	}
 
 	inline CollisionLimitClass SupportedNPCPresetLimitClass(const SupportedNPCPresetRace& a_race)
@@ -100,10 +100,10 @@ namespace VCD::Race {
 		return editorID ? SupportedNPCPresetRaceFromEditorID(editorID) : std::nullopt;
 	}
 
-	inline std::string_view GetSupportedNPCPresetKey(const RE::Actor* a_actor)
+	inline std::string_view GetSupportedNPCPresetName(const RE::Actor* a_actor)
 	{
 		const auto race = GetSupportedNPCPresetRace(a_actor);
-		return race ? SupportedNPCPresetKey(*race) : std::string_view{};
+		return race ? SupportedNPCPresetName(*race) : std::string_view{};
 	}
 
 	inline CollisionLimitClass GetCollisionLimitClass(const RE::Actor* a_actor)
