@@ -181,8 +181,8 @@ void MenuTopicManagerHook::Install()
 	logger::info("Installed MenuTopicManager MenuOpenCloseEvent hook");
 }
 
-//best hook I could find that would let me set camera collision position 
-// without my changes being overwritten by camera update hooks next frame
+//thirdperson state inlines a function to set camera phantom position inside itself
+// so hooking this func works to reach that inlined func allows us to decouple camera pos from collision
 void ThirdPersonState_SetRotation::thunk(
 	RE::ThirdPersonState* a_state,
 	float* rotation,
@@ -191,6 +191,8 @@ void ThirdPersonState_SetRotation::thunk(
 {
 	// Call original first - this calculates everything
 	func(a_state, rotation, a_flag, a_someFlag);
+
+	if (!a_state) return;
 
 	auto manager = VCD::Manager::GetSingleton(); 
 
@@ -208,11 +210,10 @@ void ThirdPersonState_SetRotation::thunk(
 	// Modify ONLY the phantom's motion state
 	auto& translation = hkpPhantom->motionState.transform.translation;
 
-	// logger::info("Phantom BEFORE Z: {:.2f}", translation.quad.m128_f32[2]);
+	float worldScale = RE::bhkWorld::GetWorldScale();
 
-	// Apply your offset - ONLY to the phantom!
-	translation.quad.m128_f32[0] += cameraGlobals::CollisionPosX;
-	translation.quad.m128_f32[1] += cameraGlobals::CollisionPosY;
+	translation.quad.m128_f32[0] += cameraGlobals::CollisionPosX * worldScale;
+	translation.quad.m128_f32[1] += cameraGlobals::CollisionPosY * worldScale;
 
 	// logger::info("Phantom AFTER Z: {:.2f}", translation.quad.m128_f32[2]);
 }
@@ -227,7 +228,7 @@ void ThirdPersonState_SetRotation::Install()
 	std::array targets{
 		std::make_pair(
 			RELOCATION_ID(49960, 50896),  // AE 1408E7810 SE 14084F490
-			REL::VariantOffset{ 0x144, 0x1E8, 0 }  // Offset to the CALL instruction
+			REL::VariantOffset{ 0x144, 0x1E8, 0}  // Offset to the CALL instruction
 		),
 		std::make_pair(
 			RELOCATION_ID(49966, 50902),  // AE sub_1408E7C50 SE 14084f830  ThirdPersonState::ResetFreeRotation() 
@@ -243,6 +244,48 @@ void ThirdPersonState_SetRotation::Install()
 	logger::info("ThirdPersonState_SetRotation hook installed");
 }
 
+//called for arrows, player character
+void BhkSimpleShapePhantom_SetPosition::thunk(RE::bhkSimpleShapePhantom* phantom, RE::hkVector4* position)
+{
+	auto playerCamera = RE::PlayerCamera::GetSingleton();
+	if (!playerCamera) return func(phantom, position);
+
+		auto& rtd = playerCamera->GetRuntimeData();
+		if (!rtd.unk120) return func(phantom, position);
+
+			auto* cameraPhantom = rtd.unk120->unk00.get();
+
+			if (phantom == cameraPhantom) {
+				float worldScale = RE::bhkWorld::GetWorldScale();
+				position->quad.m128_f32[0] += cameraGlobals::CollisionPosX * worldScale;
+				position->quad.m128_f32[1] += cameraGlobals::CollisionPosY * worldScale;
+			}
+		
+	
+	func(phantom, position);
+}
+
+void BhkSimpleShapePhantom_SetPosition::Install()
+{
+	SKSE::AllocTrampoline(1 << 7);
+	auto& trampoline = SKSE::GetTrampoline();
+
+	std::array targets{
+			std::make_pair(
+				RELOCATION_ID(32271, 33008),  //  SE 1404F4C00 AE 14054fd00  - CheckCharacterCollision
+				REL::VariantOffset{ 0x29F, 0x27B, 0 }  
+			)
+	};
+
+	for (auto& [id, offset] : targets) {
+		REL::Relocation<std::uintptr_t> target(id, offset);
+		func = trampoline.write_call<5>(target.address(), thunk);
+	}
+
+	logger::info("BhkSimpleShapePhantom_SetPosition hook installed");
+}
+
+
 void Hook::Install() {
 
 
@@ -253,4 +296,9 @@ void Hook::Install() {
 	MenuTopicManagerHook::Install();
 
 	ThirdPersonState_SetRotation::Install();
+
+	BhkSimpleShapePhantom_SetPosition::Install();
+
+
 }
+
