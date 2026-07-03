@@ -2,7 +2,6 @@ name: Build
 
 on:
   push:
-    branches: [ "master" ]
     paths-ignore:
       - "**/README.md"
       - "**/VERSION"
@@ -29,6 +28,7 @@ jobs:
           repository: alandtse/CommonLibVR
           ref: ng
           path: external/CommonLibVR
+          submodules: recursive
 
       - name: Checkout vcpkg
         uses: actions/checkout@v4
