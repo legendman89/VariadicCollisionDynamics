@@ -11,7 +11,7 @@ set(DRAW_DEBUG_HPP "${SOURCE_PATH}/include/CLibUtilsQTR/DrawDebug.hpp")
 file(READ "${DRAW_DEBUG_HPP}" DRAW_DEBUG_CONTENT)
 string(REPLACE
     "constexpr float DRAW_LOC_MAX_DIF = 5.0f;"
-    "constexpr float DRAW_LOC_MAX_DIF = 2.0f;"
+    "constexpr float DRAW_LOC_MAX_DIF = 1.0f;"
     DRAW_DEBUG_PATCHED
     "${DRAW_DEBUG_CONTENT}"
 )
