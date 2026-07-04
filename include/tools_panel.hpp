@@ -6,6 +6,9 @@
 
 namespace UI {
 
+    inline constexpr auto kFixedLogComboWidth = 180.0F;
+    inline constexpr auto kFixedDelaySliderWidth = 260.0F;
+
     inline constexpr const char* kLogLevels[] = {
         "Trace",
         "Debug",

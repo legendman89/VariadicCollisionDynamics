@@ -116,9 +116,8 @@ namespace UI {
 
         GUI::Spacing();
 
-        GUI::SetNextItemWidth(260.0F);
-        GUI::SliderFloat(Trans::Tr("Tools.Visualization.PreviewRestoreDelay").c_str(),
-            &settings.previewRestoreDelay, 0.0F, 10.0F);
+        GUI::SetNextItemWidth(kFixedDelaySliderWidth);
+        GUI::SliderFloat(Trans::Tr("Tools.Visualization.PreviewRestoreDelay").c_str(), &settings.previewRestoreDelay, 0.0F, 10.0F);
 
         Tooltip(Trans::Tr("Tools.Visualization.PreviewRestoreDelay.Tooltip").c_str());
     }
@@ -128,9 +127,8 @@ namespace UI {
         auto& settings = Settings::GetSettings();
         auto logLevel = Settings::NormalizeLogLevel(settings.logLevel);
 
-        GUI::SetNextItemWidth(180.0F);
         SolidBackground(GUI::ImGuiCol_PopupBg);
-
+        GUI::SetNextItemWidth(kFixedLogComboWidth);
         if (GUI::Combo(Trans::Tr("Tools.Logging.LogLevel").c_str(),
             &logLevel,
             kLogLevels,

@@ -58,7 +58,7 @@ namespace UI {
 		auto& settings = Settings::GetSettings();
 
 		if (GUI::BeginTable("PoseFixSettings", 2)) {
-			GUI::TableSetupColumn(Trans::Tr("Dynamics.PoseFix.Column.Fix").c_str(), GUI::ImGuiTableColumnFlags_WidthFixed, 340.0F);
+			GUI::TableSetupColumn(Trans::Tr("Dynamics.PoseFix.Column.Fix").c_str(), GUI::ImGuiTableColumnFlags_WidthFixed, kPoseFixesTableWidth);
 			GUI::TableSetupColumn(Trans::Tr("Dynamics.PoseFix.Column.Scale").c_str(), GUI::ImGuiTableColumnFlags_WidthStretch);
 
 			GUI::TableNextRow();
@@ -68,7 +68,7 @@ namespace UI {
 			GUI::TableNextColumn();
 			GUI::SetCursorPosX(GUI::GetCursorPosX() + 12.0F);
 			GUI::BeginDisabled(!settings.fixPlayerSitting);
-			GUI::SetNextItemWidth(260.0F);
+			GUI::SetNextItemWidth(kFixedPoseSliderWidth);
 			const auto playerSittingScaleChanged = GUI::SliderFloat(Trans::Tr("Dynamics.PoseFix.PlayerSittingScale").c_str(), &settings.playerSittingScale, 0.3F, 1.0F);
 			GUI::EndDisabled();
 
@@ -79,7 +79,7 @@ namespace UI {
 			GUI::TableNextColumn();
 			GUI::SetCursorPosX(GUI::GetCursorPosX() + 12.0F);
 			GUI::BeginDisabled(!settings.fixNPCSitting);
-			GUI::SetNextItemWidth(260.0F);
+			GUI::SetNextItemWidth(kFixedPoseSliderWidth);
 			const auto npcSittingScaleChanged = GUI::SliderFloat(Trans::Tr("Dynamics.PoseFix.NPCSittingScale").c_str(), &settings.npcSittingScale, 0.3F, 1.0F);
 			GUI::EndDisabled();
 
@@ -92,7 +92,7 @@ namespace UI {
 			GUI::TableNextColumn();
 			GUI::SetCursorPosX(GUI::GetCursorPosX() + 12.0F);
 			GUI::BeginDisabled(dynamicCollisionAdjustmentInstalled || !settings.fixPlayerSneaking);
-			GUI::SetNextItemWidth(260.0F);
+			GUI::SetNextItemWidth(kFixedPoseSliderWidth);
 			const auto sneakingScaleChanged = GUI::SliderFloat(Trans::Tr("Dynamics.PoseFix.PlayerSneakingScale").c_str(), &settings.playerSneakingScale, 0.3F, 1.0F);
 			GUI::EndDisabled();
 
@@ -104,7 +104,7 @@ namespace UI {
 			GUI::TableNextColumn();
 			GUI::SetCursorPosX(GUI::GetCursorPosX() + 12.0F);
 			GUI::BeginDisabled(dynamicCollisionAdjustmentInstalled || !settings.enableNPCDynamics || !settings.fixNPCSneaking);
-			GUI::SetNextItemWidth(260.0F);
+			GUI::SetNextItemWidth(kFixedPoseSliderWidth);
 			const auto npcSneakingScaleChanged = GUI::SliderFloat(Trans::Tr("Dynamics.PoseFix.NPCSneakingScale").c_str(), &settings.npcSneakingScale, 0.3F, 1.0F);
 			GUI::EndDisabled();
 
