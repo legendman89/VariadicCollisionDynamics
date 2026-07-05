@@ -272,7 +272,7 @@ void BhkSimpleShapePhantom_SetPosition::Install()
 	std::array targets{
 			std::make_pair(
 				RELOCATION_ID(32271, 33008),  //  SE 1404F4C00 AE 14054fd00  - CheckCharacterCollision
-				REL::VariantOffset{ 0x29F, 0x27B, 0 }  
+				REL::VariantOffset{ 0x29F, 0x27B, 0x29F }
 			)
 	};
 
