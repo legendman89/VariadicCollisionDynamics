@@ -204,6 +204,12 @@ namespace Dynamics {
 		return editorID && std::string_view(editorID) == "DLC1VampireBeastRace";
 	}
 
+	inline bool IsSwimming(const RE::Actor* a_actor)
+	{
+		const auto* actorState = a_actor ? a_actor->AsActorState() : nullptr;
+		return actorState && actorState->IsSwimming();
+	}
+
 	inline bool IsTransformationState(const char* a_state)
 	{
 		return std::strcmp(a_state, "werewolf") == 0 || std::strcmp(a_state, "vampireLord") == 0;

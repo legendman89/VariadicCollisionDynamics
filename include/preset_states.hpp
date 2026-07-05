@@ -6,6 +6,7 @@
 	S(outdoor, VCD::Preset::kPersonalSpace) \
 	S(indoor, VCD::Preset::kCompact) \
 	S(combat, VCD::Preset::kBulky) \
+	S(swimming, VCD::Preset::kSwimming) \
 	S(werewolf, VCD::Preset::kWerewolf) \
 	S(vampireLord, VCD::Preset::kVampireLord) \
 	S(neutral, VCD::Preset::kVanilla)

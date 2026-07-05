@@ -62,11 +62,12 @@
   "Dynamics.PlayerDynamics.Column.State": "State",
   "Dynamics.PlayerDynamics.Column.Preset": "Preset",
 
-  "Dynamics.PlayerDynamics.State.Outdoor": "Outdoor",
-  "Dynamics.PlayerDynamics.State.Indoor": "Indoor",
-  "Dynamics.PlayerDynamics.State.Combat": "Combat",
   "Dynamics.PlayerDynamics.State.Werewolf": "Werewolf",
   "Dynamics.PlayerDynamics.State.VampireLord": "Vampire Lord",
+  "Dynamics.PlayerDynamics.State.Swimming": "Swimming",
+  "Dynamics.PlayerDynamics.State.Combat": "Combat",
+  "Dynamics.PlayerDynamics.State.Outdoor": "Outdoor",
+  "Dynamics.PlayerDynamics.State.Indoor": "Indoor",
   "Dynamics.PlayerDynamics.State.Neutral": "Neutral",
 
   "Dynamics.NPC.EnableCheckbox": "Enable NPC Dynamics",

@@ -133,6 +133,7 @@ namespace UI {
         case VCD::Preset::kPersonalSpace:
         case VCD::Preset::kCompact:
         case VCD::Preset::kBulky:
+        case VCD::Preset::kSwimming:
         case VCD::Preset::kNPCNeutral:
         case VCD::Preset::kNPCCombat:
         case VCD::Preset::kGuardNeutral:
@@ -1264,11 +1265,12 @@ namespace UI {
             GUI::TableSetupColumn(Trans::Tr("Dynamics.PlayerDynamics.Column.State").c_str(), GUI::ImGuiTableColumnFlags_WidthFixed, kFixedDynamicsStateColumnWidth);
             GUI::TableSetupColumn(Trans::Tr("Dynamics.PlayerDynamics.Column.Preset").c_str(), GUI::ImGuiTableColumnFlags_WidthStretch);
 
-            RenderStateRow(Trans::Tr("Dynamics.PlayerDynamics.State.Outdoor").c_str(), config.outdoor);
-            RenderStateRow(Trans::Tr("Dynamics.PlayerDynamics.State.Indoor").c_str(), config.indoor);
-            RenderStateRow(Trans::Tr("Dynamics.PlayerDynamics.State.Combat").c_str(), config.combat);
             RenderStateRow(Trans::Tr("Dynamics.PlayerDynamics.State.Werewolf").c_str(), config.werewolf);
             RenderStateRow(Trans::Tr("Dynamics.PlayerDynamics.State.VampireLord").c_str(), config.vampireLord);
+            RenderStateRow(Trans::Tr("Dynamics.PlayerDynamics.State.Swimming").c_str(), config.swimming);
+            RenderStateRow(Trans::Tr("Dynamics.PlayerDynamics.State.Combat").c_str(), config.combat);
+            RenderStateRow(Trans::Tr("Dynamics.PlayerDynamics.State.Outdoor").c_str(), config.outdoor);
+            RenderStateRow(Trans::Tr("Dynamics.PlayerDynamics.State.Indoor").c_str(), config.indoor);
             RenderStateRow(Trans::Tr("Dynamics.PlayerDynamics.State.Neutral").c_str(), config.neutral);
 
             GUI::EndTable();

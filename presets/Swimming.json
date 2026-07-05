@@ -1,0 +1,7 @@
+{
+  "name": "Swimming",
+  "position": [0.0, 25.0, 0.0],
+  "radius": 0.4,
+  "firstPoint": [0.0, 0.0, 0.9925],
+  "secondPoint": [0.0, 0.0, 0.31]
+}

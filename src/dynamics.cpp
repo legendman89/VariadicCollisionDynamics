@@ -326,6 +326,32 @@ namespace Dynamics {
 		return true;
 	}
 
+	VCD::Preset GetPlayerPreset(const RE::PlayerCharacter* a_player, const RE::TESObjectCELL* a_cell, const char*& a_stateName)
+	{
+		auto& config = GetConfig();
+		a_stateName = GetCellStateName(a_cell);
+		auto preset = GetCellPreset(a_cell);
+
+		if (IsWerewolf(a_player)) {
+			a_stateName = "werewolf";
+			preset = config.werewolf;
+		}
+		else if (IsVampireLord(a_player)) {
+			a_stateName = "vampireLord";
+			preset = config.vampireLord;
+		}
+		else if (IsSwimming(a_player)) {
+			a_stateName = "swimming";
+			preset = config.swimming;
+		}
+		else if (a_player && a_player->IsInCombat()) {
+			a_stateName = "combat";
+			preset = config.combat;
+		}
+
+		return preset;
+	}
+
 	bool ApplyPreset(const RE::PlayerCharacter* a_player, const VCD::Preset& a_preset, const char* a_state, const bool& a_force)
 	{
 		if (!a_player) {
@@ -544,19 +570,10 @@ namespace Dynamics {
 			return;
 		}
 
-		// Ordered by priority: Werewolf > Vampire Lord > Combat > Environment.
-		if (IsWerewolf(a_player)) {
-			ApplyPreset(a_player, GetConfig().werewolf, "werewolf", true);
-		}
-		else if (IsVampireLord(a_player)) {
-			ApplyPreset(a_player, GetConfig().vampireLord, "vampireLord", true);
-		}
-		else if (a_player->IsInCombat()) {
-			ApplyPreset(a_player, GetConfig().combat, "combat", true);
-		}
-		else {
-			ApplyEnvironmentPreset(a_player, true);
-		}
+		const char* stateName = "unknown";
+		auto* cell = a_player->GetParentCell();
+		const auto preset = GetPlayerPreset(a_player, cell, stateName);
+		ApplyPreset(a_player, preset, stateName, true);
 	}
 
 	void ClearRuntimeState()
@@ -620,22 +637,9 @@ namespace Dynamics {
 		}
 
 		const auto poseFlags = PoseFixes::PlayerPose(a_player);
-		const auto* stateName = GetCellStateName(cell);
-		auto preset = GetCellPreset(cell);
+		const char* stateName = "unknown";
+		auto preset = GetPlayerPreset(a_player, cell, stateName);
 		auto cameraPreset = GetCellCameraPreset(cell);
-
-		if (IsWerewolf(a_player)) {
-			stateName = "werewolf";
-			preset = GetConfig().werewolf;
-		}
-		else if (IsVampireLord(a_player)) {
-			stateName = "vampireLord";
-			preset = GetConfig().vampireLord;
-		}
-		else if (a_player->IsInCombat()) {
-			stateName = "combat";
-			preset = GetConfig().combat;
-		}
 
 		if (!forceApply && state.lastCell == cell && state.applied && state.current == preset && std::strcmp(state.stateName, stateName) == 0 && state.poseFlags == poseFlags) {
 			if (Settings::GetSettings().enableCameraDynamics && state.currentCamera != VCD::Preset::kCameraDialogue && state.currentCamera != cameraPreset) {

@@ -31,6 +31,7 @@
     S(PersonalSpace, "Personal Space") \
     S(Compact, "Compact") \
     S(Bulky, "Bulky") \
+    S(Swimming, "Swimming") \
     S(Werewolf, "Werewolf") \
     S(VampireLord, "Vampire Lord") \
     S(NPCNeutral, "NPC Neutral") \

@@ -66,7 +66,7 @@ void PlayerUpdate::thunk(RE::PlayerCharacter* player, float delta) {
 
 void PlayerUpdate::Install()
 {
-	func = REL::Relocation<std::uintptr_t>(RE::PlayerCharacter::VTABLE[0]).write_vfunc(REL::Relocate(0xAD,0xAD,0xAF), thunk);
+	func = REL::Relocation<std::uintptr_t>(RE::PlayerCharacter::VTABLE[0]).write_vfunc(0xAD, thunk);
 	logger::info("Player update hook installed.");
 }
 
@@ -130,7 +130,7 @@ void SneakHandlerProcessButton::Install()
         return;
     }
 	
-	func = REL::Relocation<std::uintptr_t>(RE::SneakHandler::VTABLE[0]).write_vfunc(REL::Relocate(0x04,0x04,0x06), thunk);
+	func = REL::Relocation<std::uintptr_t>(RE::SneakHandler::VTABLE[0]).write_vfunc(0x04, thunk);
 	logger::info("process sneak button hook installed");
 }
 
