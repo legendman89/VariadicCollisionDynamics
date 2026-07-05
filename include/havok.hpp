@@ -19,6 +19,7 @@ namespace VCD::Havok {
         {}
     };
 
+    // Based on flyingparticle's RE.
     struct ConvexVerticesBuildConfig
     {
         bool createConnectivity;

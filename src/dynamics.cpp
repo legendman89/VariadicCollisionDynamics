@@ -283,11 +283,7 @@ namespace Dynamics {
 		auto& state = GetNPCDynamicsState();
 		auto& manager = VCD::Manager::GetSingleton();
 		std::erase_if(state.actors, [&](const NPCPresetState& a_actorState) {
-			const auto nearby = std::any_of(state.nearbyActors.begin(), state.nearbyActors.end(), [&](const RE::ActorHandle& a_handle) {
-				auto actorPtr = a_handle.get();
-				auto* actor = actorPtr.get();
-				return actor && actor->GetFormID() == a_actorState.formID;
-			});
+			const auto nearby = HasActorHandleWithFormID(state.nearbyActors, a_actorState.formID);
 			if (!nearby) {
 				manager.ClearActorTransientState(a_actorState.formID);
 			}

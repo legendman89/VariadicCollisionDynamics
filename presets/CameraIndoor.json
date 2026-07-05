@@ -1,12 +1,12 @@
 {
-  // Display name shown in logs and debug UI. Name-based preset matching uses this value.
+  // Display name shown in logs and debug UI.
   "name": "Camera Indoor",
 
   // Position offset: [side, forward, unused z]. Keep z at 0.0.
-  "position": [0.0, 0.0, 0.0],
+  "position": [0.0, 5.0, 0.0],
 
   // Collision radius.
-  "radius": 15.0,
+  "radius": 10.0,
 
   // First endpoint: [x, y, z].
   "firstPoint": [0.0, 0.0, 0.0],

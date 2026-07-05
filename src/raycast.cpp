@@ -1,7 +1,7 @@
 #include "raycast.hpp"
 #include <CLibUtilsQTR/DrawDebug.hpp>
 
-bool raycast::castRay(RE::bhkWorld* world, RE::NiPoint3 start, RE::NiPoint3 end, RE::COL_LAYER collisionFilter)
+bool Raycast::castRay(RE::bhkWorld* world, RE::NiPoint3 start, RE::NiPoint3 end, RE::COL_LAYER collisionFilter)
 {
 	//initialize empty pick datra
 	RE::bhkPickData pickData{};
@@ -56,7 +56,7 @@ bool raycast::castRay(RE::bhkWorld* world, RE::NiPoint3 start, RE::NiPoint3 end,
 	return true; 
 }
 
- bool raycast::canStandUp(const float a_standingHeight)
+ bool Raycast::canStandUp(const float a_standingHeight)
 {
 	 auto player = RE::PlayerCharacter::GetSingleton();
 	 if (!player) return false;
@@ -77,7 +77,7 @@ bool raycast::castRay(RE::bhkWorld* world, RE::NiPoint3 start, RE::NiPoint3 end,
 	 end.z += a_standingHeight; // end at full standing height
 
 	 // see if anything blocking
-	 bool canNotStandUp = raycast::castRay(world, start, end, RE::COL_LAYER::kLOS);
+	 bool canNotStandUp = Raycast::castRay(world, start, end, RE::COL_LAYER::kLOS);
 
 	 return !canNotStandUp;
 }

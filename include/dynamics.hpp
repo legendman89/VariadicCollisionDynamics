@@ -120,6 +120,19 @@ namespace Dynamics {
 		return state;
 	}
 
+	inline bool HasActorHandleWithFormID(const std::vector<RE::ActorHandle>& a_handles, const RE::FormID& a_formID)
+	{
+		for (auto& handle : a_handles) {
+			auto actorPtr = handle.get();
+			auto* actor = actorPtr.get();
+			if (actor && actor->GetFormID() == a_formID) {
+				return true;
+			}
+		}
+
+		return false;
+	}
+
 	inline VCD::Preset GetCellPreset(const RE::TESObjectCELL* a_cell)
 	{
 		auto& config = GetConfig();
@@ -207,6 +220,10 @@ namespace Dynamics {
 	bool CanApplyNPCDynamics(RE::Actor* a_actor, const RE::PlayerCharacter* a_player, const float& a_radiusSquared);
 
 	VCD::Preset GetNPCPreset(const RE::Actor* a_actor, const char*& a_stateName);
+
+	const VCD::CollisionData* GetNPCCollisionData(const RE::FormID& a_formID, const VCD::Preset& a_preset);
+
+	void TrackPoseFixedNPC(RE::Actor* a_actor);
 
 	bool ApplyNPCPreset(RE::Actor* a_actor, const VCD::Preset& a_preset, const char* a_stateName);
 

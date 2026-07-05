@@ -3,7 +3,26 @@
 #include "helper.hpp"
 #include "settings.hpp"
 
+#include <chrono>
+
 namespace PoseFixes {
+
+    inline constexpr auto kPoseFixApplyDebounce = std::chrono::milliseconds(250);
+
+    struct PoseFixApplyState
+    {
+        bool pending{ false };
+        bool afterRelease{ false };
+        bool playerPending{ false };
+        bool npcPending{ false };
+        std::chrono::steady_clock::time_point applyAt{};
+    };
+
+    inline PoseFixApplyState& GetPoseFixApplyState()
+    {
+        static PoseFixApplyState state{};
+        return state;
+    }
 
     inline bool IsSittingFurnitureName(const char* a_name)
     {

@@ -24,6 +24,7 @@ namespace UI {
         bool changed = false;
 
         SolidBackground(GUI::ImGuiCol_PopupBg);
+        GUI::SetNextItemWidth(kFixedComboWidth);
         if (GUI::BeginCombo(a_label, current ? current->name.c_str() : Trans::Tr("Dynamics.Label.Vanilla").c_str())) {
             for (size_t i = 0; i < presetConfigs.size(); ++i) {
                 if (i == VCD::kBuiltInPresetCount) {
@@ -60,6 +61,7 @@ namespace UI {
         bool changed = false;
 
         SolidBackground(GUI::ImGuiCol_PopupBg);
+        GUI::SetNextItemWidth(kFixedComboWidth);
         if (GUI::BeginCombo(a_label, current ? current->name.c_str() : Trans::Tr("Dynamics.Label.Vanilla").c_str())) {
             for (const auto& preset : cameraPresets) {
                 const auto* config = manager.GetPresetConfig(preset);
@@ -946,7 +948,7 @@ namespace UI {
         GUI::TableNextColumn();
         GUI::Text("%s", a_label);
         GUI::TableNextColumn();
-        GUI::SetNextItemWidth(180.0F);
+        GUI::SetNextItemWidth(kFixedComboWidth);
         if (PresetCombo((std::string("##") + a_label).c_str(), a_preset) && a_previewPlayer) {
             PreviewPreset(a_preset);
         }
@@ -972,7 +974,7 @@ namespace UI {
         GUI::TableNextColumn();
         GUI::Text("%s", a_label);
         GUI::TableNextColumn();
-        GUI::SetNextItemWidth(180.0F);
+        GUI::SetNextItemWidth(kFixedComboWidth);
         if (CameraPresetCombo((std::string("##") + a_label).c_str(), a_preset) && Settings::GetSettings().enableCameraDynamics) {
             Dynamics::ApplyCameraPreset(a_preset);
         }
@@ -1008,9 +1010,9 @@ namespace UI {
             }
         }
 
-        GUI::SetNextItemWidth(260.0F);
+        
         SolidBackground(GUI::ImGuiCol_PopupBg);
-
+        GUI::SetNextItemWidth(kFixedActorComboWidth);
         if (GUI::BeginCombo(Trans::Tr("Dynamics.NPC.ActorComboLabel").c_str(), preview.c_str())) {
             for (auto& option : options) {
                 auto actorPtr = option.handle.get();
@@ -1040,6 +1042,8 @@ namespace UI {
     void RenderCreateDeleteButtons()
     {
         static const auto circlePlusText = FontAwesome::UnicodeToUtf8(Icons::kCirclePlus);
+        const auto createPresetWidth = PresetActionButtonWidth(Trans::Tr("Dynamics.CreatePreset.Button").c_str());
+        const auto deletePresetWidth = PresetActionButtonWidth(Trans::Tr("Dynamics.DeletePreset.Button").c_str());
 
         GUI::PushStyleVar(GUI::ImGuiStyleVar_FrameRounding, 5.0F);
         GUI::PushStyleVar(GUI::ImGuiStyleVar_FrameBorderSize, 1.0F);
@@ -1052,7 +1056,7 @@ namespace UI {
         const bool createPreset =
             GUI::Button(
                 ("        " + Trans::Tr("Dynamics.CreatePreset.Button") + "##CreateNewPreset").c_str(),
-                GUI::ImVec2{ kPresetActionButtonWidth, kPresetActionButtonHeight }
+                GUI::ImVec2{ createPresetWidth, kPresetActionButtonHeight }
             );
 
         WrappedTooltip(
@@ -1115,7 +1119,7 @@ namespace UI {
         const bool deletePreset =
             GUI::Button(
                 ("        " + Trans::Tr("Dynamics.DeletePreset.Button") + "##DeletePreset").c_str(),
-                GUI::ImVec2{ kPresetActionButtonWidth, kPresetActionButtonHeight }
+                GUI::ImVec2{ deletePresetWidth, kPresetActionButtonHeight }
             );
         WrappedTooltip(hasCustomPresets ? Trans::Tr("Dynamics.DeletePreset.Tooltip.Custom").c_str() :
                                           Trans::Tr("Dynamics.DeletePreset.Tooltip.Default").c_str());
@@ -1223,14 +1227,12 @@ namespace UI {
         const auto saveWidth = IconCTAButtonWidth(Trans::Tr("Dynamics.Menu.SaveSettingsButton").c_str());
         const auto resetWidth = IconCTAButtonWidth(Trans::Tr("Dynamics.Menu.ResetDefaultsButton").c_str());
         const auto rightGroupWidth = saveWidth + 6.0F + resetWidth;
-        const auto presetGroupWidth = (kPresetActionButtonWidth * 2.0F) + spacing;
+        const auto createPresetWidth = PresetActionButtonWidth(Trans::Tr("Dynamics.CreatePreset.Button").c_str());
+        const auto deletePresetWidth = PresetActionButtonWidth(Trans::Tr("Dynamics.DeletePreset.Button").c_str());
+        const auto presetGroupWidth = createPresetWidth + spacing + deletePresetWidth;
 
         RenderActionBar(presetGroupWidth, kPresetActionButtonHeight, rightGroupWidth, IconCTAButtonHeight(), RenderCreateDeleteButtons, RenderDynamicsSaveResetButtons);
     }
-
-    void RenderPlayerDynamics();
-    void RenderNPCDynamics();
-    void RenderCameraDynamics();
 
     void RenderDynamicsSections()
     {
@@ -1259,7 +1261,7 @@ namespace UI {
 
         if (GUI::BeginTable("PlayerDynamicsPresetTable", 2)) {
 
-            GUI::TableSetupColumn(Trans::Tr("Dynamics.PlayerDynamics.Column.State").c_str(), GUI::ImGuiTableColumnFlags_WidthFixed, 120.0F);
+            GUI::TableSetupColumn(Trans::Tr("Dynamics.PlayerDynamics.Column.State").c_str(), GUI::ImGuiTableColumnFlags_WidthFixed, kFixedDynamicsStateColumnWidth);
             GUI::TableSetupColumn(Trans::Tr("Dynamics.PlayerDynamics.Column.Preset").c_str(), GUI::ImGuiTableColumnFlags_WidthStretch);
 
             RenderStateRow(Trans::Tr("Dynamics.PlayerDynamics.State.Outdoor").c_str(), config.outdoor);
@@ -1290,20 +1292,20 @@ namespace UI {
             }
         }
 
-        GUI::SetNextItemWidth(260.0F);
+        GUI::SetNextItemWidth(kFixedSliderWidth);
         GUI::SliderFloat(Trans::Tr("Dynamics.NPC.NearbyActorRadius").c_str(), &settings.nearbyActorScanRadius, 256.0F, 8192.0F);
 
-        GUI::SetNextItemWidth(260.0F);
+        GUI::SetNextItemWidth(kFixedSliderWidth);
         GUI::SliderFloat(Trans::Tr("Dynamics.NPC.NearbyActorScanInterval").c_str(), &settings.nearbyActorScanInterval, 0.1F, 2.0F);
 
-        GUI::SetNextItemWidth(260.0F);
+        GUI::SetNextItemWidth(kFixedSliderWidth);
         GUI::SliderInt(Trans::Tr("Dynamics.NPC.NearbyActorLimit").c_str(), &settings.nearbyActorScanLimit, 1, 64);
 
         GUI::BeginDisabled(!settings.enableNPCDynamics);
 
         if (GUI::BeginTable("NPCDynamicsPresetTable", 2)) {
 
-            GUI::TableSetupColumn(Trans::Tr("Dynamics.NPC.Column.State").c_str(), GUI::ImGuiTableColumnFlags_WidthFixed, 120.0F);
+            GUI::TableSetupColumn(Trans::Tr("Dynamics.NPC.Column.State").c_str(), GUI::ImGuiTableColumnFlags_WidthFixed, kFixedDynamicsStateColumnWidth);
             GUI::TableSetupColumn(Trans::Tr("Dynamics.NPC.Column.Preset").c_str(), GUI::ImGuiTableColumnFlags_WidthStretch);
 
             RenderStateRow(Trans::Tr("Dynamics.NPC.State.NPCNeutral").c_str(), config.npcNeutral, false, true, true);
@@ -1339,7 +1341,7 @@ namespace UI {
         GUI::BeginDisabled(!settings.enableCameraDynamics);
 
         if (GUI::BeginTable("CameraDynamicsTable", 2)) {
-            GUI::TableSetupColumn(Trans::Tr("Dynamics.Camera.Column.State").c_str(), GUI::ImGuiTableColumnFlags_WidthFixed, 120.0F);
+            GUI::TableSetupColumn(Trans::Tr("Dynamics.Camera.Column.State").c_str(), GUI::ImGuiTableColumnFlags_WidthFixed, kFixedDynamicsStateColumnWidth);
             GUI::TableSetupColumn(Trans::Tr("Dynamics.Camera.Column.Preset").c_str(), GUI::ImGuiTableColumnFlags_WidthStretch);
             RenderCameraStateRow(Trans::Tr("Dynamics.Camera.State.Indoor").c_str(), config.cameraIndoor);
             RenderCameraStateRow(Trans::Tr("Dynamics.Camera.State.Outdoor").c_str(), config.cameraOutdoor);
@@ -1382,16 +1384,9 @@ namespace UI {
             VCD::PresetName(editor.preset) +
             "###VCDPresetEditor";
 
-        constexpr auto windowSize = GUI::ImVec2{ 480.0F, 380.0F };
-        GUI::SetNextWindowSize(windowSize, GUI::ImGuiCond_Appearing);
 
-        if (const auto* io = GUI::GetIO()) {
-            GUI::SetNextWindowPos(
-                GUI::ImVec2{ io->DisplaySize.x * 0.5F, io->DisplaySize.y * 0.5F },
-                GUI::ImGuiCond_Appearing,
-                GUI::ImVec2{ 0.5F, 0.5F }
-            );
-        }
+        GUI::SetNextWindowSize(kPresetEditorWindowSize, GUI::ImGuiCond_Appearing);
+        CenterNextWindow();
 
         const auto wasOpen = editor.open;
 
@@ -1469,7 +1464,7 @@ namespace UI {
             auto* actor = actorPtr.get();
             auto preset = editor.preset;
 
-            GUI::SetNextItemWidth(260.0F);
+            GUI::SetNextItemWidth(kFixedPreviewComboWidth);
             if (PresetCombo(Trans::Tr("Dynamics.NPC.PreviewPresetLabel").c_str(), preset) && actor) {
                 if (const auto* defaultData = GetDefaultNPCActorPresetData(preset, actor)) {
                     editor.preset = preset;
@@ -1588,11 +1583,8 @@ namespace UI {
             return;
         }
 
-        constexpr auto windowSize = GUI::ImVec2{ 440.0F, 220.0F };
-        GUI::SetNextWindowSize(windowSize, GUI::ImGuiCond_Appearing);
-        if (const auto* io = GUI::GetIO()) {
-            GUI::SetNextWindowPos(GUI::ImVec2{ io->DisplaySize.x * 0.5F, io->DisplaySize.y * 0.5F }, GUI::ImGuiCond_Appearing, GUI::ImVec2{ 0.5F, 0.5F });
-        }
+        GUI::SetNextWindowSize(kDeletePresetEditorWindowSize, GUI::ImGuiCond_Appearing);
+        CenterNextWindow();
 
         const auto wasOpen = editor.open;
         GUI::PushStyleColor(GUI::ImGuiCol_WindowBg, Color::kEditWindowBg);
@@ -1605,8 +1597,8 @@ namespace UI {
             return;
         }
 
-        GUI::SetNextItemWidth(260.0F);
         SolidBackground(GUI::ImGuiCol_PopupBg);
+        GUI::SetNextItemWidth(kFixedDeletePresetComboWidth);
         if (GUI::BeginCombo(Trans::Tr("Dynamics.DeletePreset.ComboName").c_str(), selected->name.c_str())) {
             for (const auto& config : manager.GetPresetConfigs()) {
                 if (config.builtIn) {
@@ -1669,16 +1661,8 @@ namespace UI {
             return;
         }
 
-        constexpr auto windowSize = GUI::ImVec2{ 480.0F, 440.0F };
-        GUI::SetNextWindowSize(windowSize, GUI::ImGuiCond_Appearing);
-
-        if (const auto* io = GUI::GetIO()) {
-            GUI::SetNextWindowPos(
-                GUI::ImVec2{ io->DisplaySize.x * 0.5F, io->DisplaySize.y * 0.5F },
-                GUI::ImGuiCond_Appearing,
-                GUI::ImVec2{ 0.5F, 0.5F }
-            );
-        }
+        GUI::SetNextWindowSize(kCreatePresetEditorWindowSize, GUI::ImGuiCond_Appearing);
+        CenterNextWindow();
 
         const auto wasOpen = editor.open;
 
@@ -1698,8 +1682,7 @@ namespace UI {
             return;
         }
 
-        GUI::SetNextItemWidth(260.0F);
-
+        GUI::SetNextItemWidth(kFixedCreatePresetInputWidth);
         if (GUI::InputText(Trans::Tr("Dynamics.CreatePreset.NameLabel").c_str(), editor.name.data(), editor.name.size())) {
             editor.error.clear();
         }

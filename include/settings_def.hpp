@@ -50,7 +50,7 @@
 	FOREACH_POSE_FIX_FLOAT_SETTING(S)
 
 #define FOREACH_TOOL_INT_SETTING(S) \
-	S(logLevel, 1)
+	S(logLevel, 2)
 
 #define FOREACH_DYNAMICS_INT_SETTING(S) \
 	S(nearbyActorScanLimit, 16)

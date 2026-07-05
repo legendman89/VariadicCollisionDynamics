@@ -42,16 +42,35 @@ namespace DebugAPI_IMPL::Draw {
         }
     }
 
+    void DrawCollapsedCapsule(const RE::NiPoint3& center, float radius, int liftetimeMS = 10,
+        const RE::NiColorA& color = { 1.0f, 0.0f, 0.0f, 1.0f }, float lineThickness = 1)
+    {
+        const auto xAxis = RE::NiPoint3(1.0F, 0.0F, 0.0F);
+        const auto yAxis = RE::NiPoint3(0.0F, 1.0F, 0.0F);
+        const auto zAxis = RE::NiPoint3(0.0F, 0.0F, 1.0F);
+
+        DrawCircleAxis(center, xAxis, yAxis, radius, CAPSULE_SIDES, liftetimeMS, color, lineThickness);
+        DrawCircleAxis(center, xAxis, zAxis, radius, CAPSULE_SIDES, liftetimeMS, color, lineThickness);
+        DrawCircleAxis(center, yAxis, zAxis, radius, CAPSULE_SIDES, liftetimeMS, color, lineThickness);
+    }
+
     // Based on TrueHUD's capsule drawing method but uses DebugAPI's line drawing.
+    // I Optimized it to handle collapsing capsules. Later I might replace it entirely
+    // with high-quality version similar to nifskope's.
     void DrawCapsule(const RE::NiPoint3& vertexA, const RE::NiPoint3& vertexB, float radius,
         int liftetimeMS = 10, const RE::NiColorA& color = { 1.0f, 0.0f, 0.0f, 1.0f },
         float lineThickness = 1)
     {
         RE::NiPoint3 zAxis = vertexA - vertexB;
+        const auto axisLengthSquared = (zAxis.x * zAxis.x) + (zAxis.y * zAxis.y) + (zAxis.z * zAxis.z);
+        if (axisLengthSquared <= 1.0e-4F) {
+            DrawCollapsedCapsule((vertexA + vertexB) * 0.5F, radius, liftetimeMS, color, lineThickness);
+            return;
+        }
+
         zAxis.Unitize();
 
-        RE::NiPoint3 upVector = (fabs(zAxis.z) < (1.0f - 1.e-4f)) ? RE::NiPoint3(0.0f, 0.0f, 1.0f)
-            : RE::NiPoint3(1.0f, 0.0f, 0.0f);
+        RE::NiPoint3 upVector = (fabs(zAxis.z) < (1.0f - 1.e-4f)) ? RE::NiPoint3(0.0f, 0.0f, 1.0f) : RE::NiPoint3(1.0f, 0.0f, 0.0f);
         RE::NiPoint3 xAxis = upVector.UnitCross(zAxis);
         RE::NiPoint3 yAxis = zAxis.Cross(xAxis);
 

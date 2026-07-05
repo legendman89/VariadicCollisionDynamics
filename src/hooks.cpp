@@ -94,7 +94,7 @@ void SneakHandlerProcessButton::thunk(
 			standingHeight = player->GetHeight();
 		}
 
-		if (!raycast::canStandUp(standingHeight)) {
+		if (!Raycast::canStandUp(standingHeight)) {
 			return;
 		}
 	}
@@ -134,7 +134,7 @@ void SneakHandlerProcessButton::Install()
 	logger::info("process sneak button hook installed");
 }
 
-// called on dialogue menu open and close
+// Called on dialogue menu open and close.
 RE::BSEventNotifyControl MenuTopicManagerHook::ProcessMenuOpenCloseEvent(
 	RE::MenuTopicManager* a_this,
 	const RE::MenuOpenCloseEvent* a_event,
@@ -181,7 +181,7 @@ void MenuTopicManagerHook::Install()
 	logger::info("Installed MenuTopicManager MenuOpenCloseEvent hook");
 }
 
-//thirdperson state inlines a function to set camera phantom position inside itself
+// Thirdperson state inlines a function to set camera phantom position inside itself
 // so hooking this func works to reach that inlined func allows us to decouple camera pos from collision
 void ThirdPersonState_SetRotation::thunk(
 	RE::ThirdPersonState* a_state,
@@ -211,9 +211,10 @@ void ThirdPersonState_SetRotation::thunk(
 	auto& translation = hkpPhantom->motionState.transform.translation;
 
 	float worldScale = RE::bhkWorld::GetWorldScale();
+	const auto& cameraCollision = VCD::GetCameraCollisionState();
 
-	translation.quad.m128_f32[0] += cameraGlobals::CollisionPosX * worldScale;
-	translation.quad.m128_f32[1] += cameraGlobals::CollisionPosY * worldScale;
+	translation.quad.m128_f32[0] += cameraCollision.positionX * worldScale;
+	translation.quad.m128_f32[1] += cameraCollision.positionY * worldScale;
 
 	// logger::info("Phantom AFTER Z: {:.2f}", translation.quad.m128_f32[2]);
 }
@@ -244,7 +245,7 @@ void ThirdPersonState_SetRotation::Install()
 	logger::info("ThirdPersonState_SetRotation hook installed");
 }
 
-//hook this funcs caller func check character collision and filter for camera phantom
+// Hook this funcs caller func check character collision and filter for camera phantom
 void BhkSimpleShapePhantom_SetPosition::thunk(RE::bhkSimpleShapePhantom* phantom, RE::hkVector4* position)
 {
 	auto playerCamera = RE::PlayerCamera::GetSingleton();
@@ -257,8 +258,9 @@ void BhkSimpleShapePhantom_SetPosition::thunk(RE::bhkSimpleShapePhantom* phantom
 
 			if (phantom == cameraPhantom) {
 				float worldScale = RE::bhkWorld::GetWorldScale();
-				position->quad.m128_f32[0] += cameraGlobals::CollisionPosX * worldScale;
-				position->quad.m128_f32[1] += cameraGlobals::CollisionPosY * worldScale;
+				const auto& cameraCollision = VCD::GetCameraCollisionState();
+				position->quad.m128_f32[0] += cameraCollision.positionX * worldScale;
+				position->quad.m128_f32[1] += cameraCollision.positionY * worldScale;
 			}
 		
 	func(phantom, position);

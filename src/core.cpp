@@ -196,7 +196,7 @@ bool Manager::CaptureActorVanillaCollisionData(const RE::Actor* a_actor)
     return true;
 }
 
-//apply radius and xy collision only
+// Apply radius and xy collision only.
 bool Manager::SetCameraCollisionData(const VCD::CollisionData& a_data)
 {
     auto* playerCamera = RE::PlayerCamera::GetSingleton();
@@ -209,15 +209,9 @@ bool Manager::SetCameraCollisionData(const VCD::CollisionData& a_data)
         return false;
     }
 
-    //set globals that are used in ThirdPersonState_SetRotation hook 
-    // applying changes here results in the changes being overwritten next frame
-    auto Apply = [&]()
-    {
-       cameraGlobals::CollisionPosX = a_data.bump.translation.x;
-       cameraGlobals::CollisionPosY = a_data.bump.translation.y;
-    };
-  
-    Apply(); 
+    auto& cameraCollision = VCD::GetCameraCollisionState();
+    cameraCollision.positionX = a_data.bump.translation.x;
+    cameraCollision.positionY = a_data.bump.translation.y;
 
     //I still dont know when unk08 is used its not used at all normally
     //Apply(cameraRTD.unk120->unk08.get());
@@ -227,6 +221,8 @@ bool Manager::SetCameraCollisionData(const VCD::CollisionData& a_data)
     return true;
 }
 
+// Rebuild convex shape for actor's character controller based on mapped capsule data.
+// Vertices extraction based on flyingparticle's code.
 bool Manager::SetConvexShape(const RE::Actor* a_actor, 
     RE::bhkCharacterController* a_controller, 
     const float& a_radius, const float& a_point1Z, const float& a_point2Z, 

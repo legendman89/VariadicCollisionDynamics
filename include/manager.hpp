@@ -14,14 +14,13 @@
 #include <unordered_map>
 #include <vector>
 
-namespace cameraGlobals {
-
-    inline float CollisionPosX = 0.0f;
-
-    inline float CollisionPosY = 0.0f;
-}
-
 namespace VCD {
+
+    struct CameraCollisionState
+    {
+        float positionX{ 0.0f };
+        float positionY{ 0.0f };
+    };
 
     struct PresetKeyHash
     {
@@ -126,7 +125,7 @@ namespace VCD {
 
         bool DeletePreset(const Preset& a_preset, std::string& a_key, std::string& a_error);
 
-        bool SetPreset(const RE::Actor* a_actor, const Preset& a_preset, const PoseFlags& a_poseFlags, const bool& a_log);
+        bool SetPreset(const RE::Actor* a_actor, const Preset& a_preset, const PoseFlags& a_poseFlags, const bool& a_log, const bool& a_rebuildConvex = true);
 
         bool SetCollisionData(const RE::Actor* a_actor, const CollisionData& a_data, const Preset& a_anchorPreset, const char* a_name, const PoseFlags& a_poseFlags, const bool& a_log, const bool& a_rebuildConvex = true);
 
@@ -138,7 +137,7 @@ namespace VCD {
 
         bool FixSittingPose(const RE::Actor* a_actor, const PoseFlags& a_poseFlags, const bool& a_log = false);
 
-        bool FixSneakingPose(const RE::Actor* a_actor, const PoseFlags& a_poseFlags, const bool& a_log = false);
+        bool FixSneakingPose(const RE::Actor* a_actor, const PoseFlags& a_poseFlags, const bool& a_log = false, const bool& a_rebuildConvex = true);
 
         float GetStandingCapsuleHeight(const RE::Actor* a_actor) const;
 
@@ -351,6 +350,12 @@ namespace VCD {
         }
 
         return a_materialID == RE::MATERIAL_ID::kTrap;
+    }
+
+    inline CameraCollisionState& GetCameraCollisionState()
+    {
+        static CameraCollisionState state{};
+        return state;
     }
 
 }

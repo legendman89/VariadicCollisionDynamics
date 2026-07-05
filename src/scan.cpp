@@ -86,7 +86,7 @@ namespace Scan {
 
     void LogNearbyActorScan(const NearbyActorScanState& a_state, const Settings::VCDSettings& a_settings)
     {
-        logger::debug("Nearby actor scan: scanned={} (high={}, middleHigh={}, middleLow={}), accepted={}, rejected={}, radius={}, limit={}, limitReached={}",
+        logger::trace("Nearby actor scan: scanned={} (high={}, middleHigh={}, middleLow={}), accepted={}, rejected={}, radius={}, limit={}, limitReached={}",
             a_state.scannedCount,
             a_state.scannedHighCount,
             a_state.scannedMiddleHighCount,

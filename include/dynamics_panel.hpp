@@ -18,6 +18,17 @@ namespace UI {
     // Editor debounce time.
     inline constexpr auto kEditorCollisionApplyDebounce = std::chrono::milliseconds(250);
 
+    // Fixed widths.
+    inline constexpr auto kFixedDynamicsStateColumnWidth = 210.0F;
+    inline constexpr auto kFixedComboWidth = 220.0F;
+    inline constexpr auto kFixedPreviewComboWidth = 260.0F;
+    inline constexpr auto kFixedActorComboWidth = 270.0F;
+    inline constexpr auto kFixedDeletePresetComboWidth = 260.0F;
+    inline constexpr auto kFixedCreatePresetInputWidth = 260.0F;
+    inline constexpr auto kPresetEditorWindowSize = GUI::ImVec2{ 520.0F, 395.0F };
+    inline constexpr auto kCreatePresetEditorWindowSize = GUI::ImVec2{ 480.0F, 450.0F };
+    inline constexpr auto kDeletePresetEditorWindowSize = GUI::ImVec2{ 450.0F, 250.0F };
+
     struct CollisionEditorLimits
     {
         float heightOffset{ 4.0F };

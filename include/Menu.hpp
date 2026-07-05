@@ -11,6 +11,7 @@ namespace UI {
 
     constexpr auto kPresetActionButtonWidth = 220.0F;
     constexpr auto kPresetActionButtonHeight = 50.0F;
+    constexpr auto kFixedSliderWidth = 260.0F;
 
     inline void SolidBackground(const GUI::ImGuiCol& bgType) {
         auto bg = GUI::GetStyleColorVec4(bgType);
@@ -47,6 +48,21 @@ namespace UI {
     {
         const auto* style = GUI::GetStyle();
         return GUI::GetFontSize() + ((style ? style->FramePadding.y : 6.0F) * 2.0F);
+    }
+
+    inline float PresetActionButtonWidth(const char* a_label)
+    {
+        const auto label = "        " + std::string(a_label);
+        GUI::ImVec2 labelSize{};
+        GUI::CalcTextSize(&labelSize, label.c_str(), nullptr, false, -1.0F);
+        return std::max(kPresetActionButtonWidth, labelSize.x + 28.0F);
+    }
+
+    inline void CenterNextWindow(const GUI::ImGuiCond& a_cond = GUI::ImGuiCond_Appearing)
+    {
+        if (const auto* io = GUI::GetIO()) {
+            GUI::SetNextWindowPos(GUI::ImVec2{ io->DisplaySize.x * 0.5F, io->DisplaySize.y * 0.5F }, a_cond, GUI::ImVec2{ 0.5F, 0.5F });
+        }
     }
 
     inline void DrawLine(const GUI::ImVec2& a_start, const GUI::ImVec2& a_end, const GUI::ImVec4& a_color, const float& a_thickness = 1.0F)
