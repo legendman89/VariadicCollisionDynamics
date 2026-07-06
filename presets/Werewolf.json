@@ -12,5 +12,5 @@
   "firstPoint": [0.0, 0.0, 1.3],
 
   // Second endpoint: [x, y, z].
-  "secondPoint": [0.0, 0.0, 0.4]
+  "secondPoint": [0.0, 0.0, 0.45]
 }

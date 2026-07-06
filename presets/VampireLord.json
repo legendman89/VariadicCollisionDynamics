@@ -3,14 +3,14 @@
   "name": "Vampire Lord",
 
   // Position offset: [side, forward, unused z]. Keep z at 0.0.
-  "position": [0.0, 5.8, 0.0],
+  "position": [0.0, 9.0, 0.0],
 
   // Collision radius.
   "radius": 0.397,
 
   // First endpoint: [x, y, z].
-  "firstPoint": [0.0, 0.0, 0.766],
+  "firstPoint": [0.0, 0.0, 0.8],
 
   // Second endpoint: [x, y, z].
-  "secondPoint": [0.0, 0.0, -0.65]
+  "secondPoint": [0.0, 0.0, -0.4]
 }

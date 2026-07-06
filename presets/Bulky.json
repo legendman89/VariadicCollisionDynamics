@@ -3,7 +3,7 @@
   "name": "Bulky",
 
   // Position offset: [side, forward, unused z]. Keep z at 0.0.
-  "position": [0.0, 25.0, 0.0],
+  "position": [0.0, 21.0, 0.0],
 
   // Collision radius.
   "radius": 0.4,
@@ -12,5 +12,5 @@
   "firstPoint": [0.0, 0.0, 1.22],
 
   // Second endpoint: [x, y, z].
-  "secondPoint": [0.0, 0.0, 0.31]
+  "secondPoint": [0.0, 0.0, 0.35]
 }

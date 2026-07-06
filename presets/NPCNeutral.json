@@ -3,14 +3,14 @@
   "name": "NPC Neutral",
 
   // Position offset: [side, forward, unused z]. Keep z at 0.0.
-  "position": [0.0, 12.0, 0.0],
+  "position": [0.0, 15.0, 0.0],
 
   // Collision radius.
-  "radius": 0.28574997,
+  "radius": 0.286,
 
   // First endpoint: [x, y, z].
-  "firstPoint": [0.0, 0.0, 1.3715999],
+  "firstPoint": [0.0, 0.0, 1.4],
 
   // Second endpoint: [x, y, z].
-  "secondPoint": [0.0, 0.0, 0.28574997]
+  "secondPoint": [0.0, 0.0, 0.35]
 }
