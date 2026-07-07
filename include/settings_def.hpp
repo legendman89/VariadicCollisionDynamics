@@ -77,6 +77,7 @@ namespace Settings {
 		struct PresetOverride
 		{
 			bool edited{ false };
+			bool relative{ false };
 			VCD::CollisionData data{};
 		};
 

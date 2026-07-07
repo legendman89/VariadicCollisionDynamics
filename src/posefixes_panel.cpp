@@ -58,14 +58,14 @@ namespace UI {
 				return Dynamics::ApplyNPCPreset(a_actor, preset, stateName);
 			}
 
-			const auto* collisionData = Dynamics::GetNPCCollisionData(a_actor->GetFormID(), preset);
-			if (!collisionData) {
+			VCD::CollisionData collisionData{};
+			if (!Dynamics::GetNPCCollisionData(a_actor, preset, collisionData)) {
 				return false;
 			}
 
 			return manager.SetCollisionData(
 				a_actor,
-				*collisionData,
+				collisionData,
 				preset,
 				VCD::PresetName(preset),
 				PoseFixes::NPCPose(a_actor),

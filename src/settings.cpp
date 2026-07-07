@@ -274,6 +274,18 @@ namespace Settings {
 		return it != settings.npcPresets.end() && it->second.edited ? &it->second.data : nullptr;
 	}
 
+	bool IsNPCPresetOverrideRelative(const VCD::Preset& a_preset)
+	{
+		const auto& settings = GetSettings();
+		const auto* presetConfig = VCD::Manager::GetSingleton().GetPresetConfig(a_preset);
+		if (!presetConfig) {
+			return false;
+		}
+
+		const auto it = settings.npcPresets.find(presetConfig->key);
+		return it != settings.npcPresets.end() && it->second.edited && it->second.relative;
+	}
+
 	const VCD::CollisionData* GetCameraPresetOverride(const VCD::Preset& a_preset)
 	{
 		const auto& settings = GetSettings();
@@ -286,7 +298,7 @@ namespace Settings {
 		return it != settings.cameraPresets.end() && it->second.edited ? &it->second.data : nullptr;
 	}
 
-	void MarkNPCPresetEdited(const VCD::Preset& a_preset, const VCD::CollisionData& a_data)
+	void MarkNPCPresetEdited(const VCD::Preset& a_preset, const VCD::CollisionData& a_data, const bool& a_relative)
 	{
 		auto& settings = GetSettings();
 		const auto* presetConfig = VCD::Manager::GetSingleton().GetPresetConfig(a_preset);
@@ -296,6 +308,7 @@ namespace Settings {
 
 		auto& presetOverride = settings.npcPresets[presetConfig->key];
 		presetOverride.edited = true;
+		presetOverride.relative = a_relative;
 		presetOverride.data = a_data;
 		presetOverride.data.RecalculateHeight();
 	}

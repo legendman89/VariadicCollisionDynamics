@@ -82,7 +82,8 @@ namespace JSON {
 
 		for (const auto& [key, presetOverride] : a_presets) {
 			auto entry = json{
-				{ "edited", presetOverride.edited }
+				{ "edited", presetOverride.edited },
+				{ "relative", presetOverride.relative }
 			};
 
 			if (presetOverride.edited) {
@@ -111,6 +112,7 @@ namespace JSON {
 
 			auto& presetOverride = a_presets[name];
 			presetOverride.edited = true;
+			presetOverride.relative = entry.contains("relative") && entry.at("relative").get<bool>();
 			CollisionDataFromJson(entry, presetOverride.data);
 		}
 	}

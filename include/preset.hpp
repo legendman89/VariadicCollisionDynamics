@@ -142,6 +142,28 @@ namespace VCD {
         return data;
     }
 
+    inline CollisionData GetCollisionDataDelta(const CollisionData& a_data, const CollisionData& a_base)
+    {
+        CollisionData delta{};
+        delta.bump.translation = a_data.bump.translation - a_base.bump.translation;
+        delta.capsule.radius = a_data.capsule.radius - a_base.capsule.radius;
+        delta.capsule.point1 = { a_data.capsule.point1.x - a_base.capsule.point1.x, a_data.capsule.point1.y - a_base.capsule.point1.y, a_data.capsule.point1.z - a_base.capsule.point1.z };
+        delta.capsule.point2 = { a_data.capsule.point2.x - a_base.capsule.point2.x, a_data.capsule.point2.y - a_base.capsule.point2.y, a_data.capsule.point2.z - a_base.capsule.point2.z };
+        delta.RecalculateHeight();
+        return delta;
+    }
+
+    inline CollisionData ApplyCollisionDataDelta(const CollisionData& a_base, const CollisionData& a_delta)
+    {
+        CollisionData data{};
+        data.bump.translation = a_base.bump.translation + a_delta.bump.translation;
+        data.capsule.radius = std::max(0.05F, a_base.capsule.radius + a_delta.capsule.radius);
+        data.capsule.point1 = { a_base.capsule.point1.x + a_delta.capsule.point1.x, a_base.capsule.point1.y + a_delta.capsule.point1.y, a_base.capsule.point1.z + a_delta.capsule.point1.z };
+        data.capsule.point2 = { a_base.capsule.point2.x + a_delta.capsule.point2.x, a_base.capsule.point2.y + a_delta.capsule.point2.y, a_base.capsule.point2.z + a_delta.capsule.point2.z };
+        data.RecalculateHeight();
+        return data;
+    }
+
     struct PresetConfig
     {
         Preset preset{};

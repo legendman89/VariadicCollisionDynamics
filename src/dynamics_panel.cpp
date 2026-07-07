@@ -105,7 +105,11 @@ namespace UI {
 
     const VCD::CollisionData* GetDefaultNPCActorPresetData(const VCD::Preset& a_preset, const RE::Actor* a_actor)
     {
-        if (a_preset == VCD::Preset::kVanilla && a_actor) {
+        if (a_preset == VCD::Preset::kVanilla) {
+            if (!a_actor) {
+                return GetDefaultPresetData(a_preset);
+            }
+
             auto& manager = VCD::Manager::GetSingleton();
             manager.CaptureActorVanillaCollisionData(a_actor);
             if (const auto* actorVanilla = manager.GetActorVanillaCollisionData(a_actor->GetFormID())) {
@@ -332,6 +336,113 @@ namespace UI {
         );
     }
 
+    bool GetNPCGlobalPresetEditorDefaults(const VCD::Preset& a_preset, VCD::CollisionData& a_data)
+    {
+        if (a_preset == VCD::Preset::kVanilla) {
+            if (auto* actor = GetSelectedNPCActorPtr()) {
+                if (const auto* actorVanilla = GetDefaultNPCActorPresetData(a_preset, actor)) {
+                    a_data = *actorVanilla;
+                    return true;
+                }
+            }
+        }
+
+        if (const auto* defaultData = GetDefaultPresetData(a_preset)) {
+            a_data = *defaultData;
+            return true;
+        }
+
+        return false;
+    }
+
+    bool GetNPCGlobalPresetEditorCurrent(const VCD::Preset& a_preset, const VCD::CollisionData& a_defaults, VCD::CollisionData& a_data)
+    {
+        if (const auto* npcOverride = Settings::GetNPCPresetOverride(a_preset)) {
+            if (a_preset == VCD::Preset::kVanilla) {
+                const auto* defaultData = GetDefaultPresetData(VCD::Preset::kVanilla);
+                const auto delta = Settings::IsNPCPresetOverrideRelative(a_preset) || !defaultData ? *npcOverride : VCD::GetCollisionDataDelta(*npcOverride, *defaultData);
+                a_data = VCD::ApplyCollisionDataDelta(a_defaults, delta);
+                return true;
+            }
+
+            a_data = *npcOverride;
+            return true;
+        }
+
+        a_data = a_defaults;
+        return true;
+    }
+
+    bool GetNPCGlobalEditorCollisionData(RE::Actor* a_actor, const PresetEditorState& a_editor, VCD::CollisionData& a_data)
+    {
+        if (!a_actor) {
+            return false;
+        }
+
+        if (const auto* actorOverride = Settings::GetNPCActorPresetOverride(a_actor->GetFormID(), a_editor.preset)) {
+            a_data = *actorOverride;
+            return true;
+        }
+
+        if (a_editor.preset == VCD::Preset::kVanilla) {
+            auto& manager = VCD::Manager::GetSingleton();
+            manager.CaptureActorVanillaCollisionData(a_actor);
+            const auto* actorVanilla = manager.GetActorVanillaCollisionData(a_actor->GetFormID());
+            if (!actorVanilla) {
+                const auto* defaultPresetConfig = manager.GetDefaultPresetConfig(VCD::Preset::kVanilla);
+                actorVanilla = defaultPresetConfig ? &defaultPresetConfig->data : nullptr;
+            }
+            if (!actorVanilla) {
+                return false;
+            }
+
+            a_data = VCD::ApplyCollisionDataDelta(*actorVanilla, VCD::GetCollisionDataDelta(a_editor.current, a_editor.defaults));
+            return true;
+        }
+
+        a_data = a_editor.current;
+        return true;
+    }
+
+    bool TryApplyNPCGlobalEditorHandle(const RE::ActorHandle& a_handle, std::unordered_map<RE::FormID, bool>& a_seen, const RE::PlayerCharacter* a_player, const float& a_radiusSquared, const bool& a_rebuildConvex)
+    {
+        auto actorPtr = a_handle.get();
+        auto* actor = actorPtr.get();
+        if (!actor || a_seen[actor->GetFormID()]) {
+            return false;
+        }
+
+        a_seen[actor->GetFormID()] = true;
+        if (!Dynamics::CanApplyNPCDynamics(actor, a_player, a_radiusSquared)) {
+            return false;
+        }
+
+        auto& editor = GetPresetEditorState();
+        const char* stateName = "unknown";
+        const auto preset = Dynamics::GetNPCPreset(actor, stateName);
+        if (preset != editor.preset) {
+            return false;
+        }
+
+        if (a_rebuildConvex) {
+            return Dynamics::ApplyNPCPreset(actor, preset, stateName);
+        }
+
+        VCD::CollisionData collisionData{};
+        if (!GetNPCGlobalEditorCollisionData(actor, editor, collisionData)) {
+            return false;
+        }
+
+        return VCD::Manager::GetSingleton().SetCollisionData(actor, collisionData, editor.preset, VCD::PresetName(editor.preset), PoseFixes::NPCPose(actor), false, false);
+    }
+
+    void ApplyNPCGlobalEditorHandles(const std::vector<RE::ActorHandle>& a_handles, std::unordered_map<RE::FormID, bool>& a_seen, const RE::PlayerCharacter* a_player, const float& a_radiusSquared, const bool& a_rebuildConvex)
+    {
+        for (auto& handle : a_handles) {
+            TryApplyNPCGlobalEditorHandle(handle, a_seen, a_player, a_radiusSquared, a_rebuildConvex);
+        }
+    }
+
     void ApplyNPCGlobalEditorCollision(const bool& a_rebuildConvex)
     {
         auto& editor = GetPresetEditorState();
@@ -354,50 +465,9 @@ namespace UI {
             npcState.actors.clear();
         }
 
-        auto applyHandle = [&](const RE::ActorHandle& a_handle) {
-            auto actorPtr = a_handle.get();
-            auto* actor = actorPtr.get();
-            if (!actor || seen[actor->GetFormID()]) {
-                return;
-            }
-
-            seen[actor->GetFormID()] = true;
-            if (!Dynamics::CanApplyNPCDynamics(actor, player, radiusSquared)) {
-                return;
-            }
-
-            const char* stateName = "unknown";
-            const auto preset = Dynamics::GetNPCPreset(actor, stateName);
-            if (preset != editor.preset) {
-                return;
-            }
-
-            if (a_rebuildConvex) {
-                Dynamics::ApplyNPCPreset(actor, preset, stateName);
-                return;
-            }
-
-            const auto* actorOverride = Settings::GetNPCActorPresetOverride(actor->GetFormID(), editor.preset);
-            const auto& collisionData = actorOverride ? *actorOverride : editor.current;
-            VCD::Manager::GetSingleton().SetCollisionData(
-                actor,
-                collisionData,
-                editor.preset,
-                VCD::PresetName(editor.preset),
-                PoseFixes::NPCPose(actor),
-                false,
-                false
-            );
-        };
-
         editor.current.RecalculateHeight();
-        for (auto& handle : npcState.nearbyActors) {
-            applyHandle(handle);
-        }
-
-        for (auto& handle : scanState.handles) {
-            applyHandle(handle);
-        }
+        ApplyNPCGlobalEditorHandles(npcState.nearbyActors, seen, player, radiusSquared, a_rebuildConvex);
+        ApplyNPCGlobalEditorHandles(scanState.handles, seen, player, radiusSquared, a_rebuildConvex);
     }
 
     bool StartNPCEditorPreview(RE::Actor* a_actor)
@@ -531,8 +601,8 @@ namespace UI {
             return;
         }
 
-        const auto* defaultData = GetDefaultPresetData(a_preset);
-        if (!defaultData) {
+        VCD::CollisionData defaultData{};
+        if (!GetNPCGlobalPresetEditorDefaults(a_preset, defaultData)) {
             return;
         }
 
@@ -551,14 +621,9 @@ namespace UI {
         editor.previousDrawNearbyActors = false;
         editor.previewActor = {};
         editor.preset = a_preset;
-        editor.defaults = *defaultData;
+        editor.defaults = defaultData;
         editor.limits = GetCollisionEditorLimits(GetPresetCollisionLimitClass(a_preset));
-        if (const auto* npcOverride = Settings::GetNPCPresetOverride(a_preset)) {
-            editor.current = *npcOverride;
-        }
-        else {
-            editor.current = *defaultData;
-        }
+        GetNPCGlobalPresetEditorCurrent(a_preset, editor.defaults, editor.current);
 
         StartNPCEditorPreview(GetSelectedNPCActorPtr());
         ScheduleEditorCollisionApply(false);
@@ -635,13 +700,14 @@ namespace UI {
         }
 
         if (editor.npcGlobal) {
+            VCD::CollisionData globalDefaults{};
+            if (!GetNPCGlobalPresetEditorDefaults(editor.preset, globalDefaults)) {
+                return false;
+            }
+
+            editor.defaults = globalDefaults;
             editor.limits = GetCollisionEditorLimits(GetPresetCollisionLimitClass(editor.preset));
-            if (const auto* npcOverride = Settings::GetNPCPresetOverride(editor.preset)) {
-                editor.current = *npcOverride;
-            }
-            else {
-                editor.current = *defaultData;
-            }
+            GetNPCGlobalPresetEditorCurrent(editor.preset, editor.defaults, editor.current);
             return true;
         }
 
@@ -775,7 +841,8 @@ namespace UI {
         }
         else if (editor.npcGlobal) {
             editor.current.RecalculateHeight();
-            Settings::MarkNPCPresetEdited(editor.preset, editor.current);
+            const auto relative = editor.preset == VCD::Preset::kVanilla;
+            Settings::MarkNPCPresetEdited(editor.preset, relative ? VCD::GetCollisionDataDelta(editor.current, editor.defaults) : editor.current, relative);
             if (editor.preview) {
                 ApplyEditorCollisionPreview();
             }
@@ -943,6 +1010,55 @@ namespace UI {
         return result;
     }
 
+    bool TryApplyNPCStateHandle(const RE::ActorHandle& a_handle, std::unordered_map<RE::FormID, bool>& a_seen, const RE::PlayerCharacter* a_player, const float& a_radiusSquared, const char* a_stateName)
+    {
+        auto actorPtr = a_handle.get();
+        auto* actor = actorPtr.get();
+        if (!actor || a_seen[actor->GetFormID()]) {
+            return false;
+        }
+
+        a_seen[actor->GetFormID()] = true;
+        if (!Dynamics::CanApplyNPCDynamics(actor, a_player, a_radiusSquared)) {
+            return false;
+        }
+
+        const char* stateName = "unknown";
+        const auto preset = Dynamics::GetNPCPreset(actor, stateName);
+        if (std::strcmp(stateName, a_stateName) != 0) {
+            return false;
+        }
+
+        return Dynamics::ApplyNPCPreset(actor, preset, stateName);
+    }
+
+    void ApplyNPCStateHandles(const std::vector<RE::ActorHandle>& a_handles, std::unordered_map<RE::FormID, bool>& a_seen, const RE::PlayerCharacter* a_player, const float& a_radiusSquared, const char* a_stateName)
+    {
+        for (auto& handle : a_handles) {
+            TryApplyNPCStateHandle(handle, a_seen, a_player, a_radiusSquared, a_stateName);
+        }
+    }
+
+    void ApplyNPCStatePresetChange(const char* a_stateName)
+    {
+        if (!Settings::GetSettings().enableNPCDynamics) {
+            return;
+        }
+
+        auto* player = RE::PlayerCharacter::GetSingleton();
+        if (!player) {
+            return;
+        }
+
+        auto& npcState = Dynamics::GetNPCDynamicsState();
+        auto& scanState = ::Scan::GetNearbyActorScanState();
+        const auto radius = Settings::GetSettings().nearbyActorScanRadius;
+        const auto radiusSquared = radius * radius;
+        std::unordered_map<RE::FormID, bool> seen{};
+        ApplyNPCStateHandles(npcState.nearbyActors, seen, player, radiusSquared, a_stateName);
+        ApplyNPCStateHandles(scanState.handles, seen, player, radiusSquared, a_stateName);
+    }
+
     void RenderStateRow(const char* a_label, VCD::Preset& a_preset, const bool& a_previewPlayer = true, const bool& a_showEdit = true, const bool& a_npcGlobal = false)
     {
         GUI::TableNextRow();
@@ -967,6 +1083,23 @@ namespace UI {
                 ? Trans::Tr("Dynamics.Editor.Details.NPCGlobal").c_str()
                 : Trans::Tr("Dynamics.Editor.Details.StateLocal").c_str());
         }
+    }
+
+    void RenderNPCStateRow(const char* a_label, VCD::Preset& a_preset, const char* a_stateName)
+    {
+        GUI::TableNextRow();
+        GUI::TableNextColumn();
+        GUI::Text("%s", a_label);
+        GUI::TableNextColumn();
+        GUI::SetNextItemWidth(kFixedComboWidth);
+        if (PresetCombo((std::string("##") + a_label).c_str(), a_preset)) {
+            ApplyNPCStatePresetChange(a_stateName);
+        }
+        GUI::SameLine(0, 12.0F);
+        if (EditButton(a_label)) {
+            OpenNPCGlobalPresetEditor(a_preset);
+        }
+        WrappedTooltip(Trans::Tr("Dynamics.Editor.Details.NPCGlobal").c_str());
     }
 
     void RenderCameraStateRow(const char* a_label, VCD::Preset& a_preset)
@@ -1310,10 +1443,10 @@ namespace UI {
             GUI::TableSetupColumn(Trans::Tr("Dynamics.NPC.Column.State").c_str(), GUI::ImGuiTableColumnFlags_WidthFixed, kFixedDynamicsStateColumnWidth);
             GUI::TableSetupColumn(Trans::Tr("Dynamics.NPC.Column.Preset").c_str(), GUI::ImGuiTableColumnFlags_WidthStretch);
 
-            RenderStateRow(Trans::Tr("Dynamics.NPC.State.NPCNeutral").c_str(), config.npcNeutral, false, true, true);
-            RenderStateRow(Trans::Tr("Dynamics.NPC.State.NPCCombat").c_str(), config.npcCombat, false, true, true);
-            RenderStateRow(Trans::Tr("Dynamics.NPC.State.GuardNeutral").c_str(), config.guardNeutral, false, true, true);
-            RenderStateRow(Trans::Tr("Dynamics.NPC.State.GuardCombat").c_str(), config.guardCombat, false, true, true);
+            RenderNPCStateRow(Trans::Tr("Dynamics.NPC.State.NPCNeutral").c_str(), config.npcNeutral, "npcNeutral");
+            RenderNPCStateRow(Trans::Tr("Dynamics.NPC.State.NPCCombat").c_str(), config.npcCombat, "npcCombat");
+            RenderNPCStateRow(Trans::Tr("Dynamics.NPC.State.GuardNeutral").c_str(), config.guardNeutral, "guardNeutral");
+            RenderNPCStateRow(Trans::Tr("Dynamics.NPC.State.GuardCombat").c_str(), config.guardCombat, "guardCombat");
 
             GUI::EndTable();
         }

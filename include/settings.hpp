@@ -128,9 +128,11 @@ namespace Settings {
 
 	const VCD::CollisionData* GetNPCPresetOverride(const VCD::Preset& a_preset);
 
+	bool IsNPCPresetOverrideRelative(const VCD::Preset& a_preset);
+
 	const VCD::CollisionData* GetCameraPresetOverride(const VCD::Preset& a_preset);
 
-	void MarkNPCPresetEdited(const VCD::Preset& a_preset, const VCD::CollisionData& a_data);
+	void MarkNPCPresetEdited(const VCD::Preset& a_preset, const VCD::CollisionData& a_data, const bool& a_relative = false);
 
 	void ClearNPCPresetEdited(const VCD::Preset& a_preset);
 

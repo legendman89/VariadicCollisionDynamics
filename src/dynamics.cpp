@@ -141,24 +141,53 @@ namespace Dynamics {
 		state.poseFixedActors.clear();
 	}
 
-	const VCD::CollisionData* GetNPCCollisionData(const RE::FormID& a_formID, const VCD::Preset& a_preset)
+	bool GetNPCCollisionData(RE::Actor* a_actor, const VCD::Preset& a_preset, VCD::CollisionData& a_data)
 	{
-		if (const auto* actorOverride = Settings::GetNPCActorPresetOverride(a_formID, a_preset)) {
-			return actorOverride;
+		if (!a_actor) {
+			return false;
 		}
 
+		const auto formID = a_actor->GetFormID();
+		if (const auto* actorOverride = Settings::GetNPCActorPresetOverride(formID, a_preset)) {
+			a_data = *actorOverride;
+			return true;
+		}
+
+		auto& manager = VCD::Manager::GetSingleton();
 		if (a_preset == VCD::Preset::kVanilla) {
-			if (const auto* actorVanilla = VCD::Manager::GetSingleton().GetActorVanillaCollisionData(a_formID)) {
-				return actorVanilla;
+			manager.CaptureActorVanillaCollisionData(a_actor);
+			const auto* actorVanilla = manager.GetActorVanillaCollisionData(formID);
+			if (!actorVanilla) {
+				const auto* defaultPresetConfig = manager.GetDefaultPresetConfig(VCD::Preset::kVanilla);
+				actorVanilla = defaultPresetConfig ? &defaultPresetConfig->data : nullptr;
 			}
+			if (!actorVanilla) {
+				return false;
+			}
+
+			if (const auto* npcOverride = Settings::GetNPCPresetOverride(a_preset)) {
+				const auto* defaultPresetConfig = manager.GetDefaultPresetConfig(VCD::Preset::kVanilla);
+				const auto delta = Settings::IsNPCPresetOverrideRelative(a_preset) || !defaultPresetConfig ? *npcOverride : VCD::GetCollisionDataDelta(*npcOverride, defaultPresetConfig->data);
+				a_data = VCD::ApplyCollisionDataDelta(*actorVanilla, delta);
+				return true;
+			}
+
+			a_data = *actorVanilla;
+			return true;
 		}
 
 		if (const auto* npcOverride = Settings::GetNPCPresetOverride(a_preset)) {
-			return npcOverride;
+			a_data = *npcOverride;
+			return true;
 		}
 
-		const auto* defaultPresetConfig = VCD::Manager::GetSingleton().GetDefaultPresetConfig(a_preset);
-		return defaultPresetConfig ? &defaultPresetConfig->data : nullptr;
+		const auto* defaultPresetConfig = manager.GetDefaultPresetConfig(a_preset);
+		if (!defaultPresetConfig) {
+			return false;
+		}
+
+		a_data = defaultPresetConfig->data;
+		return true;
 	}
 
 	bool ApplyNPCPreset(RE::Actor* a_actor, const VCD::Preset& a_preset, const char* a_stateName)
@@ -192,8 +221,8 @@ namespace Dynamics {
 		}
 
 		auto& manager = VCD::Manager::GetSingleton();
-		const auto* collisionData = GetNPCCollisionData(formID, a_preset);
-		if (!collisionData || !manager.SetCollisionData(a_actor, *collisionData, a_preset, VCD::PresetName(a_preset), poseFlags, true)) {
+		VCD::CollisionData collisionData{};
+		if (!GetNPCCollisionData(a_actor, a_preset, collisionData) || !manager.SetCollisionData(a_actor, collisionData, a_preset, VCD::PresetName(a_preset), poseFlags, true)) {
 			return false;
 		}
 
@@ -454,9 +483,9 @@ namespace Dynamics {
 		}
 
 		auto& manager = VCD::Manager::GetSingleton();
-		const auto* collisionData = GetNPCCollisionData(a_actor->GetFormID(), a_preset);
+		VCD::CollisionData collisionData{};
 		const auto poseFlags = PoseFixes::NPCPose(a_actor);
-		if (!collisionData || !manager.SetCollisionData(a_actor, *collisionData, a_preset, VCD::PresetName(a_preset), poseFlags, false)) {
+		if (!GetNPCCollisionData(a_actor, a_preset, collisionData) || !manager.SetCollisionData(a_actor, collisionData, a_preset, VCD::PresetName(a_preset), poseFlags, false)) {
 			return false;
 		}
 
@@ -489,14 +518,11 @@ namespace Dynamics {
 		const char* stateName = "unknown";
 		auto& manager = VCD::Manager::GetSingleton();
 		const auto preset = Settings::GetSettings().enableNPCDynamics ? GetNPCPreset(actor, stateName) : VCD::Preset::kVanilla;
-		const auto* collisionData = Settings::GetSettings().enableNPCDynamics ? GetNPCCollisionData(actor->GetFormID(), preset) : nullptr;
-		if (!collisionData) {
-			const auto* defaultPresetConfig = manager.GetDefaultPresetConfig(preset);
-			collisionData = defaultPresetConfig ? &defaultPresetConfig->data : nullptr;
-		}
+		VCD::CollisionData collisionData{};
+		const auto hasCollisionData = GetNPCCollisionData(actor, preset, collisionData);
 		const auto poseFlags = PoseFixes::NPCPose(actor);
-		if (collisionData) {
-			manager.SetCollisionData(actor, *collisionData, preset, VCD::PresetName(preset), poseFlags, false);
+		if (hasCollisionData) {
+			manager.SetCollisionData(actor, collisionData, preset, VCD::PresetName(preset), poseFlags, false);
 		}
 		if (auto* actorState = FindNPCPresetState(actor->GetFormID())) {
 			actorState->controller = actor->GetCharController();
