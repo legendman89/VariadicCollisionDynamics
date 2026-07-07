@@ -131,6 +131,17 @@ namespace VCD {
         }
     };
 
+    inline CollisionData MakeVanillaCollisionData()
+    {
+        CollisionData data{};
+        data.bump.translation = { 0.0F, 17.0F, 0.0F };
+        data.capsule.radius = 0.28574997F;
+        data.capsule.point1 = { 0.0F, 0.0F, 1.3715999F };
+        data.capsule.point2 = { 0.0F, 0.0F, 0.28574997F };
+        data.RecalculateHeight();
+        return data;
+    }
+
     struct PresetConfig
     {
         Preset preset{};
@@ -148,13 +159,15 @@ namespace VCD {
     {
         a_presets.clear();
         a_presets.reserve(kBuiltInPresetCount);
+        const auto vanillaData = MakeVanillaCollisionData();
         for (size_t i = 0; i < kBuiltInPresetCount; ++i) {
+            const bool isVanilla = static_cast<Preset>(i) == Preset::kVanilla;
             a_presets.push_back({
                 static_cast<Preset>(i),
                 kPresetKeys[i],
                 kPresetNames[i],
-                {},
-                false,
+                vanillaData,
+                isVanilla,
                 true
             });
         }

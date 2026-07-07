@@ -8,22 +8,6 @@ using json = nlohmann::json;
 
 namespace VCD {
 
-	CollisionData MakeVanillaFallbackData()
-	{
-		CollisionData fallback{};
-		fallback.bump.translation = { 0.0F, 17.0F, 0.0F };
-		fallback.capsule.radius = 0.286F;
-		fallback.capsule.point1 = { 0.0F, 0.0F, 1.372F };
-		fallback.capsule.point2 = { 0.0F, 0.0F, 0.286F };
-		fallback.RecalculateHeight();
-		return fallback;
-	}
-
-	const CollisionData& GetVanillaFallbackData()
-	{
-		static const CollisionData fallback = MakeVanillaFallbackData();
-		return fallback;
-	}
 
     std::vector<fs::path> GetPresetPaths()
     {
@@ -134,6 +118,10 @@ namespace VCD {
             }
 
             const auto key = ToUTF8(path.stem()); // Filename is our key.
+            if (key == kPresetKeys[ToUnderlying(Preset::kVanilla)]) {
+                logger::info("Ignoring {} preset file; using built-in Vanilla defaults.", key);
+                continue;
+            }
 
             // Check for duplicate builtin preset.
             auto builtIn = std::find_if( a_presets.begin(), a_presets.end(),
@@ -187,11 +175,11 @@ namespace VCD {
 
         const auto& fallbackData = GetVanillaFallbackData();
         for (size_t i = 0; i < a_presets.size(); ++i) {
-            if (loadedPresets[i]) {
+            auto& presetConfig = a_presets[i];
+            if (loadedPresets[i] || presetConfig.loaded) {
                 continue;
             }
 
-            auto& presetConfig = a_presets[i];
             const auto preset = static_cast<Preset>(i);
             presetConfig.preset = preset;
             presetConfig.data = fallbackData;

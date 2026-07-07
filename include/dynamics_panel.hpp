@@ -148,6 +148,40 @@ namespace UI {
         return defaultPresetConfig ? &defaultPresetConfig->data : nullptr;
     }
 
+    inline const VCD::CollisionData* GetDefaultPlayerPresetData(const VCD::Preset& a_preset)
+    {
+        auto& manager = VCD::Manager::GetSingleton();
+        if (a_preset == VCD::Preset::kVanilla) {
+            if (const auto* player = RE::PlayerCharacter::GetSingleton()) {
+                manager.CaptureActorVanillaCollisionData(player);
+                if (const auto* playerVanilla = manager.GetActorVanillaCollisionData(player->GetFormID())) {
+                    return playerVanilla;
+                }
+            }
+        }
+
+        return GetDefaultPresetData(a_preset);
+    }
+
+    inline const VCD::CollisionData& GetPlayerPresetEditorCurrent(const VCD::PresetConfig& a_presetConfig, const VCD::CollisionData& a_defaultData)
+    {
+        const auto* defaultPresetConfig = VCD::Manager::GetSingleton().GetDefaultPresetConfig(a_presetConfig.preset);
+        if (a_presetConfig.preset == VCD::Preset::kVanilla && defaultPresetConfig && a_presetConfig.data.IsSame(defaultPresetConfig->data)) {
+            return a_defaultData;
+        }
+
+        return a_presetConfig.data;
+    }
+
+    inline const VCD::CollisionData* GetPresetEditorDefaultData(const PresetEditorState& a_editor)
+    {
+        if (a_editor.camera || a_editor.npcGlobal || a_editor.npcPreview) {
+            return GetDefaultPresetData(a_editor.preset);
+        }
+
+        return GetDefaultPlayerPresetData(a_editor.preset);
+    }
+
     inline const VCD::CollisionData* GetDefaultNPCPresetData(const VCD::Preset& a_preset)
     {
         if (const auto* npcOverride = Settings::GetNPCPresetOverride(a_preset)) {

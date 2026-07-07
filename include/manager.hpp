@@ -129,6 +129,8 @@ namespace VCD {
 
         bool SetCollisionData(const RE::Actor* a_actor, const CollisionData& a_data, const Preset& a_anchorPreset, const char* a_name, const PoseFlags& a_poseFlags, const bool& a_log, const bool& a_rebuildConvex = true);
 
+        const CollisionData* GetActorPresetCollisionData(const RE::Actor* a_actor, const Preset& a_preset, const bool& a_log = false);
+
         const CollisionData* GetActorVanillaCollisionData(const RE::FormID& a_formID) const;
 
         bool CaptureActorVanillaCollisionData(const RE::Actor* a_actor);

@@ -63,11 +63,34 @@ void Manager::ClearActorTransientState(const RE::FormID& a_formID)
 bool Manager::SetPreset(const RE::Actor* a_actor, const Preset& a_preset, const PoseFlags& a_poseFlags, const bool& a_log, const bool& a_rebuildConvex)
 {
     const auto* presetConfig = GetPresetConfig(a_preset);
-    if (!presetConfig) {
+    const auto* collisionData = GetActorPresetCollisionData(a_actor, a_preset, a_log);
+    if (!presetConfig || !collisionData) {
         return false;
     }
 
-    return SetCollisionData(a_actor, presetConfig->data, a_preset, presetConfig->name.c_str(), a_poseFlags, a_log, a_rebuildConvex);
+    return SetCollisionData(a_actor, *collisionData, a_preset, presetConfig->name.c_str(), a_poseFlags, a_log, a_rebuildConvex);
+}
+
+const CollisionData* Manager::GetActorPresetCollisionData(const RE::Actor* a_actor, const Preset& a_preset, const bool& a_log)
+{
+    const auto* presetConfig = GetPresetConfig(a_preset);
+    if (!presetConfig) {
+        return nullptr;
+    }
+
+    const auto* defaultPresetConfig = GetDefaultPresetConfig(a_preset);
+    const bool useActorVanilla = a_actor && a_preset == Preset::kVanilla && (!defaultPresetConfig || presetConfig->data.IsSame(defaultPresetConfig->data));
+    if (useActorVanilla) {
+        CaptureActorVanillaCollisionData(a_actor);
+        if (const auto* actorVanilla = GetActorVanillaCollisionData(a_actor->GetFormID())) {
+            return actorVanilla;
+        }
+        if (a_log) {
+            logger::warn("Actor [{:08X}] Vanilla capture unavailable; using built-in Vanilla fallback.", a_actor->GetFormID());
+        }
+    }
+
+    return &presetConfig->data;
 }
 
 const CollisionData* Manager::GetActorVanillaCollisionData(const RE::FormID& a_formID) const

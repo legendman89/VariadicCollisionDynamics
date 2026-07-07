@@ -158,7 +158,7 @@ namespace UI {
 
         auto& manager = VCD::Manager::GetSingleton();
         auto* presetConfig = manager.GetPresetConfig(a_preset);
-        const auto* defaultData = GetDefaultPresetData(a_preset);
+        const auto* defaultData = GetDefaultPlayerPresetData(a_preset);
         if (!presetConfig || !defaultData) {
             return;
         }
@@ -179,7 +179,7 @@ namespace UI {
         editor.previewActor = {};
         editor.preset = a_preset;
         editor.defaults = *defaultData;
-        editor.current = presetConfig->data;
+        editor.current = GetPlayerPresetEditorCurrent(*presetConfig, *defaultData);
         editor.limits = GetCollisionEditorLimits(VCD::Race::CollisionLimitClass::kPlayer);
 
         if (editor.preview) {
@@ -615,7 +615,7 @@ namespace UI {
         }
 
         auto& manager = VCD::Manager::GetSingleton();
-        const auto* defaultData = GetDefaultPresetData(editor.preset);
+        const auto* defaultData = GetPresetEditorDefaultData(editor);
         auto* presetConfig = manager.GetPresetConfig(editor.preset);
         if (!defaultData || !presetConfig) {
             editor.open = false;
@@ -661,7 +661,7 @@ namespace UI {
             }
         }
 
-        editor.current = editor.npcPreview ? editor.defaults : presetConfig->data;
+        editor.current = editor.npcPreview ? editor.defaults : GetPlayerPresetEditorCurrent(*presetConfig, editor.defaults);
         editor.limits = GetCollisionEditorLimits(VCD::Race::CollisionLimitClass::kPlayer);
         return true;
     }
@@ -838,8 +838,8 @@ namespace UI {
             presetEditor.open = false;
         }
 
-        const auto* vanilla = VCD::Manager::GetSingleton().GetDefaultPresetConfig(VCD::Preset::kVanilla);
-        if (!vanilla || !vanilla->loaded) {
+        const auto* vanilla = GetDefaultPlayerPresetData(VCD::Preset::kVanilla);
+        if (!vanilla) {
             return;
         }
 
@@ -847,8 +847,8 @@ namespace UI {
         RestoreCreatePresetPreview();
         editor = {};
         editor.open = true;
-        editor.defaults = vanilla->data;
-        editor.current = vanilla->data;
+        editor.defaults = *vanilla;
+        editor.current = *vanilla;
         editor.limits = GetCollisionEditorLimits(VCD::Race::CollisionLimitClass::kPlayer);
     }
 

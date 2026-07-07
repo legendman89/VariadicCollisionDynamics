@@ -22,6 +22,12 @@ namespace VCD {
         return GetPluginDataPath() / "Presets";
     }
 
+    inline const CollisionData& GetVanillaFallbackData()
+	{
+		static const CollisionData fallback = MakeVanillaCollisionData();
+		return fallback;
+	}
+
     std::vector<fs::path> GetPresetPaths();
 
     bool LoadPresetConfiguration(PresetConfig& a_preset, const nlohmann::json& a_data);
