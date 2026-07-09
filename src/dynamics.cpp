@@ -3,11 +3,11 @@
 #include "logger.hpp"
 #include "posefixes.hpp"
 #include "settings.hpp"
+#include "transformations.hpp"
 
 #include <algorithm>
 #include <chrono>
 #include <cstring>
-#include <string_view>
 
 namespace Dynamics {
 
@@ -361,11 +361,11 @@ namespace Dynamics {
 		a_stateName = GetCellStateName(a_cell);
 		auto preset = GetCellPreset(a_cell);
 
-		if (IsWerewolf(a_player)) {
+		if (VCD::IsWerewolf(a_player)) {
 			a_stateName = "werewolf";
 			preset = config.werewolf;
 		}
-		else if (IsVampireLord(a_player)) {
+		else if (VCD::IsVampireLord(a_player)) {
 			a_stateName = "vampireLord";
 			preset = config.vampireLord;
 		}

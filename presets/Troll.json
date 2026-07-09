@@ -3,13 +3,13 @@
   "name": "Troll",
 
   // Position offset: [side, forward, unused z]. Keep z at 0.0.
-  "position": [0.0, 22.0, 0.0],
+  "position": [0.0, 30.0, 0.0],
 
   // Collision radius.
-  "radius": 0.5,
+  "radius": 0.54,
 
   // First endpoint: [x, y, z].
-  "firstPoint": [0.0, 0.0, 1.55],
+  "firstPoint": [0.0, 0.0, 1.3],
 
   // Second endpoint: [x, y, z].
   "secondPoint": [0.0, 0.0, 0.38]

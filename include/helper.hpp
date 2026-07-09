@@ -97,6 +97,40 @@ namespace VCD {
         return static_cast<char>(std::tolower(a_char));
     }
 
+    template <class T>
+    inline bool isSpace(const T& ch)
+    {
+        return (ch >= 9 && ch <= 13) || ch == 32;
+    }
+
+    inline bool isDigit(const char& ch)
+    {
+        return (ch ^ '0') <= 9;
+    }
+
+    inline void eatWS(char*& str)
+    {
+        while (isSpace(*str)) {
+            ++str;
+        }
+    }
+
+    inline std::string Trim(std::string_view a_value)
+    {
+        auto first = a_value.begin();
+        auto last = a_value.end();
+
+        while (first != last && isSpace(*first)) {
+            ++first;
+        }
+
+        while (first != last && isSpace(*(last - 1))) {
+            --last;
+        }
+
+        return std::string(first, last);
+    }
+
     inline bool ContainsInsensitive(const std::string_view& a_text, const std::string_view& a_pattern)
     {
         if (a_pattern.empty() || a_pattern.size() > a_text.size()) {

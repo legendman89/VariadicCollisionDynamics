@@ -13,6 +13,7 @@ function(copyOutputs TARGET_FOLDER)
         COMMAND "${CMAKE_COMMAND}" -E copy_directory "${CMAKE_SOURCE_DIR}/fonts" "${TARGET_FOLDER}"
         COMMAND "${CMAKE_COMMAND}" -E copy_directory "${CMAKE_SOURCE_DIR}/presets" "${DLL_FOLDER}/${PROJECT_NAME}/Presets"
         COMMAND "${CMAKE_COMMAND}" -E copy_directory "${CMAKE_SOURCE_DIR}/translation" "${DLL_FOLDER}/${PROJECT_NAME}/Translation"
+        COMMAND "${CMAKE_COMMAND}" -E copy_if_different "${CMAKE_SOURCE_DIR}/INI/Transformations.ini" "${DLL_FOLDER}/${PROJECT_NAME}/Transformations.ini"
         VERBATIM
     )
 

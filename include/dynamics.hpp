@@ -6,7 +6,6 @@
 
 #include <chrono>
 #include <cstring>
-#include <string_view>
 #include <vector>
 
 namespace Dynamics {
@@ -172,36 +171,6 @@ namespace Dynamics {
 	{
 		const auto& preview = GetPreviewState();
 		return preview.active && preview.preset == a_preset;
-	}
-
-	inline bool IsWerewolf(const RE::Actor* a_actor)
-	{
-		if (!a_actor) {
-			return false;
-		}
-
-		const auto* race = a_actor->GetRace();
-		if (!race) {
-			return false;
-		}
-
-		const auto* editorID = race->GetFormEditorID();
-		return editorID && std::string_view(editorID) == "WerewolfBeastRace";
-	}
-
-	inline bool IsVampireLord(const RE::Actor* a_actor)
-	{
-		if (!a_actor) {
-			return false;
-		}
-
-		const auto* race = a_actor->GetRace();
-		if (!race) {
-			return false;
-		}
-
-		const auto* editorID = race->GetFormEditorID();
-		return editorID && std::string_view(editorID) == "DLC1VampireBeastRace";
 	}
 
 	inline bool IsSwimming(const RE::Actor* a_actor)

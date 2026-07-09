@@ -7,6 +7,7 @@
 #include "dynamics.hpp"
 #include "settings.hpp"
 #include "translate.hpp"
+#include "transformations.hpp"
 
 static void MessageHandler(SKSE::MessagingInterface::Message* msg) {
     switch (msg->type) {
@@ -30,6 +31,8 @@ static void MessageHandler(SKSE::MessagingInterface::Message* msg) {
     case SKSE::MessagingInterface::kDataLoaded:
     {
         VCD::Manager::GetSingleton().LoadPresets();
+
+        VCD::LoadTransformations();
 
         Settings::Load();
 
