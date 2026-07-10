@@ -157,14 +157,11 @@ namespace DebugAPI_IMPL::Draw {
             translation.quad.m128_f32[2]
         );
 
-        RE::NiPoint3 realCollisionPos = hkPos * VCD::GetPresetScale();
-
-        // push in front so it's visible, but offset relative to the real collision center
-        RE::NiPoint3 projectedPos = realCollisionPos + forward * 100.0f;
+        RE::NiPoint3 CollisionPos = hkPos * VCD::GetPresetScale();
 
         const auto radius = sphere->radius * VCD::GetPresetScale();
 
-        DebugAPI_IMPL::DebugAPI::GetSingleton()->DrawSphere(projectedPos, radius, 10, a_color, a_lineThickness);
+        DebugAPI_IMPL::DebugAPI::GetSingleton()->DrawSphere(CollisionPos, radius, 10, a_color, a_lineThickness);
     }
 
     void DrawCameraBumper()
