@@ -74,15 +74,39 @@ namespace VCD {
 		return false;
 	}
 
-	inline bool ActorHasAnyEffectKeyword(const RE::Actor* a_actor, const std::vector<RE::BGSKeyword*>& a_keywords)
+	inline bool ActiveEffectHasAnyKeyword(const RE::ActiveEffect* a_effect, const std::vector<RE::BGSKeyword*>& a_keywords)
 	{
-		auto* actor = const_cast<RE::Actor*>(a_actor);
-		if (!actor) {
+		if (!a_effect ||
+			a_effect->flags.all(RE::ActiveEffect::Flag::kInactive) ||
+			a_effect->flags.all(RE::ActiveEffect::Flag::kDispelled)) {
 			return false;
 		}
 
-		for (auto* keyword : a_keywords) {
-			if (keyword && actor->HasMagicEffectWithKeyword(keyword)) {
+		const auto* base = a_effect->GetBaseObject();
+		if (!base) {
+			return false;
+		}
+
+		for (const auto* keyword : a_keywords) {
+			if (keyword && base->HasKeyword(keyword)) {
+				return true;
+			}
+		}
+
+		return false;
+	}
+
+	inline bool ActorHasAnyEffectKeyword(const RE::Actor* a_actor, const std::vector<RE::BGSKeyword*>& a_keywords)
+	{
+		auto* actor = const_cast<RE::Actor*>(a_actor);
+		auto* magicTarget = actor ? actor->AsMagicTarget() : nullptr;
+		auto* activeEffects = magicTarget ? magicTarget->GetActiveEffectList() : nullptr;
+		if (!activeEffects) {
+			return false;
+		}
+
+		for (const auto* effect : *activeEffects) {
+			if (ActiveEffectHasAnyKeyword(effect, a_keywords)) {
 				return true;
 			}
 		}
