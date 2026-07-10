@@ -3,7 +3,7 @@
   "name": "Camera Indoor",
 
   // Position offset: [side, forward, unused z]. Keep z at 0.0.
-  "position": [0.0, 0.0, 0.0],
+  "position": [0.0, 5.0, 0.0],
 
   // Collision radius.
   "radius": 10.0,

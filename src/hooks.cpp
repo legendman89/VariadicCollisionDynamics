@@ -189,12 +189,9 @@ void ThirdPersonState_SetRotation::thunk(
 	bool a_flag,
 	bool a_someFlag)
 {
-	// Call original first - this calculates everything
 	func(a_state, rotation, a_flag, a_someFlag);
 
 	if (!a_state) return;
-
-	auto manager = VCD::Manager::GetSingleton(); 
 
 	auto* playerCamera = RE::PlayerCamera::GetSingleton();
 	if (!playerCamera) return;
@@ -205,18 +202,31 @@ void ThirdPersonState_SetRotation::thunk(
 	auto* phantom = cameraRTD.unk120->unk00.get();
 	if (!phantom) return;
 
-	auto hkpPhantom = manager.GetCameraSimpleShapePhantom(phantom); 
+	auto manager = VCD::Manager::GetSingleton();
+	auto hkpPhantom = manager.GetCameraSimpleShapePhantom(phantom);
+	if (!hkpPhantom) return;
 
-	// Modify ONLY the phantom's motion state
 	auto& translation = hkpPhantom->motionState.transform.translation;
-
 	float worldScale = RE::bhkWorld::GetWorldScale();
 	const auto& cameraCollision = VCD::GetCameraCollisionState();
 
-	translation.quad.m128_f32[0] += cameraCollision.positionX * worldScale;
-	translation.quad.m128_f32[1] += cameraCollision.positionY * worldScale;
+	// Get the player's facing direction
+	auto* player = RE::PlayerCharacter::GetSingleton();
+	float yaw = player ? player->GetAngleZ() : 0.0f;
 
-	// logger::info("Phantom AFTER Z: {:.2f}", translation.quad.m128_f32[2]);
+	// Calculate forward and right vectors in world space
+	float forwardX = std::sin(yaw);
+	float forwardY = std::cos(yaw);
+	float rightX = std::cos(yaw);
+	float rightY = -std::sin(yaw);
+
+	// Transform local offsets to world space
+	float worldOffsetX = (rightX * cameraCollision.positionX) + (forwardX * cameraCollision.positionY);
+	float worldOffsetY = (rightY * cameraCollision.positionX) + (forwardY * cameraCollision.positionY);
+
+	// Apply the transformed offset
+	translation.quad.m128_f32[0] += worldOffsetX * worldScale;
+	translation.quad.m128_f32[1] += worldOffsetY * worldScale;
 }
 
 void ThirdPersonState_SetRotation::Install()
@@ -251,18 +261,29 @@ void BhkSimpleShapePhantom_SetPosition::thunk(RE::bhkSimpleShapePhantom* phantom
 	auto playerCamera = RE::PlayerCamera::GetSingleton();
 	if (!playerCamera) return func(phantom, position);
 
-		auto& rtd = playerCamera->GetRuntimeData();
-		if (!rtd.unk120) return func(phantom, position);
+	auto& rtd = playerCamera->GetRuntimeData();
+	if (!rtd.unk120) return func(phantom, position);
 
-			auto* cameraPhantom = rtd.unk120->unk00.get();
+	auto* cameraPhantom = rtd.unk120->unk00.get();
+	if (phantom == cameraPhantom) {
+		float worldScale = RE::bhkWorld::GetWorldScale();
+		const auto& cameraCollision = VCD::GetCameraCollisionState();
 
-			if (phantom == cameraPhantom) {
-				float worldScale = RE::bhkWorld::GetWorldScale();
-				const auto& cameraCollision = VCD::GetCameraCollisionState();
-				position->quad.m128_f32[0] += cameraCollision.positionX * worldScale;
-				position->quad.m128_f32[1] += cameraCollision.positionY * worldScale;
-			}
-		
+		auto* player = RE::PlayerCharacter::GetSingleton();
+		float yaw = player ? player->GetAngleZ() : 0.0f;
+
+		float forwardX = std::sin(yaw);
+		float forwardY = std::cos(yaw);
+		float rightX = std::cos(yaw);
+		float rightY = -std::sin(yaw);
+
+		float worldOffsetX = (rightX * cameraCollision.positionX) + (forwardX * cameraCollision.positionY);
+		float worldOffsetY = (rightY * cameraCollision.positionX) + (forwardY * cameraCollision.positionY);
+
+		position->quad.m128_f32[0] += worldOffsetX * worldScale;
+		position->quad.m128_f32[1] += worldOffsetY * worldScale;
+	}
+
 	func(phantom, position);
 }
 
