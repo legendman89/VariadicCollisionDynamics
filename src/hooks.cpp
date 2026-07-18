@@ -210,9 +210,7 @@ void ThirdPersonState_SetRotation::thunk(
 	float worldScale = RE::bhkWorld::GetWorldScale();
 	const auto& cameraCollision = VCD::GetCameraCollisionState();
 
-	// Get the player's facing direction
-	auto* player = RE::PlayerCharacter::GetSingleton();
-	float yaw = player ? player->GetAngleZ() : 0.0f;
+	float yaw = playerCamera->GetRuntimeData2().yaw;
 
 	// Calculate forward and right vectors in world space
 	float forwardX = std::sin(yaw);
@@ -221,8 +219,22 @@ void ThirdPersonState_SetRotation::thunk(
 	float rightY = -std::sin(yaw);
 
 	// Transform local offsets to world space
-	float worldOffsetX = (rightX * cameraCollision.positionX) + (forwardX * cameraCollision.positionY);
-	float worldOffsetY = (rightY * cameraCollision.positionX) + (forwardY * cameraCollision.positionY);
+	float worldOffsetX =
+		(rightX * cameraCollision.positionX) +
+		(forwardX * cameraCollision.positionY);
+
+	float worldOffsetY =
+		(rightY * cameraCollision.positionX) +
+		(forwardY * cameraCollision.positionY);
+
+
+	//Log MUST match the phantoms collideable position below in the player camera linear cast hook below
+	logger::info("[SYNC-SetRotation] yaw={:.4f} offsetX={:.4f} offsetY={:.4f} translationScale=({:.6f},{:.6f}) -> ({:.6f},{:.6f})",
+		yaw, worldOffsetX, worldOffsetY,
+		translation.quad.m128_f32[0], translation.quad.m128_f32[1],
+		translation.quad.m128_f32[0] + worldOffsetX * worldScale,
+		translation.quad.m128_f32[1] + worldOffsetY * worldScale);
+
 
 	// Apply the transformed offset
 	translation.quad.m128_f32[0] += worldOffsetX * worldScale;
@@ -231,7 +243,6 @@ void ThirdPersonState_SetRotation::thunk(
 
 void ThirdPersonState_SetRotation::Install()
 {
-	SKSE::AllocTrampoline(1 << 7);
 	auto& trampoline = SKSE::GetTrampoline();
 
 	// IDA / Ghidra Address [AE 1408e8640 REL: 50911]
@@ -255,61 +266,133 @@ void ThirdPersonState_SetRotation::Install()
 	logger::info("ThirdPersonState_SetRotation hook installed");
 }
 
-// Hook this funcs caller func check character collision and filter for camera phantom
-void BhkSimpleShapePhantom_SetPosition::thunk(RE::bhkSimpleShapePhantom* phantom, RE::hkVector4* position)
+void CameraLinearCastHook::thunk(
+	std::int64_t* param_1,   // unk120 phantom wrapper
+	std::int64_t* param_2,   // bhkWorld
+	float* param_3,          // TARGET pos - phantom moves here
+	float* param_4,          // CURRENT pos - linear cast starts here
+	float* param_5,          // output
+	std::uint64_t* param_6,  // tesobject refr
+	float          param_7   // radius
+)
 {
-	auto playerCamera = RE::PlayerCamera::GetSingleton();
-	if (!playerCamera) return func(phantom, position);
+	auto* playerCamera = RE::PlayerCamera::GetSingleton();
+	if (!playerCamera) return	func(
+		param_1,
+		param_2,
+		param_3,
+		param_4,
+		param_5,
+		param_6,
+		param_7
+	);
 
-	auto& rtd = playerCamera->GetRuntimeData();
-	if (!rtd.unk120) return func(phantom, position);
+	auto& cameraRTD = playerCamera->GetRuntimeData();
+	if (!cameraRTD.unk120) return	func(
+		param_1,
+		param_2,
+		param_3,
+		param_4,
+		param_5,
+		param_6,
+		param_7
+	);
 
-	auto* cameraPhantom = rtd.unk120->unk00.get();
-	if (phantom == cameraPhantom) {
-		float worldScale = RE::bhkWorld::GetWorldScale();
-		const auto& cameraCollision = VCD::GetCameraCollisionState();
+	auto* phantom = cameraRTD.unk120->unk00.get();
+	if (!phantom) return 	func(
+		param_1,
+		param_2,
+		param_3,
+		param_4,
+		param_5,
+		param_6,
+		param_7
+	);
 
-		auto* player = RE::PlayerCharacter::GetSingleton();
-		float yaw = player ? player->GetAngleZ() : 0.0f;
+	auto manager = VCD::Manager::GetSingleton();
+	auto hkpPhantom = manager.GetCameraSimpleShapePhantom(phantom);
+	if (!hkpPhantom) return 	func(
+		param_1,
+		param_2,
+		param_3,
+		param_4,
+		param_5,
+		param_6,
+		param_7
+	);
 
+	auto* player = RE::PlayerCharacter::GetSingleton();
+	if (player) {
+
+		auto playerPos = player->GetPosition(); 
+
+		logger::info("playerPos = {}", playerPos); 
+
+		float yaw = playerCamera->GetRuntimeData2().yaw;
+
+		// Forward vector (camera facing direction)
 		float forwardX = std::sin(yaw);
 		float forwardY = std::cos(yaw);
+		// Right vector (perpendicular, 90 degrees)
 		float rightX = std::cos(yaw);
 		float rightY = -std::sin(yaw);
 
-		float worldOffsetX = (rightX * cameraCollision.positionX) + (forwardX * cameraCollision.positionY);
-		float worldOffsetY = (rightY * cameraCollision.positionX) + (forwardY * cameraCollision.positionY);
+		const auto& col = VCD::GetCameraCollisionState();
 
-		position->quad.m128_f32[0] += worldOffsetX * worldScale;
-		position->quad.m128_f32[1] += worldOffsetY * worldScale;
+		float worldOffsetX = (forwardX * col.positionY) + (rightX * col.positionX);
+		float worldOffsetY = (forwardY * col.positionY) + (rightY * col.positionX);
+
+		//Log MUST match the position for the phantom shape in set rotation hook above
+		logger::debug("[SYNC-LinearCast] yaw={:.4f} offsetX={:.4f} offsetY={:.4f} param3=({:.2f},{:.2f}) -> ({:.2f},{:.2f})",
+			yaw, worldOffsetX, worldOffsetY,
+			param_3[0], param_3[1],
+			param_3[0] + worldOffsetX, param_3[1] + worldOffsetY);
+
+		// Apply to param_3
+		param_3[0] += worldOffsetX;
+		param_3[1] += worldOffsetY;
+	
 	}
 
-	func(phantom, position);
+	func(
+		param_1,
+		param_2,
+		param_3,
+		param_4,
+		param_5,
+		param_6,
+		param_7
+	);
+
 }
 
-void BhkSimpleShapePhantom_SetPosition::Install()
+// AE 33007     14054F720
+void CameraLinearCastHook::Install()
 {
-	SKSE::AllocTrampoline(1 << 7);
 	auto& trampoline = SKSE::GetTrampoline();
 
+	//AE  UpdatePlayerCameraTransforms = 50832 (FUN_1408e48d0) Offset = 0x38E
+	// SE UpdatePlayerCameraTransforms = 49899 (FUN_14084c870) Offset = 0x300
 	std::array targets{
-			std::make_pair(
-				RELOCATION_ID(32271, 33008),  //  SE 1404F4C00 AE 14054fd00  - CheckCharacterCollision
-				REL::VariantOffset{ 0x29F, 0x27B, 0x29F }
-			)
+		std::make_pair(
+			RELOCATION_ID(49899, 50832),  // UpdatePlayerCameraTransforms
+			REL::VariantOffset{ 0x300, 0x38E, 0x300}  // Offset to CALL FUN_14054f720
+		)
 	};
 
 	for (auto& [id, offset] : targets) {
 		REL::Relocation<std::uintptr_t> target(id, offset);
+		logger::info("CameraLinearCastHook target: {:X}", target.address());
 		func = trampoline.write_call<5>(target.address(), thunk);
 	}
 
-	logger::info("BhkSimpleShapePhantom_SetPosition hook installed");
+	logger::info("CameraLinearCastHook installed");
 }
 
-
 void Hook::Install() {
+	SKSE::AllocTrampoline(1 << 8);
 
+	CameraLinearCastHook::Install(); 
 
 	Hook::PlayerUpdate::Install();
 
@@ -318,7 +401,5 @@ void Hook::Install() {
 	MenuTopicManagerHook::Install();
 
 	ThirdPersonState_SetRotation::Install();
-
-	BhkSimpleShapePhantom_SetPosition::Install();
 }
 
