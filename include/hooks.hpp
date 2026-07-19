@@ -48,12 +48,24 @@ namespace Hook {
         static void Install();
     };
 
-    struct BhkSimpleShapePhantom_SetPosition
+
+    struct CameraLinearCastHook
     {
-        static void thunk(RE::bhkSimpleShapePhantom* phantom, RE::hkVector4* position);
+        static void thunk(
+            std::int64_t* param_1,   // unk120 phantom wrapper
+            std::int64_t* param_2,   // bhkWorld
+            float* param_3,   // TARGET pos - phantom moves here
+            float* param_4,   // CURRENT pos - linear cast starts here  
+            float* param_5,   // output
+            std::uint64_t* param_6,   // hit actor
+            float          param_7    // radius
+        );
+
         static inline REL::Relocation<decltype(thunk)*> func;
+
         static void Install();
     };
+
 
     void Install(); 
 

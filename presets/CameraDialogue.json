@@ -3,7 +3,7 @@
   "name": "Camera Dialogue",
 
   // Position offset: [side, forward, unused z]. Keep z at 0.0.
-  "position": [0.0, 10.0, 0.0],
+  "position": [-5.0, 30.0, 0.0],
 
   // Collision radius.
   "radius": 6.0,
