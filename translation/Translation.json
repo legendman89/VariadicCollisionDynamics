@@ -151,6 +151,10 @@
   "Dynamics.PoseFix.NPCSittingTooltip": "Shrink nearby NPC collision capsules while sitting on supported furniture.",
   "Dynamics.PoseFix.NPCSittingScale": "NPC Sitting Scale",
 
+  "Dynamics.PoseFix.GrindstoneSitting": "Grindstone Sitting",
+  "Dynamics.PoseFix.GrindstoneSittingTooltip": "Use a separate collision capsule scale for players and NPCs using grindstones.",
+  "Dynamics.PoseFix.GrindstoneSittingScale": "Grindstone Scale",
+
   "Dynamics.PoseFix.PlayerSneaking": "Fix Player Sneaking",
   "Dynamics.PoseFix.PlayerSneakingScale": "Player Sneaking Scale",
 

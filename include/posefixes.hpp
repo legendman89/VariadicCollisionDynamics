@@ -34,7 +34,14 @@ namespace PoseFixes {
         return VCD::ContainsInsensitive(name, "bench") ||
             VCD::ContainsInsensitive(name, "chair") ||
             VCD::ContainsInsensitive(name, "stool") ||
-            VCD::ContainsInsensitive(name, "throne");
+            VCD::ContainsInsensitive(name, "throne") ||
+            VCD::ContainsInsensitive(name, "grindstone") ||
+            VCD::ContainsInsensitive(name, "tanning rack");
+    }
+
+    inline bool IsGrindstoneFurnitureName(const char* a_name)
+    {
+        return a_name && VCD::ContainsInsensitive(a_name, "grindstone");
     }
 
     inline const RE::TESIdleForm* GetSittingIdle(const RE::Actor* a_actor)
@@ -76,7 +83,9 @@ namespace PoseFixes {
             return poseFlags;
         }
 
-        if (IsSittingFurnitureName(VCD::GetOccupiedFurnitureName(a_actor))) {
+        const auto* furnitureName = VCD::GetOccupiedFurnitureName(a_actor);
+        poseFlags.isGrindstone = IsGrindstoneFurnitureName(furnitureName);
+        if (IsSittingFurnitureName(furnitureName)) {
             poseFlags.isSitting = true;
             return poseFlags;
         }
@@ -84,6 +93,16 @@ namespace PoseFixes {
         poseFlags.isChildSittingOnKnees = IsChildSittingOnKnees(a_actor);
         poseFlags.isSitting = poseFlags.isChildSittingOnKnees;
         return poseFlags;
+    }
+
+    inline float GetSittingScale(const RE::Actor* a_actor, const VCD::PoseFlags& a_poseFlags)
+    {
+        const auto& settings = Settings::GetSettings();
+        if (a_poseFlags.isGrindstone) {
+            return settings.grindstoneSittingScale;
+        }
+
+        return a_actor == RE::PlayerCharacter::GetSingleton() ? settings.playerSittingScale : settings.npcSittingScale;
     }
 
     inline bool IsReallySitting(const RE::Actor* a_actor)
@@ -98,6 +117,7 @@ namespace PoseFixes {
 		if (!settings.fixPlayerSitting) {
 			poseFlags.isSitting = false;
 			poseFlags.isChildSittingOnKnees = false;
+			poseFlags.isGrindstone = false;
 		}
 		poseFlags.isSneaking = settings.fixPlayerSneaking && poseFlags.isSneaking;
 		return poseFlags;
@@ -110,6 +130,7 @@ namespace PoseFixes {
 		if (!settings.fixNPCSitting) {
 			poseFlags.isSitting = false;
 			poseFlags.isChildSittingOnKnees = false;
+			poseFlags.isGrindstone = false;
 		}
 		poseFlags.isSneaking = settings.enableNPCDynamics && settings.fixNPCSneaking && poseFlags.isSneaking;
 		return poseFlags;

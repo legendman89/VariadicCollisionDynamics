@@ -33,17 +33,17 @@ namespace UI {
     {
         float heightOffset{ 4.0F };
         float radius{ 1.0F };
-        float xyOffset{ 30.0F };
+        float xyOffset{ 50.0F };
     };
 
     inline constexpr std::array<CollisionEditorLimits, static_cast<size_t>(VCD::Race::CollisionLimitClass::kTotal)> kCollisionEditorLimits
     {
-        CollisionEditorLimits{ 0.6F, 1.0F, 30.0F },
-        CollisionEditorLimits{ 1.0F, 1.0F, 40.0F },
-        CollisionEditorLimits{ 2.5F, 1.5F, 40.0F },
-        CollisionEditorLimits{ 2.0F, 1.2F, 40.0F },
-        CollisionEditorLimits{ 3.0F, 1.0F, 30.0F },
-        CollisionEditorLimits{ 0.0F, 30.0F, 30.0F }
+        CollisionEditorLimits{ 0.6F, 1.0F, 50.0F },
+        CollisionEditorLimits{ 1.0F, 1.0F, 50.0F },
+        CollisionEditorLimits{ 2.5F, 1.5F, 50.0F },
+        CollisionEditorLimits{ 2.0F, 1.2F, 50.0F },
+        CollisionEditorLimits{ 3.0F, 1.0F, 50.0F },
+        CollisionEditorLimits{ 0.0F, 50.0F, 50.0F }
     };
 
     inline constexpr CollisionEditorLimits GetCollisionEditorLimits(const VCD::Race::CollisionLimitClass& a_limitClass)

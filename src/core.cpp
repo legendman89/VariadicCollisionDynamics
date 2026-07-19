@@ -2,6 +2,7 @@
 #include "havok.hpp"
 #include "settings.hpp"
 #include "dynamics.hpp"
+#include "posefixes.hpp"
 
 using namespace VCD;
 
@@ -86,8 +87,7 @@ bool Manager::SetCollisionData(const RE::Actor* a_actor, const CollisionData& a_
             CacheStandingCapsule(lastActorState, mappedPoint1Z, mappedPoint2Z, mappedRadius);
         }
 
-        const auto* player = RE::PlayerCharacter::GetSingleton();
-        const auto scale = a_actor == player ? Settings::GetSettings().playerSittingScale : Settings::GetSettings().npcSittingScale;
+        const auto scale = PoseFixes::GetSittingScale(a_actor, a_poseFlags);
         mappedHeight = ApplySittingCapsule(lastActorState, mappedPoint1Z, mappedPoint2Z, mappedRadius, a_poseFlags, scale);
     }
     const auto* player = RE::PlayerCharacter::GetSingleton();

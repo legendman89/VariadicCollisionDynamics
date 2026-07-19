@@ -41,6 +41,7 @@
 #define FOREACH_POSE_FIX_FLOAT_SETTING(S) \
 	S(playerSittingScale, 0.65F) \
 	S(npcSittingScale, 0.65F) \
+	S(grindstoneSittingScale, 0.5F) \
 	S(playerSneakingScale, 0.7F) \
 	S(npcSneakingScale, 0.7F)
 

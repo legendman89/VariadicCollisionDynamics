@@ -1,6 +1,7 @@
 #pragma once
 
 #include "plugin.hpp"
+#include "logger.hpp"
 
 #include <array>
 #include <cctype>
@@ -18,6 +19,7 @@ namespace VCD {
     {
         bool isSitting{ false };
         bool isChildSittingOnKnees{ false };
+        bool isGrindstone{ false };
         bool isSneaking{ false };
 
         bool operator==(const PoseFlags&) const = default;
@@ -183,6 +185,9 @@ namespace VCD {
         const auto furniturePtr = furnitureHandle.get();
         const auto* furniture = furniturePtr.get();
         const auto* name = furniture ? furniture->GetName() : nullptr;
+
+        logger::trace("Found furniture {}", name ? name : "Unknown");
+
         return name ? name : "";
     }
 

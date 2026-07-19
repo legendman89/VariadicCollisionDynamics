@@ -235,6 +235,22 @@ namespace UI {
 
 			GUI::TableNextRow();
 			GUI::TableNextColumn();
+			GUI::AlignTextToFramePadding();
+			const auto* style = GUI::GetStyle();
+			const auto checkboxLabelOffset = GUI::GetFrameHeight() + (style ? style->ItemInnerSpacing.x : 4.0F);
+			GUI::SetCursorPosX(GUI::GetCursorPosX() + checkboxLabelOffset);
+			GUI::TextUnformatted(Trans::Tr("Dynamics.PoseFix.GrindstoneSitting").c_str());
+			Tooltip(Trans::Tr("Dynamics.PoseFix.GrindstoneSittingTooltip").c_str());
+			GUI::TableNextColumn();
+			GUI::SetCursorPosX(GUI::GetCursorPosX() + 12.0F);
+			GUI::BeginDisabled(!settings.fixPlayerSitting && !settings.fixNPCSitting);
+			GUI::SetNextItemWidth(kFixedPoseSliderWidth);
+			const auto grindstoneSittingScaleChanged = GUI::SliderFloat(Trans::Tr("Dynamics.PoseFix.GrindstoneSittingScale").c_str(), &settings.grindstoneSittingScale, 0.3F, 1.0F);
+			const auto grindstoneSittingScaleActive = GUI::IsItemActive();
+			GUI::EndDisabled();
+
+			GUI::TableNextRow();
+			GUI::TableNextColumn();
 			const auto dynamicCollisionAdjustmentInstalled = VCD::IsDynamicCollisionAdjustmentInstalled();
 			GUI::BeginDisabled(dynamicCollisionAdjustmentInstalled);
 			const auto sneakingFixChanged = GUI::Checkbox(Trans::Tr("Dynamics.PoseFix.PlayerSneaking").c_str(), &settings.fixPlayerSneaking);
@@ -260,9 +276,9 @@ namespace UI {
 			const auto npcSneakingScaleActive = GUI::IsItemActive();
 			GUI::EndDisabled();
 
-			const auto playerChanged = playerSittingChanged || playerSittingScaleChanged || sneakingFixChanged || sneakingScaleChanged;
-			const auto npcChanged = npcSittingChanged || npcSittingScaleChanged || npcSneakingChanged || npcSneakingScaleChanged;
-			const auto waitForRelease = playerSittingScaleActive || npcSittingScaleActive || sneakingScaleActive || npcSneakingScaleActive;
+			const auto playerChanged = playerSittingChanged || playerSittingScaleChanged || grindstoneSittingScaleChanged || sneakingFixChanged || sneakingScaleChanged;
+			const auto npcChanged = npcSittingChanged || npcSittingScaleChanged || grindstoneSittingScaleChanged || npcSneakingChanged || npcSneakingScaleChanged;
+			const auto waitForRelease = playerSittingScaleActive || npcSittingScaleActive || grindstoneSittingScaleActive || sneakingScaleActive || npcSneakingScaleActive;
 			if (playerChanged || npcChanged) {
 				ApplyPoseFixes(playerChanged, npcChanged, false);
 				SchedulePoseFixApply(playerChanged, npcChanged, waitForRelease);

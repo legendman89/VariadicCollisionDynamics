@@ -137,8 +137,7 @@ bool Manager::FixSittingPose(const RE::Actor* a_actor, const PoseFlags& a_poseFl
 
     auto mappedPoint1Z = lastActorState.standingPoint1Z;
     auto mappedPoint2Z = lastActorState.standingPoint2Z;
-    const auto* player = RE::PlayerCharacter::GetSingleton();
-    const auto scale = a_actor == player ? Settings::GetSettings().playerSittingScale : Settings::GetSettings().npcSittingScale;
+    const auto scale = PoseFixes::GetSittingScale(a_actor, a_poseFlags);
     ApplySittingCapsule(lastActorState, mappedPoint1Z, mappedPoint2Z, lastActorState.standingRadius, a_poseFlags, scale);
     ApplyCapsulePoseHeight(worldCapsuleShape, lastActorState.standingRadius, mappedPoint1Z, mappedPoint2Z);
     lastActorState.sittingPoseApplied = true;
