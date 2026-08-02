@@ -285,6 +285,19 @@ namespace VCD {
             a_shape->vertexB = ToHkVector(RE::NiPoint3(vertexB.x, vertexB.y, a_point2Z));
         }
 
+        inline bool IsFinitePoint(const RE::NiPoint3& a_point) const
+        {
+            return std::isfinite(a_point.x) && std::isfinite(a_point.y) && std::isfinite(a_point.z);
+        }
+
+        inline bool IsFiniteVector(const RE::hkVector4& a_vector) const
+        {
+            return std::isfinite(a_vector.quad.m128_f32[0]) &&
+                   std::isfinite(a_vector.quad.m128_f32[1]) &&
+                   std::isfinite(a_vector.quad.m128_f32[2]) &&
+                   std::isfinite(a_vector.quad.m128_f32[3]);
+        }
+
         // Recompute convex vertices based on capsule shape.
         bool SetConvexShape(const RE::Actor* a_actor, RE::bhkCharacterController* a_controller, const float& a_radius, const float& a_point1Z, const float& a_point2Z, const RE::NiPoint3& a_translation, const char* a_name, const bool& a_log);
 
@@ -306,7 +319,7 @@ namespace VCD {
 
         bool CacheConvexShapeState(const RE::FormID& a_formID, const RE::bhkCharacterController* a_controller, const RE::hkpConvexVerticesShape* a_shape, ConvexShapeState& a_state);
 
-        bool ReplaceControllerConvexShape(RE::bhkCharacterController* a_controller, ConvexShapeData& a_convex, RE::hkpConvexVerticesShape* a_newShape) const;
+        bool ReplaceControllerConvexShape(const RE::FormID& a_formID, RE::bhkCharacterController* a_controller, ConvexShapeData& a_convex, RE::hkpConvexVerticesShape* a_newShape) const;
 
         // For debugging.
         void LogCharacterBumperFailure(const char* a_reason) const;

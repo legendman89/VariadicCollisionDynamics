@@ -2,6 +2,19 @@
 
 namespace Hook {
 
+    struct CharacterProxyProcessConstraints
+    {
+        static void thunk(
+            RE::bhkCharProxyController* a_this,
+            const RE::hkpCharacterProxy* a_proxy,
+            const RE::hkArray<RE::hkpRootCdPoint>& a_manifold,
+            RE::hkpSimplexSolverInput& a_input);
+
+        static inline REL::Relocation<decltype(thunk)> func;
+
+        static void Install();
+    };
+
     struct PlayerUpdate {
 
         static void thunk(RE::PlayerCharacter* player, float delta);

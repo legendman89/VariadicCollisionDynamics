@@ -6,11 +6,6 @@
 
 using namespace VCD;
 
-//Legendman please organize this how you want
-// these globals are set in the menu editor for camera,
-// then are used in thirdperson_SetRotation hook to apply camera collision pos
-
-
 // Core logic of capsule shaping based on actor's preset and pose.
 bool Manager::SetCollisionData(const RE::Actor* a_actor, const CollisionData& a_data, const Preset& a_anchorPreset, const char* a_name, const PoseFlags& a_poseFlags, const bool& a_log, const bool& a_rebuildConvex)
 {
@@ -20,6 +15,18 @@ bool Manager::SetCollisionData(const RE::Actor* a_actor, const CollisionData& a_
     }
 
     RE::BSWriteLockGuard lock(context.world->worldLock);
+    auto* currentCell = a_actor->GetParentCell();
+    auto* currentWorld = currentCell ? currentCell->GetbhkWorld() : nullptr;
+    if (a_actor->GetCharController() != context.controller || currentWorld != context.world) {
+        logger::error("Collision update aborted [{:08X}] [{}]: actor context changed after world lock; controller {} -> {}, world {} -> {}",
+            a_actor->GetFormID(),
+            a_name ? a_name : "Unknown",
+            static_cast<void*>(context.controller),
+            static_cast<void*>(a_actor->GetCharController()),
+            static_cast<void*>(context.world),
+            static_cast<void*>(currentWorld));
+        return false;
+    }
 
     CharacterBumperShape bumperShape{};
     if (!FindWorldCharacterBumperShapeData(context.controller, bumperShape)) {
@@ -213,8 +220,6 @@ bool Manager::SetCameraCollisionData(const VCD::CollisionData& a_data)
     cameraCollision.positionX = a_data.bump.translation.x;
     cameraCollision.positionY = a_data.bump.translation.y;
 
-    //I still dont know when unk08 is used its not used at all normally
-    //Apply(cameraRTD.unk120->unk08.get());
 
     Dynamics::ApplyCameraCollisionRadius(a_data.capsule.radius);
 
@@ -228,32 +233,52 @@ bool Manager::SetConvexShape(const RE::Actor* a_actor,
     const float& a_radius, const float& a_point1Z, const float& a_point2Z, 
     const RE::NiPoint3& a_translation, const char* a_name, const bool& a_log)
 {
+    (void)a_log;
+
     if (!a_actor || !a_controller) {
+        logger::error("Convex rebuild rejected: actor={}, controller={}",
+            static_cast<const void*>(a_actor), static_cast<void*>(a_controller));
+        return false;
+    }
+
+    const auto formID = a_actor->GetFormID();
+    if (!std::isfinite(a_radius) || a_radius <= 0.0F ||
+        !std::isfinite(a_point1Z) || !std::isfinite(a_point2Z) ||
+        !IsFinitePoint(a_translation)) {
+        logger::error("Convex rebuild rejected [{:08X}] [{}]: invalid or non-finite input geometry",
+            formID, a_name ? a_name : "Unknown");
         return false;
     }
 
     ConvexShapeData convex{};
     if (!FindControllerConvexShape(a_controller, convex) || !convex.convexShape) {
-        if (a_log) {
-            logger::warn("Actor convex rebuild skipped [{}]: convex controller shape unavailable", a_name ? a_name : "Unknown");
-        }
+        logger::warn("Convex rebuild skipped [{:08X}] [{}]: controller shape unavailable; controller={}",
+            formID, a_name ? a_name : "Unknown", static_cast<void*>(a_controller));
         return false;
     }
 
-    const auto formID = a_actor->GetFormID();
     auto& state = convexShapeStates[formID];
     if (state.controller != a_controller || (state.currentShape && state.currentShape != convex.convexShape)) {
         state = {};
     }
     if (!CacheConvexShapeState(formID, a_controller, convex.convexShape, state)) {
+        logger::warn("Convex rebuild skipped [{:08X}] [{}]: original shape cache unavailable",
+            formID, a_name ? a_name : "Unknown");
         return false;
     }
 
     if (state.originalVertices.size() != 18) {
-        if (a_log) {
-            logger::warn("Actor convex rebuild skipped [{}]: unsupported vertex count {}", a_name ? a_name : "Unknown", state.originalVertices.size());
-        }
+        logger::warn("Convex rebuild skipped [{:08X}] [{}]: unsupported vertex count {}",
+            formID, a_name ? a_name : "Unknown", state.originalVertices.size());
         return false;
+    }
+
+    for (const auto& vertex : state.originalVertices) {
+        if (!IsFiniteVector(vertex)) {
+            logger::error("Convex rebuild rejected [{:08X}] [{}]: cached source vertices contain non-finite data",
+                formID, a_name ? a_name : "Unknown");
+            return false;
+        }
     }
 
     const auto* refPresetConfig = GetDefaultPresetConfig(Preset::kVanilla);
@@ -266,6 +291,14 @@ bool Manager::SetConvexShape(const RE::Actor* a_actor,
     const auto heightMult = refHeight > 0.0F ? presetHeight / refHeight : 1.0F;
     const auto forwardOffset = (a_translation.y - refForward) * RE::bhkWorld::GetWorldScale();
     const auto sideOffset = (a_translation.x - refSide) * RE::bhkWorld::GetWorldScale();
+    if (!std::isfinite(radiusMult) || radiusMult <= 0.0F ||
+        !std::isfinite(heightMult) || heightMult <= 0.0F ||
+        !std::isfinite(forwardOffset) || !std::isfinite(sideOffset)) {
+        logger::error("Convex rebuild rejected [{:08X}] [{}]: invalid mapped geometry; radiusMult={}, heightMult={}, offset=({}, {})",
+            formID, a_name ? a_name : "Unknown",
+            radiusMult, heightMult, sideOffset, forwardOffset);
+        return false;
+    }
 
     auto newVertices = state.originalVertices;
     const auto topVertex = state.originalVertices[9];
@@ -294,38 +327,37 @@ bool Manager::SetConvexShape(const RE::Actor* a_actor,
         vertex.quad.m128_f32[0] += sideOffset;
         vertex.quad.m128_f32[1] += forwardOffset;
     }
+    for (const auto& vertex : newVertices) {
+        if (!IsFiniteVector(vertex)) {
+            logger::error("Convex rebuild rejected [{:08X}] [{}]: generated vertices contain non-finite data",
+                formID, a_name ? a_name : "Unknown");
+            return false;
+        }
+    }
 
     Havok::StridedVertices stridedVertices(newVertices.data(), static_cast<int>(newVertices.size()));
     Havok::ConvexVerticesBuildConfig buildConfig{ false, false, true, 0.05F, 0, 0.0F, 0.0F, -0.1F };
     auto* newShape = Havok::AllocateConvexVerticesShape();
     if (!newShape) {
-        if (a_log) {
-            logger::warn("Actor convex rebuild skipped [{}]: allocation failed", a_name ? a_name : "Unknown");
-        }
+        logger::error("Convex allocation failed [{:08X}] [{}]: Havok router or heap unavailable, or BlockAlloc returned null",
+            formID, a_name ? a_name : "Unknown");
         return false;
     }
 
     Havok::ConvexVerticesShapeCtor(newShape, stridedVertices, buildConfig);
-    reinterpret_cast<std::uintptr_t*>(newShape)[0] = RE::VTABLE_hkCharControllerShape[0].address();
+    if (newShape->GetReferenceCount() <= 0) {
+        logger::error("Convex rebuild abandoned [{:08X}] [{}]: constructor produced invalid reference count {}",
+            formID, a_name ? a_name : "Unknown", newShape->GetReferenceCount());
+        return false;
+    }
 
-    if (!ReplaceControllerConvexShape(a_controller, convex, newShape)) {
+    reinterpret_cast<std::uintptr_t*>(newShape)[0] = RE::VTABLE_hkCharControllerShape[0].address();
+    if (!ReplaceControllerConvexShape(formID, a_controller, convex, newShape)) {
         newShape->RemoveReference();
-        if (a_log) {
-            logger::warn("Actor convex rebuild skipped [{}]: replacement failed", a_name ? a_name : "Unknown");
-        }
+        logger::warn("Convex replacement failed [{:08X}] [{}]: newly constructed shape released", formID, a_name ? a_name : "Unknown");
         return false;
     }
     state.currentShape = newShape;
-
-    if (a_log) {
-        logger::debug("Actor convex rebuild [{}]: vertices={}, radius mult={}, height mult={}, offset=({}, {})",
-            a_name ? a_name : "Unknown", 
-            newVertices.size(), 
-            radiusMult, 
-            heightMult, 
-            sideOffset,
-            forwardOffset);
-    }
 
     return true;
 }

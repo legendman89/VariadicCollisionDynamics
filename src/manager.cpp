@@ -524,6 +524,7 @@ bool Manager::CacheConvexShapeState(const RE::FormID& a_formID, const RE::bhkCha
     }
 
     if (!a_shape) {
+        logger::error("Convex cache rejected [{:08X}]: shape pointer is null", a_formID);
         return false;
     }
 
@@ -533,34 +534,57 @@ bool Manager::CacheConvexShapeState(const RE::FormID& a_formID, const RE::bhkCha
         logger::warn("Actor convex cache failed [{:08X}]: original vertices unavailable", a_formID);
         return false;
     }
+    if (originalVertices.size() > 1024) {
+        logger::error("Actor convex cache rejected [{:08X}]: unreasonable original vertex count {}",
+            a_formID, originalVertices.size());
+        return false;
+    }
 
     a_state.originalVertices.assign(originalVertices.begin(), originalVertices.end());
     a_state.controller = a_controller;
     a_state.currentShape = a_shape;
     const auto vertex = ToNiPoint3(a_state.originalVertices[0]);
     a_state.originalRadius = std::sqrt((vertex.x * vertex.x) + (vertex.y * vertex.y));
-    a_state.valid = a_state.originalRadius > 0.0F;
+    a_state.valid = std::isfinite(a_state.originalRadius) && a_state.originalRadius > 0.0F;
     if (!a_state.valid) {
-        logger::warn("Actor convex cache failed [{:08X}]: original radius unavailable", a_formID);
+        logger::error("Actor convex cache failed [{:08X}]: original radius is invalid ({})",
+            a_formID, a_state.originalRadius);
         return false;
     }
 
-    logger::debug("Actor convex cache [{:08X}]: vertices={}, radius={}", a_formID, a_state.originalVertices.size(), a_state.originalRadius);
     return true;
 }
 
-bool Manager::ReplaceControllerConvexShape(RE::bhkCharacterController* a_controller, ConvexShapeData& a_convex, RE::hkpConvexVerticesShape* a_newShape) const
+bool Manager::ReplaceControllerConvexShape(const RE::FormID& a_formID, RE::bhkCharacterController* a_controller, ConvexShapeData& a_convex, RE::hkpConvexVerticesShape* a_newShape) const
 {
     if (!a_controller || !a_convex.convexShape || !a_newShape) {
+        logger::error("Convex replacement rejected [{:08X}]: controller={}, oldShape={}, newShape={}",
+            a_formID, static_cast<void*>(a_controller), static_cast<void*>(a_convex.convexShape), static_cast<void*>(a_newShape));
         return false;
     }
 
     auto* oldShape = a_convex.convexShape;
-    if (oldShape->userData) {
-        oldShape->userData->SetReferencedObject(a_newShape);
+    auto* wrapper = oldShape->userData;
+    if (!wrapper) {
+        logger::error("Convex replacement rejected [{:08X}]: old shape {} has no bhk wrapper",
+            a_formID,
+            static_cast<void*>(oldShape));
+        return false;
+    }
+    if (wrapper->referencedObject.get() != oldShape) {
+        logger::error("Convex replacement rejected [{:08X}]: wrapper ownership mismatch; wrapper={}, referenced={}, expected={}",
+            a_formID, static_cast<void*>(wrapper), static_cast<void*>(wrapper->referencedObject.get()), static_cast<void*>(oldShape));
+        return false;
     }
 
     if (a_convex.childInfo) {
+        if (a_convex.childInfo->shape != oldShape) {
+            logger::error("Convex replacement rejected [{:08X}]: list child changed; child={}, current={}, expected={}",
+                a_formID, static_cast<void*>(a_convex.childInfo), static_cast<const void*>(a_convex.childInfo->shape), static_cast<void*>(oldShape));
+            return false;
+        }
+
+        wrapper->SetReferencedObject(a_newShape);
         a_convex.childInfo->shape = a_newShape;
         oldShape->RemoveReference();
         a_convex.convexShape = a_newShape;
@@ -570,17 +594,47 @@ bool Manager::ReplaceControllerConvexShape(RE::bhkCharacterController* a_control
     bool replaced = false;
     if (auto* proxyController = skyrim_cast<RE::bhkCharProxyController*>(a_controller)) {
         auto* proxy = proxyController->GetCharacterProxy();
-        if (proxy && proxy->shapePhantom) {
-            proxy->shapePhantom->SetShape(a_newShape);
-            replaced = true;
+        if (!proxy || !proxy->shapePhantom) {
+            logger::warn("Convex proxy replacement unavailable [{:08X}]: proxy or phantom is null", a_formID);
+            return false;
+        }
+        if (proxy->shapePhantom->collidable.shape != oldShape) {
+            logger::error("Convex proxy replacement rejected [{:08X}]: collidable shape changed; current={}, expected={}",
+                a_formID, static_cast<const void*>(proxy->shapePhantom->collidable.shape), static_cast<void*>(oldShape));
+            return false;
+        }
+
+        wrapper->SetReferencedObject(a_newShape);
+        const auto result = proxy->shapePhantom->SetShape(a_newShape);
+        replaced = true;
+        if (result != RE::hkWorldOperation::Result::kDone) {
+            logger::warn("Convex proxy replacement postponed [{:08X}]", a_formID);
         }
     }
     else if (auto* rigidBodyController = skyrim_cast<RE::bhkCharRigidBodyController*>(a_controller)) {
         auto* rigidBody = rigidBodyController->GetRigidBody();
-        if (rigidBody) {
-            rigidBody->SetShape(a_newShape);
-            replaced = true;
+        auto* collidable = rigidBody ? rigidBody->GetCollidable() : nullptr;
+        if (!rigidBody || !collidable) {
+            logger::warn("Convex rigid-body replacement unavailable [{:08X}]: body or collidable is null", a_formID);
+            return false;
         }
+        if (collidable->GetShape() != oldShape) {
+            logger::error("Convex rigid-body replacement rejected [{:08X}]: collidable shape changed; current={}, expected={}",
+                a_formID, static_cast<const void*>(collidable->GetShape()), static_cast<void*>(oldShape));
+            return false;
+        }
+
+        wrapper->SetReferencedObject(a_newShape);
+        const auto result = rigidBody->SetShape(a_newShape);
+        replaced = true;
+        if (result != RE::hkWorldOperation::Result::kDone) {
+            logger::warn("Convex rigid-body replacement postponed [{:08X}]", a_formID);
+        }
+    }
+    else {
+        logger::error("Convex replacement rejected [{:08X}]: unsupported controller type at {}",
+            a_formID, static_cast<void*>(a_controller));
+        return false;
     }
 
     if (replaced) {

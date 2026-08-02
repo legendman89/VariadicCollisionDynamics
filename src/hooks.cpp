@@ -1,4 +1,4 @@
- 
+#include "step.hpp"
 #include "draw.hpp"
 #include "hooks.hpp"
 #include "helper.hpp"
@@ -10,8 +10,34 @@
 #include "posefixes.hpp"
 #include <CLibUtilsQTR/DrawDebug.hpp>
 
+#include <array>
+#include <cmath>
+
 using namespace Hook; 
 using namespace DebugAPI_IMPL;
+
+void CharacterProxyProcessConstraints::thunk(
+	RE::bhkCharProxyController* a_this,
+	const RE::hkpCharacterProxy* a_proxy,
+	const RE::hkArray<RE::hkpRootCdPoint>& a_manifold,
+	RE::hkpSimplexSolverInput& a_input)
+{
+	if (!a_this || !a_proxy || !StepConstraints::IsManagedCharacter(a_this)) {
+		func(a_this, a_proxy, a_manifold, a_input);
+		return;
+	}
+
+	const auto constraintCountBefore = a_input.numConstraints;
+	func(a_this, a_proxy, a_manifold, a_input);
+	StepConstraints::Fix(a_this, a_proxy, a_manifold, a_input, constraintCountBefore);
+}
+
+void CharacterProxyProcessConstraints::Install()
+{
+	REL::Relocation<std::uintptr_t> vtable{ RE::VTABLE_bhkCharProxyController[0] };
+	func = vtable.write_vfunc(0x01, thunk);
+	logger::info("Character step compatibility hook installed.");
+}
 
 void PlayerUpdate::thunk(RE::PlayerCharacter* player, float delta) {
 
@@ -227,15 +253,6 @@ void ThirdPersonState_SetRotation::thunk(
 		(rightY * cameraCollision.positionX) +
 		(forwardY * cameraCollision.positionY);
 
-
-	//Log MUST match the phantoms collideable position below in the player camera linear cast hook below
-	logger::info("[SYNC-SetRotation] yaw={:.4f} offsetX={:.4f} offsetY={:.4f} translationScale=({:.6f},{:.6f}) -> ({:.6f},{:.6f})",
-		yaw, worldOffsetX, worldOffsetY,
-		translation.quad.m128_f32[0], translation.quad.m128_f32[1],
-		translation.quad.m128_f32[0] + worldOffsetX * worldScale,
-		translation.quad.m128_f32[1] + worldOffsetY * worldScale);
-
-
 	// Apply the transformed offset
 	translation.quad.m128_f32[0] += worldOffsetX * worldScale;
 	translation.quad.m128_f32[1] += worldOffsetY * worldScale;
@@ -323,11 +340,6 @@ void CameraLinearCastHook::thunk(
 
 	auto* player = RE::PlayerCharacter::GetSingleton();
 	if (player) {
-
-		auto playerPos = player->GetPosition(); 
-
-		logger::info("playerPos = {}", playerPos); 
-
 		float yaw = playerCamera->GetRuntimeData2().yaw;
 
 		// Forward vector (camera facing direction)
@@ -341,12 +353,6 @@ void CameraLinearCastHook::thunk(
 
 		float worldOffsetX = (forwardX * col.positionY) + (rightX * col.positionX);
 		float worldOffsetY = (forwardY * col.positionY) + (rightY * col.positionX);
-
-		//Log MUST match the position for the phantom shape in set rotation hook above
-		logger::debug("[SYNC-LinearCast] yaw={:.4f} offsetX={:.4f} offsetY={:.4f} param3=({:.2f},{:.2f}) -> ({:.2f},{:.2f})",
-			yaw, worldOffsetX, worldOffsetY,
-			param_3[0], param_3[1],
-			param_3[0] + worldOffsetX, param_3[1] + worldOffsetY);
 
 		// Apply to param_3
 		param_3[0] += worldOffsetX;
@@ -392,14 +398,15 @@ void CameraLinearCastHook::Install()
 void Hook::Install() {
 	SKSE::AllocTrampoline(1 << 8);
 
+	CharacterProxyProcessConstraints::Install();
+
 	CameraLinearCastHook::Install(); 
 
-	Hook::PlayerUpdate::Install();
+	PlayerUpdate::Install();
 
-	Hook::SneakHandlerProcessButton::Install();
+	SneakHandlerProcessButton::Install();
 
 	MenuTopicManagerHook::Install();
 
 	ThirdPersonState_SetRotation::Install();
 }
-
