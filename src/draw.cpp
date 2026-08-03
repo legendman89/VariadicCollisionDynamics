@@ -226,7 +226,7 @@ namespace DebugAPI_IMPL::Draw {
         }
 
         if (scanned) {
-            logger::debug("Nearby actor draw: cached={}, drawn={}, filtered={}", state.handles.size(), drawnCount, filteredCount);
+            logger::trace("Nearby actor draw: cached={}, drawn={}, filtered={}", state.handles.size(), drawnCount, filteredCount);
         }
     }
 

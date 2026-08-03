@@ -1,46 +1,74 @@
 #include "step.hpp"
-
-#include "dynamics.hpp"
 #include "helper.hpp"
+#include "dynamics.hpp"
 
 #include <algorithm>
+#include <chrono>
 #include <cmath>
 #include <limits>
 
-namespace
+
+StepConstraints::GroundHeightCache& StepConstraints::GetGroundHeightCache(const RE::bhkCharProxyController* a_controller)
 {
-	constexpr float kMinimumStepHeight = 0.25F;
-	constexpr float kMaximumStepHeight = 40.0F;
-	constexpr float kMinimumGroundNormalZ = 0.7F;
-	constexpr float kMinimumStepContactNormalZ = 0.25F;
-	constexpr float kMaximumStepContactNormalZ = 0.7F;
-	constexpr float kMinimumMovementIntoObstacle = 0.1F;
-	constexpr float kConstraintNormalMatch = 0.995F;
-
-	RE::MATERIAL_ID GetContactMaterial(
-		const RE::hkpCollidable* a_collidable,
-		const RE::hkpShapeKey& a_shapeKey)
-	{
-		if (!a_collidable) {
-			return RE::MATERIAL_ID::kNone;
-		}
-
-		const auto* shape = a_collidable->GetShape();
-		if (!shape || !shape->userData) {
-			return RE::MATERIAL_ID::kNone;
-		}
-
-		if (a_shapeKey == RE::HK_INVALID_SHAPE_KEY) {
-			return shape->userData->materialID;
-		}
-
-		return shape->userData->GetMaterialID(a_shapeKey);
+	if (auto* cache = FindGroundHeightCache(a_controller)) {
+		return *cache;
 	}
 
-	bool IsStaticStepSurface(const RE::hkpCollidable* a_collidable)
-	{
-		return a_collidable && a_collidable->GetCollisionLayer() == RE::COL_LAYER::kStatic;
+	auto& caches = GetGroundHeightCaches();
+	for (auto& cache : caches) {
+		if (!cache.controller) {
+			cache.controller = a_controller;
+			return cache;
+		}
 	}
+
+	static std::size_t nextGroundHeightCache = 0;
+	auto& cache = caches[nextGroundHeightCache];
+	nextGroundHeightCache = (nextGroundHeightCache + 1) % caches.size();
+	cache = {};
+	cache.controller = a_controller;
+	return cache;
+}
+
+void StepConstraints::UpdateGroundHeightCache(const RE::bhkCharProxyController* a_controller, const float a_groundHeight)
+{
+	auto& cache = GetGroundHeightCache(a_controller);
+	cache.height = a_groundHeight;
+	cache.updatedAt = std::chrono::steady_clock::now();
+}
+
+bool StepConstraints::GetCachedGroundHeight(const RE::bhkCharProxyController* a_controller, float& a_groundHeight)
+{
+	const auto* cache = FindGroundHeightCache(a_controller);
+	if (!cache) {
+		return false;
+	}
+
+	const auto age = std::chrono::steady_clock::now() - cache->updatedAt;
+	if (age < std::chrono::steady_clock::duration::zero() || age > StepConstraints::kGroundHeightCacheLifetime) {
+		return false;
+	}
+
+	a_groundHeight = cache->height;
+	return true;
+}
+
+RE::MATERIAL_ID StepConstraints::GetContactMaterial(const RE::hkpCollidable* a_collidable, const RE::hkpShapeKey& a_shapeKey)
+{
+	if (!a_collidable) {
+		return RE::MATERIAL_ID::kNone;
+	}
+
+	const auto* shape = a_collidable->GetShape();
+	if (!shape || !shape->userData) {
+		return RE::MATERIAL_ID::kNone;
+	}
+
+	if (a_shapeKey == RE::HK_INVALID_SHAPE_KEY) {
+		return shape->userData->materialID;
+	}
+
+	return shape->userData->GetMaterialID(a_shapeKey);
 }
 
 bool StepConstraints::IsManagedCharacter(const RE::bhkCharProxyController* a_controller)
@@ -78,33 +106,28 @@ bool StepConstraints::Fix(
 	RE::hkpSimplexSolverInput& a_input,
 	const std::int32_t a_constraintCountBefore)
 {
-	// Only correct a supported character after vanilla appended a new blocking constraint.
-	if (!a_controller || !a_proxy || !a_proxy->shapePhantom || !a_input.constraints ||
-		a_controller->flags.any(RE::CHARACTER_FLAGS::kTryStep) ||
-		a_controller->surfaceInfo.supportedState.underlying() !=
-			static_cast<std::uint32_t>(RE::hkpSurfaceInfo::SupportedState::kSupported) ||
-		a_constraintCountBefore <= 0 || a_input.numConstraints <= a_constraintCountBefore) {
+	if (!a_controller || !a_proxy || !a_proxy->shapePhantom || !a_input.constraints) {
 		return false;
 	}
-
-	// Ignore nearly vertical movement.
-	if (StepConstraints::GetHorizontalLengthSquared(a_input.velocity) <= 0.01F) {
-		return false;
-	}
-
 
 	const auto worldScale = RE::bhkWorld::GetWorldScale();
 	if (!std::isfinite(worldScale) || worldScale <= 0.0F) {
 		return false;
 	}
 
-
 	const auto* characterCollidable = a_proxy->shapePhantom->GetCollidable();
 	if (!characterCollidable) {
 		return false;
 	}
 
-	// Use the lowest static bumper contact as the current ground height.
+	const auto supported = a_controller->surfaceInfo.supportedState.underlying() ==
+		static_cast<std::uint32_t>(RE::hkpSurfaceInfo::SupportedState::kSupported);
+	if (!supported) {
+		InvalidateGroundHeightCache(a_controller);
+		return false;
+	}
+
+	// Refresh the latest reliable ground height before checking for a step attempt.
 	auto groundHeight = std::numeric_limits<float>::max();
 	for (std::int32_t index = 0; index < a_manifold.size(); ++index) {
 		const auto& point = a_manifold[index];
@@ -119,7 +142,27 @@ bool StepConstraints::Fix(
 		}
 	}
 
-	if (groundHeight == std::numeric_limits<float>::max()) {
+	auto usedCachedGroundHeight = false;
+	if (groundHeight != std::numeric_limits<float>::max()) {
+		UpdateGroundHeightCache(a_controller, groundHeight);
+	}
+	else if (GetCachedGroundHeight(a_controller, groundHeight)) {
+		usedCachedGroundHeight = true;
+	}
+	else {
+		return false;
+	}
+
+	// Preserve the last valid ground while vanilla is actively completing a step.
+	const auto tryStep = a_controller->flags.any(RE::CHARACTER_FLAGS::kTryStep);
+	if (tryStep && usedCachedGroundHeight) {
+		UpdateGroundHeightCache(a_controller, groundHeight);
+	}
+
+	// Only correct after vanilla appended a blocker while the character moves horizontally.
+	if (tryStep ||
+		a_constraintCountBefore <= 0 || a_input.numConstraints <= a_constraintCountBefore ||
+		StepConstraints::GetHorizontalLengthSquared(a_input.velocity) <= 0.01F) {
 		return false;
 	}
 
@@ -132,7 +175,6 @@ bool StepConstraints::Fix(
 	auto selectedBlockerIndex = -1;
 
 	// Search static contacts for an obstacle that is low and sloped enough to step onto.
-	// For example small stairs leading to inner doors.
 	for (std::int32_t contactIndex = 0; contactIndex < a_manifold.size(); ++contactIndex) {
 		const auto& point = a_manifold[contactIndex];
 		if (point.rootCollidableA != characterCollidable || !IsStaticStepSurface(point.rootCollidableB)) {
@@ -152,7 +194,6 @@ bool StepConstraints::Fix(
 		if (stepHeight < minimumStepHeight || stepHeight > maximumStepHeight) {
 			continue;
 		}
-
 
 		const auto movementDot = StepConstraints::GetHorizontalDot(a_input.velocity, normal);
 		if (movementDot >= bestMovementDot) {
@@ -205,7 +246,7 @@ bool StepConstraints::Fix(
 	}
 
 	// Tilt the matched contact plane upward and remove friction so vanilla can step over it.
-	// This what Skyrim normally does dealing with stairs/steps based on debugging values.
+	// This mirrors the plane values Skyrim uses for native step handling.
 	auto& stepConstraint = a_input.constraints[selectedConstraintIndex];
 	const auto planeX = stepConstraint.plane.quad.m128_f32[0];
 	const auto planeY = stepConstraint.plane.quad.m128_f32[1];
