@@ -68,6 +68,10 @@ void PlayerUpdate::thunk(RE::PlayerCharacter* player, float delta) {
 
 	Dynamics::UpdateNPCs(player);
 
+	if (!Draw::IsSupported()) {
+		return;
+	}
+
 	const auto& settings = Settings::GetSettings();
 	if (settings.drawCollision || settings.drawNearbyActors) {
 		DebugAPI::GetSingleton()->LinesToDraw.clear();
@@ -92,11 +96,10 @@ void PlayerUpdate::thunk(RE::PlayerCharacter* player, float delta) {
 
 void PlayerUpdate::Install()
 {
-	func = REL::Relocation<std::uintptr_t>(RE::PlayerCharacter::VTABLE[0]).write_vfunc(0xAD, thunk);
+	func = REL::Relocation<std::uintptr_t>(RE::PlayerCharacter::VTABLE[0]).write_vfunc(REL::Relocate(0xAD,0xAD,0xAF), thunk);
 	logger::info("Player update hook installed.");
 }
 
-// isUp() called only once per sneak key press
 void SneakHandlerProcessButton::thunk(
 	RE::SneakHandler* a_this,
 	RE::ButtonEvent* a_event,
@@ -125,6 +128,7 @@ void SneakHandlerProcessButton::thunk(
 		}
 	}
 
+	// isUp() called only once per sneak key press
 	if (a_event->IsUp()) {
 	
 		// let game process button first so isSneaking() returns valid state
@@ -156,8 +160,9 @@ void SneakHandlerProcessButton::Install()
         return;
     }
 	
-	func = REL::Relocation<std::uintptr_t>(RE::SneakHandler::VTABLE[0]).write_vfunc(0x04, thunk);
-	logger::info("process sneak button hook installed");
+	// VR adds two PlayerInputHandler virtuals after ProcessButton, so this remains slot 0x04 on every runtime.
+	func = REL::Relocation<std::uintptr_t>(RE::SneakHandler::VTABLE[0]).write_vfunc(REL::Relocate(0x04, 0x04, 0x04), thunk);
+	logger::info("Process sneak button hook installed");
 }
 
 // Called on dialogue menu open and close.
@@ -372,12 +377,12 @@ void CameraLinearCastHook::thunk(
 
 }
 
-// AE 33007     14054F720
+// AE 33007, 14054F720
 void CameraLinearCastHook::Install()
 {
 	auto& trampoline = SKSE::GetTrampoline();
 
-	//AE  UpdatePlayerCameraTransforms = 50832 (FUN_1408e48d0) Offset = 0x38E
+	// AE UpdatePlayerCameraTransforms = 50832 (FUN_1408e48d0) Offset = 0x38E
 	// SE UpdatePlayerCameraTransforms = 49899 (FUN_14084c870) Offset = 0x300
 	std::array targets{
 		std::make_pair(

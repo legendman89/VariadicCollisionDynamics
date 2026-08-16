@@ -10,6 +10,11 @@ namespace DebugAPI_IMPL::Draw {
 
     inline constexpr int32_t CAPSULE_SIDES = 16;
 
+    inline bool IsSupported()
+    {
+        return !REL::Module::IsVR();
+    }
+
     struct ActorCapsuleDrawContext
     {
         bool isPlayer{ false };

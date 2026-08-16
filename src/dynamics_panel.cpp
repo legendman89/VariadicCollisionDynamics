@@ -237,6 +237,10 @@ namespace UI {
 
     void BeginAutoDraw()
     {
+        if (!DebugAPI_IMPL::Draw::IsSupported()) {
+            return;
+        }
+
         auto& editor = GetPresetEditorState();
         auto& settings = Settings::GetSettings();
         if (!settings.autoDrawPreview || editor.autoEnabledDraw) {

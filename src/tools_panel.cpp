@@ -1,4 +1,5 @@
 #include "tools_panel.hpp"
+#include "draw.hpp"
 
 #include <CLibUtilsQTR/DrawDebug.hpp>
 #include <algorithm>
@@ -9,6 +10,10 @@ namespace UI {
 
     void ClearDrawLines()
     {
+        if (!DebugAPI_IMPL::Draw::IsSupported()) {
+            return;
+        }
+
         auto api = DebugAPI_IMPL::DebugAPI::GetSingleton();
         api->LinesToDraw.clear();
         api->Update();
@@ -25,6 +30,8 @@ namespace UI {
     {
         auto& settings = Settings::GetSettings();
         constexpr auto colorEditFlags = GUI::ImGuiColorEditFlags_DisplayRGB | GUI::ImGuiColorEditFlags_AlphaBar;
+
+        GUI::BeginDisabled(!DebugAPI_IMPL::Draw::IsSupported());
 
         if (GUI::Checkbox(Trans::Tr("Tools.Visualization.DrawPlayerCollision").c_str(), &settings.drawCollision)) {
             ClearDrawLines();
@@ -120,6 +127,8 @@ namespace UI {
         GUI::SliderFloat(Trans::Tr("Tools.Visualization.PreviewRestoreDelay").c_str(), &settings.previewRestoreDelay, 0.0F, 10.0F);
 
         Tooltip(Trans::Tr("Tools.Visualization.PreviewRestoreDelay.Tooltip").c_str());
+
+        GUI::EndDisabled();
     }
 
     void RenderLogging()
