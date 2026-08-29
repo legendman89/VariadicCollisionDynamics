@@ -45,11 +45,11 @@ static void MessageHandler(SKSE::MessagingInterface::Message* msg) {
 
 SKSEPluginLoad(const SKSE::LoadInterface* skse) 
 {
-    SKSE::Init(skse);
+    SKSE::Init(skse, false);
 
     setupLog(spdlog::level::debug);
 
-    logger::info("Variadic Collision Dynamics Plugin is Loaded");
+    logger::info("{} plugin is loaded", BEAUTIFUL_NAME);
 
     SKSE::GetMessagingInterface()->RegisterListener(MessageHandler);
 

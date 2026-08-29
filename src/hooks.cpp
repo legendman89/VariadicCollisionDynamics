@@ -160,8 +160,9 @@ void SneakHandlerProcessButton::Install()
         return;
     }
 	
-	// VR adds two PlayerInputHandler virtuals after ProcessButton, so this remains slot 0x04 on every runtime.
-	func = REL::Relocation<std::uintptr_t>(RE::SneakHandler::VTABLE[0]).write_vfunc(REL::Relocate(0x04, 0x04, 0x04), thunk);
+	// AE 1.7.99 added MotionGesture and Sixaxis handlers before ProcessButton.
+	const auto processButtonOffset = REL::Module::IsAtLeast(SKSE::RUNTIME_SSE_1_7_99) ? 0x06 : 0x04;
+	func = REL::Relocation<std::uintptr_t>(RE::SneakHandler::VTABLE[0]).write_vfunc(processButtonOffset, thunk);
 	logger::info("Process sneak button hook installed");
 }
 

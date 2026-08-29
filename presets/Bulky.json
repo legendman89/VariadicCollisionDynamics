@@ -6,7 +6,7 @@
   "position": [0.0, 21.0, 0.0],
 
   // Collision radius.
-  "radius": 0.4,
+  "radius": 0.36,
 
   // First endpoint: [x, y, z].
   "firstPoint": [0.0, 0.0, 1.22],

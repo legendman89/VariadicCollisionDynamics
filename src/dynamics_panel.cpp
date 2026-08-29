@@ -1071,7 +1071,7 @@ namespace UI {
         GUI::TableNextColumn();
         GUI::SetNextItemWidth(kFixedComboWidth);
         if (PresetCombo((std::string("##") + a_label).c_str(), a_preset) && a_previewPlayer) {
-            PreviewPreset(a_preset);
+            PreviewStatePresetSelection(a_preset);
         }
         if (a_showEdit) {
             GUI::SameLine(0, 12.0F);
