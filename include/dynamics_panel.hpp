@@ -97,6 +97,12 @@ namespace UI {
         bool active{ false };
     };
 
+    struct RaceRegistrationEditorState
+    {
+        std::string message{};
+        RE::TESRace* race{ nullptr };
+    };
+
     inline PresetEditorState& GetPresetEditorState()
     {
         static PresetEditorState state{};

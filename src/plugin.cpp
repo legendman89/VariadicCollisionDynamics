@@ -36,6 +36,8 @@ static void MessageHandler(SKSE::MessagingInterface::Message* msg) {
 
         Settings::Load();
 
+        VCD::Race::LoadRegisteredRaces();
+
         break;
     }
     default:
@@ -49,9 +51,15 @@ SKSEPluginLoad(const SKSE::LoadInterface* skse)
 
     setupLog(spdlog::level::debug);
 
-    logger::info("{} plugin is loaded", BEAUTIFUL_NAME);
+    logger::info("{} v{} by {} (Game v{})", BEAUTIFUL_NAME, CURR_VERSION, AUTHOR_NAME, REL::Module::get().version().string("."));
+    
+    auto messaging = SKSE::GetMessagingInterface();
+    if (!messaging || !messaging->RegisterListener(MessageHandler)) {
+        logger::critical("Failed to register SKSE message listener");
+        return false;
+    }
 
-    SKSE::GetMessagingInterface()->RegisterListener(MessageHandler);
+    logger::info("SKSE message listener is registered successfully");
 
     Trans::GetTranslator().load();
 

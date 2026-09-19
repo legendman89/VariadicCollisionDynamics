@@ -192,7 +192,7 @@ namespace Dynamics {
 
 	bool ApplyEnvironmentPreset(const RE::PlayerCharacter* a_player, const bool& a_force = false);
 
-	bool CanApplyNPCDynamics(RE::Actor* a_actor, const RE::PlayerCharacter* a_player, const float& a_radiusSquared);
+	bool CanApplyNPCDynamics(RE::Actor* a_actor, const RE::PlayerCharacter* a_player, const float& a_radiusSquared, bool a_requireSupportedRace = true);
 
 	VCD::Preset GetNPCPreset(const RE::Actor* a_actor, const char*& a_stateName);
 

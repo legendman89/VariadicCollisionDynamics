@@ -54,6 +54,22 @@
   "Dynamics.NPC.ActorComboLabel": "Actor",
   "Dynamics.NPC.ActorComboTooltip": "Select one nearby actor for preset preview and editing.",
 
+  "Dynamics.NPC.ShowUnregistered": "Show unregistered actors",
+  "Dynamics.NPC.ShowUnregisteredTooltip": "Show creatures with unsupported races. Register a race to edit its collision.",
+  "Dynamics.NPC.Race": "Race",
+  "Dynamics.NPC.UnregisteredRace": "Race not registered. Choose a preset, then register the race.",
+  "Dynamics.NPC.RacePreset": "Race default preset",
+  "Dynamics.NPC.RaceLimits": "Collision slider limits",
+  "Dynamics.NPC.Limits.Default": "General creature",
+  "Dynamics.NPC.Limits.Humanoid": "Humanoid",
+  "Dynamics.NPC.Limits.Giant": "Giant",
+  "Dynamics.NPC.Limits.LargeCreature": "Large creature",
+  "Dynamics.NPC.RegisterRace": "Register Race",
+  "Dynamics.NPC.UpdateRace": "Update race registration",
+  "Dynamics.NPC.RegisterRaceTooltip": "Register or update this race using the selected preset. Slider limits are chosen automatically.",
+  "Dynamics.NPC.RaceSaved": "Race registration saved.",
+  "Dynamics.NPC.RaceSaveFailed": "Could not save the race. Check the VCD log.",
+
   "Dynamics.NPC.PreviewPresetLabel": "Preview Preset",
 
   "Dynamics.NPC.EditSelectedActorButton": "Edit Selected Actor",
@@ -157,6 +173,10 @@
 
   "Dynamics.PoseFix.PlayerSneaking": "Fix Player Sneaking",
   "Dynamics.PoseFix.PlayerSneakingScale": "Player Sneaking Scale",
+
+  "Dynamics.PoseFix.PlayerSliding": "Fix Player Sliding",
+  "Dynamics.PoseFix.PlayerSlidingTooltip": "Shrink player collision during SkyParkour slides and landing rolls.",
+  "Dynamics.PoseFix.PlayerSlidingScale": "Player Sliding Scale",
 
   "Dynamics.PoseFix.NPCSneaking": "Fix NPC Sneaking",
   "Dynamics.PoseFix.NPCSneakingScale": "NPC Sneaking Scale",

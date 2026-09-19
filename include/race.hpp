@@ -1,11 +1,16 @@
 #pragma once
 
 #include "plugin.hpp"
+#include "preset.hpp"
+#include "manager.hpp"
 
 #include <array>
 #include <cstddef>
+#include <filesystem>
 #include <optional>
 #include <string_view>
+#include <string>
+#include <vector>
 
 #define FOREACH_SUPPORTED_NPC_PRESET_RACE(S) \
 	S(Giant, "GiantRace", "Giant", CollisionLimitClass::kGiant) \
@@ -55,6 +60,69 @@ namespace VCD::Race {
 		std::string_view presetName{};
 		CollisionLimitClass limitClass{ CollisionLimitClass::kDefault };
 	};
+
+	struct RegisteredRace
+	{
+		std::string plugin{}, editorID{}, presetKey{};
+		RE::TESRace* race{ nullptr };
+		RE::FormID localFormID{ 0 };
+		CollisionLimitClass limitClass{ CollisionLimitClass::kDefault };
+	};
+
+	struct RaceRegistry
+	{
+		std::vector<RegisteredRace> races{};
+		bool canSave{ false };
+	};
+
+	struct RegisteredRaceLimit
+	{
+		const char* key;
+		const char* label;
+		CollisionLimitClass limitClass;
+	};
+
+	void LoadRegisteredRaces();
+
+	bool RegisterRace(RE::TESRace* a_race, Preset a_preset, CollisionLimitClass a_limitClass);
+
+	const RegisteredRace* FindRegisteredRace(const RE::Actor* a_actor);
+
+	inline RaceRegistry& GetRaceRegistry()
+	{
+		static RaceRegistry registry;
+		return registry;
+	}
+
+	inline constexpr std::array kRegisteredRaceLimits{
+		RegisteredRaceLimit{ "Default", "Dynamics.NPC.Limits.Default", CollisionLimitClass::kDefault },
+		RegisteredRaceLimit{ "Humanoid", "Dynamics.NPC.Limits.Humanoid", CollisionLimitClass::kHumanoid },
+		RegisteredRaceLimit{ "Giant", "Dynamics.NPC.Limits.Giant", CollisionLimitClass::kGiant },
+		RegisteredRaceLimit{ "LargeCreature", "Dynamics.NPC.Limits.LargeCreature", CollisionLimitClass::kLargeCreature }
+	};
+
+	template <class Value, class Member>
+	inline const RegisteredRaceLimit* FindRegisteredRaceLimit(const Value& a_value, Member RegisteredRaceLimit::* a_member)
+	{
+		for (const auto& option : kRegisteredRaceLimits) {
+			if (option.*a_member == a_value) {
+				return &option;
+			}
+		}
+		return nullptr;
+	}
+
+	inline Preset GetRegisteredRacePreset(const RegisteredRace& a_registration)
+    {
+        const auto& manager = Manager::GetSingleton();
+        const auto* preset = manager.GetPresetConfig(a_registration.presetKey);
+        return preset && !manager.IsCameraPreset(preset->preset) ? preset->preset : Preset::kVanilla;
+    }
+
+	inline std::filesystem::path GetRegisteredRacesPath()
+    {
+        return GetPluginDataPath() / "RegisteredRaces.json";
+    }
 
 #define SUPPORTED_NPC_PRESET_RACE_INFO(S, E, P, L) SupportedNPCPresetRaceInfo{ SupportedNPCPresetRace::k##S, E, P, L },
 	inline constexpr std::array<SupportedNPCPresetRaceInfo, static_cast<size_t>(SupportedNPCPresetRace::kTotal)> kSupportedNPCPresetRaces
@@ -106,8 +174,11 @@ namespace VCD::Race {
 		return race ? SupportedNPCPresetName(*race) : std::string_view{};
 	}
 
-	inline CollisionLimitClass GetCollisionLimitClass(const RE::Actor* a_actor)
+	inline CollisionLimitClass GetCollisionLimitClass(const RE::Actor* a_actor, const RegisteredRace* a_registration)
 	{
+		if (a_registration) {
+			return a_registration->limitClass;
+		}
 		const auto race = GetSupportedNPCPresetRace(a_actor);
 		if (race) {
 			return SupportedNPCPresetLimitClass(*race);
@@ -120,9 +191,19 @@ namespace VCD::Race {
 		return CollisionLimitClass::kDefault;
 	}
 
+	inline CollisionLimitClass GetCollisionLimitClass(const RE::Actor* a_actor)
+	{
+		return GetCollisionLimitClass(a_actor, FindRegisteredRace(a_actor));
+	}
+
+	inline bool IsSupportedNPCPresetActor(RE::Actor* a_actor, const RegisteredRace* a_registration)
+	{
+		return a_actor && (a_registration || a_actor->IsGuard() || a_actor->HasKeywordString("ActorTypeNPC") || GetSupportedNPCPresetRace(a_actor).has_value());
+	}
+
 	inline bool IsSupportedNPCPresetActor(RE::Actor* a_actor)
 	{
-		return a_actor && (a_actor->IsGuard() || a_actor->HasKeywordString("ActorTypeNPC") || GetSupportedNPCPresetRace(a_actor).has_value());
+		return IsSupportedNPCPresetActor(a_actor, FindRegisteredRace(a_actor));
 	}
 
 }

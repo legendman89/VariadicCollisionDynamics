@@ -1,5 +1,6 @@
-#include "config.hpp"
 #include "json.hpp"
+#include "config.hpp"
+#include "json_file.hpp"
 
 #include <algorithm>
 #include <cctype>
@@ -7,7 +8,6 @@
 using json = nlohmann::json;
 
 namespace VCD {
-
 
     std::vector<fs::path> GetPresetPaths()
     {
@@ -96,19 +96,8 @@ namespace VCD {
             const auto pathStr = ToUTF8(path);
             logger::info("Reading {}", pathStr);
 
-            std::ifstream presetFile(path);
-            if (!presetFile.is_open()) {
-                logger::error("Failed to open preset file: {}", pathStr);
-                continue;
-            }
-
-            std::string raw((std::istreambuf_iterator<char>(presetFile)), std::istreambuf_iterator<char>());
             json data;
-            try {
-                data = json::parse(raw, nullptr, true, true);
-            }
-            catch (const json::exception& e) {
-                logger::error("Failed to parse preset file {}: {}", pathStr, e.what());
+            if (!JSON::ReadFile(path, data, "Preset")) {
                 continue;
             }
 
@@ -222,44 +211,9 @@ namespace VCD {
 
     bool SavePresetConfiguration(const PresetConfig& a_preset, std::string& a_error)
     {
-        const auto dir = GetPresetDir();
-        std::error_code ec;
-        fs::create_directories(dir, ec);
-        if (ec) {
-            a_error = "Could not create the preset directory.";
-            logger::error("Failed to create preset directory {}: {}", ToUTF8(dir), ec.message());
-            return false;
-        }
-
-        // Atomic, safer as we use written presets immedietly in dynamics.
-        const auto path = dir / (a_preset.key + ".json");
-        const auto temporaryPath = path.string() + ".tmp";
+        const auto path = GetPresetDir() / (a_preset.key + ".json");
         auto data = JSON::CollisionDataToJson(a_preset.data);
         data["name"] = a_preset.name;
-
-        {
-            std::ofstream file(temporaryPath, std::ios::trunc);
-            if (!file.is_open()) {
-                a_error = "Could not open the preset file for writing.";
-                return false;
-            }
-
-            file << data.dump(2);
-            if (!file.good()) {
-                a_error = "Could not write the preset file.";
-                return false;
-            }
-        }
-
-        fs::rename(temporaryPath, path, ec);
-        if (ec) {
-            fs::remove(temporaryPath);
-            a_error = "Could not finish saving the preset file.";
-            logger::error("Failed to save preset {}: {}", ToUTF8(path), ec.message());
-            return false;
-        }
-
-        logger::info("Preset saved: {}", ToUTF8(path));
-        return true;
+        return JSON::WriteFile(path, data, "Preset", &a_error, { 2, false });
     }
 }

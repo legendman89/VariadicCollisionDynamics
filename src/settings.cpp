@@ -2,14 +2,13 @@
 
 
 #include "json.hpp"
+#include "json_file.hpp"
 #include "helper.hpp"
 #include "logger.hpp"
 #include "manager.hpp"
 #include "dynamics.hpp"
 
 #include <filesystem>
-#include <fstream>
-#include <iterator>
 #include <cstddef>
 #include <algorithm>
 
@@ -106,61 +105,12 @@ namespace Settings {
 		FOREACH_POSE_FIX_FLOAT_SETTING(SETTING2COPY)
 	}
 
-	bool WriteJsonFile(const fs::path& a_path, const JSON::json& a_json, const char* a_label)
-	{
-		const auto parentPathStr = VCD::ToUTF8(a_path.parent_path());
-
-		std::error_code ec;
-		fs::create_directories(a_path.parent_path(), ec);
-
-		if (ec) {
-			logger::error("Failed to create settings directory {}: {}", parentPathStr, ec.message());
-			return false;
-		}
-
-		const auto pathStr = VCD::ToUTF8(a_path);
-
-		std::ofstream file(a_path);
-		if (!file.is_open()) {
-			logger::error("Failed to open {} file for writing: {}", a_label, pathStr);
-			return false;
-		}
-
-		file << a_json.dump(4);
-		logger::info("{} saved: {}", a_label, pathStr);
-		return true;
-	}
-
-	bool ReadJsonFile(const fs::path& a_path, JSON::json& a_json, const char* a_label)
-	{
-		const auto pathStr = VCD::ToUTF8(a_path);
-
-		std::ifstream file(a_path);
-		if (!file.is_open()) {
-			logger::error("Failed to open {} file: {}", a_label, pathStr);
-			return false;
-		}
-
-		std::string raw((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
-
-		try {
-			a_json = JSON::json::parse(raw, nullptr, true, true);
-		}
-		catch (const JSON::json::exception& e) {
-			logger::error("Failed to parse {} file {}: {}", a_label, pathStr, e.what());
-			return false;
-		}
-
-		logger::info("{} loaded: {}", a_label, pathStr);
-		return true;
-	}
-
 	bool WriteSettings(const VCDSettings& a_settings)
 	{
-		return WriteJsonFile(GetSettingsPath(), JSON::ToolsToJson(a_settings), "Settings") &&
-			WriteJsonFile(GetPlayerStatePath(), JSON::PlayerStateToJson(a_settings), "Player state") &&
-			WriteJsonFile(GetNPCStatePath(), JSON::NPCStateToJson(a_settings), "NPC state") &&
-			WriteJsonFile(GetCameraStatePath(), JSON::CameraStateToJson(a_settings), "Camera state");
+		return JSON::WriteFile(GetSettingsPath(), JSON::ToolsToJson(a_settings), "Settings") &&
+			JSON::WriteFile(GetPlayerStatePath(), JSON::PlayerStateToJson(a_settings), "Player state") &&
+			JSON::WriteFile(GetNPCStatePath(), JSON::NPCStateToJson(a_settings), "NPC state") &&
+			JSON::WriteFile(GetCameraStatePath(), JSON::CameraStateToJson(a_settings), "Camera state");
 	}
 
 	bool SettingsEqual(const VCDSettings& a_left, const VCDSettings& a_right)
@@ -480,7 +430,7 @@ namespace Settings {
 
 		if (const auto path = GetSettingsPath(); fs::exists(path, ec)) {
 			JSON::json data{};
-			if (!ReadJsonFile(path, data, "Settings")) {
+			if (!JSON::ReadFile(path, data, "Settings")) {
 				return false;
 			}
 
@@ -490,7 +440,7 @@ namespace Settings {
 
 		if (const auto path = GetPlayerStatePath(); fs::exists(path, ec)) {
 			JSON::json data{};
-			if (!ReadJsonFile(path, data, "Player state")) {
+			if (!JSON::ReadFile(path, data, "Player state")) {
 				return false;
 			}
 
@@ -500,7 +450,7 @@ namespace Settings {
 
 		if (const auto path = GetNPCStatePath(); fs::exists(path, ec)) {
 			JSON::json data{};
-			if (!ReadJsonFile(path, data, "NPC state")) {
+			if (!JSON::ReadFile(path, data, "NPC state")) {
 				return false;
 			}
 
@@ -510,7 +460,7 @@ namespace Settings {
 
 		if (const auto path = GetCameraStatePath(); fs::exists(path, ec)) {
 			JSON::json data{};
-			if (!ReadJsonFile(path, data, "Camera state")) {
+			if (!JSON::ReadFile(path, data, "Camera state")) {
 				return false;
 			}
 
@@ -547,7 +497,7 @@ namespace Settings {
 		auto settings = GetSavedSettings();
 		CopyToolsSettings(settings, GetSettings());
 
-		if (!WriteJsonFile(GetSettingsPath(), JSON::ToolsToJson(settings), "Settings")) {
+		if (!JSON::WriteFile(GetSettingsPath(), JSON::ToolsToJson(settings), "Settings")) {
 			return false;
 		}
 
@@ -560,7 +510,7 @@ namespace Settings {
 		auto settings = GetSavedSettings();
 		CopyPoseFixesSettings(settings, GetSettings());
 
-		if (!WriteJsonFile(GetSettingsPath(), JSON::ToolsToJson(settings), "Settings")) {
+		if (!JSON::WriteFile(GetSettingsPath(), JSON::ToolsToJson(settings), "Settings")) {
 			return false;
 		}
 

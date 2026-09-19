@@ -19,6 +19,7 @@ namespace Scan {
         int acceptedCount{ 0 };
         int rejectedCount{ 0 };
         bool limitReached{ false };
+        bool showUnregistered{ false };
     };
 
     struct NearbyActorScanOption
@@ -28,6 +29,11 @@ namespace Scan {
         std::string label{};
         RE::FormID formID{ 0 };
     };
+
+    inline bool CompareNearbyActorLabels(const NearbyActorScanOption& a_left, const NearbyActorScanOption& a_right)
+    {
+        return a_left.label < a_right.label;
+    }
 
     NearbyActorScanState& GetNearbyActorScanState();
 
@@ -44,5 +50,7 @@ namespace Scan {
     void LogNearbyActorScan(const NearbyActorScanState& a_state, const Settings::VCDSettings& a_settings);
 
     void RefreshNearbyActorCache(const RE::PlayerCharacter* a_player);
+
+    bool UpdateNearbyActorCache(const RE::PlayerCharacter* a_player, bool a_force = false);
 
 }

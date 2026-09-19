@@ -14,13 +14,14 @@ namespace Dynamics {
 	constexpr auto kTransitionRetryDuration = std::chrono::duration<float>(2.0F);
 	constexpr auto kTransitionRetryInterval = std::chrono::duration<float>(0.15F);
 
-	bool CanApplyNPCDynamics(RE::Actor* a_actor, const RE::PlayerCharacter* a_player, const float& a_radiusSquared)
+	bool CanApplyNPCDynamics(RE::Actor* a_actor, const RE::PlayerCharacter* a_player, const float& a_radiusSquared, bool a_requireSupportedRace)
 	{
 		if (!a_actor || !a_player || a_actor == a_player) {
 			return false;
 		}
 
-		if (a_actor->IsDead() || a_actor->IsDisabled() || !a_actor->Get3D() || !VCD::Race::IsSupportedNPCPresetActor(a_actor)) {
+		if (a_actor->IsDead() || a_actor->IsDisabled() || !a_actor->Get3D() || !a_actor->GetRace() ||
+			(a_requireSupportedRace && !VCD::Race::IsSupportedNPCPresetActor(a_actor))) {
 			return false;
 		}
 
@@ -39,6 +40,10 @@ namespace Dynamics {
 	VCD::Preset GetNPCPreset(const RE::Actor* a_actor, const char*& a_stateName)
 	{
 		auto& config = GetConfig();
+		if (const auto* registration = VCD::Race::FindRegisteredRace(a_actor)) {
+			a_stateName = "registeredRace";
+			return VCD::Race::GetRegisteredRacePreset(*registration);
+		}
 		const auto isCombat = a_actor && a_actor->IsInCombat();
 		const auto isGuard = a_actor && a_actor->IsGuard();
 

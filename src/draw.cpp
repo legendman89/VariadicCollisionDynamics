@@ -201,14 +201,7 @@ namespace DebugAPI_IMPL::Draw {
 
         auto& state = Scan::GetNearbyActorScanState();
         const auto& settings = Settings::GetSettings();
-        const auto now = std::chrono::steady_clock::now();
-        bool scanned = false;
-        if (now >= state.nextScan) {
-            Scan::RefreshNearbyActorCache(player);
-            scanned = true;
-            const auto interval = std::chrono::duration<float>(settings.nearbyActorScanInterval);
-            state.nextScan = now + std::chrono::duration_cast<std::chrono::steady_clock::duration>(interval);
-        }
+        const bool scanned = Scan::UpdateNearbyActorCache(player);
 
         int drawnCount = 0;
         int filteredCount = 0;
@@ -216,11 +209,12 @@ namespace DebugAPI_IMPL::Draw {
         for (auto& handle : state.handles) {
             auto actorPtr = handle.get();
             auto* actor = actorPtr.get();
-            if (Scan::CanScanNearbyActor(actor, player, radiusSquared)) {
+            if (Dynamics::CanApplyNPCDynamics(actor, player, radiusSquared)) {
                 if (DrawActorBumper(actor)) {
                     drawnCount++;
                 }
-            } else {
+            }
+            else {
                 filteredCount++;
             }
         }

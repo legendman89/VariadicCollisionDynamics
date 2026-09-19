@@ -19,7 +19,7 @@ namespace UI {
 
 		auto& manager = VCD::Manager::GetSingleton();
 		const auto poseFlags = PoseFixes::PlayerPose(player);
-		if (player->IsSneaking()) {
+		if (player->IsSneaking() || PoseFixes::IsSkyParkourSliding(player)) {
 			return manager.FixSneakingPose(player, poseFlags, false, a_rebuildConvex);
 		}
 
@@ -38,7 +38,7 @@ namespace UI {
 
 	bool ApplyNPCPoseFixActor(RE::Actor* a_actor, std::unordered_map<RE::FormID, bool>& a_seen, const bool& a_rebuildConvex)
 	{
-		if (!a_actor || a_seen[a_actor->GetFormID()]) {
+		if (!a_actor || !VCD::Race::IsSupportedNPCPresetActor(a_actor) || a_seen[a_actor->GetFormID()]) {
 			return false;
 		}
 
@@ -276,9 +276,21 @@ namespace UI {
 			const auto npcSneakingScaleActive = GUI::IsItemActive();
 			GUI::EndDisabled();
 
-			const auto playerChanged = playerSittingChanged || playerSittingScaleChanged || grindstoneSittingScaleChanged || sneakingFixChanged || sneakingScaleChanged;
+			GUI::TableNextRow();
+			GUI::TableNextColumn();
+			const auto slidingFixChanged = GUI::Checkbox(Trans::Tr("Dynamics.PoseFix.PlayerSliding").c_str(), &settings.fixPlayerSliding);
+			Tooltip(Trans::Tr("Dynamics.PoseFix.PlayerSlidingTooltip").c_str());
+			GUI::TableNextColumn();
+			GUI::SetCursorPosX(GUI::GetCursorPosX() + 12.0F);
+			GUI::BeginDisabled(!settings.fixPlayerSliding);
+			GUI::SetNextItemWidth(kFixedPoseSliderWidth);
+			const auto slidingScaleChanged = GUI::SliderFloat(Trans::Tr("Dynamics.PoseFix.PlayerSlidingScale").c_str(), &settings.playerSlidingScale, 0.3F, 1.0F);
+			const auto slidingScaleActive = GUI::IsItemActive();
+			GUI::EndDisabled();
+
+			const auto playerChanged = playerSittingChanged || playerSittingScaleChanged || grindstoneSittingScaleChanged || sneakingFixChanged || sneakingScaleChanged || slidingFixChanged || slidingScaleChanged;
 			const auto npcChanged = npcSittingChanged || npcSittingScaleChanged || grindstoneSittingScaleChanged || npcSneakingChanged || npcSneakingScaleChanged;
-			const auto waitForRelease = playerSittingScaleActive || npcSittingScaleActive || grindstoneSittingScaleActive || sneakingScaleActive || npcSneakingScaleActive;
+			const auto waitForRelease = playerSittingScaleActive || npcSittingScaleActive || grindstoneSittingScaleActive || sneakingScaleActive || npcSneakingScaleActive || slidingScaleActive;
 			if (playerChanged || npcChanged) {
 				ApplyPoseFixes(playerChanged, npcChanged, false);
 				SchedulePoseFixApply(playerChanged, npcChanged, waitForRelease);

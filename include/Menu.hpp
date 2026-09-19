@@ -244,9 +244,9 @@ namespace UI {
         return clicked;
     }
 
-    inline bool EditButton(const char* a_id)
+    inline bool IconButton(const char* a_id, unsigned a_icon)
     {
-        static const auto editText = FontAwesome::UnicodeToUtf8(Icons::kEdit);
+        const auto iconText = FontAwesome::UnicodeToUtf8(a_icon);
 
         GUI::PushStyleVar(GUI::ImGuiStyleVar_FrameBorderSize, 0.0F);
         GUI::PushStyleVar(GUI::ImGuiStyleVar_FramePadding, GUI::ImVec2{ 0.0F, 0.0F });
@@ -257,13 +257,18 @@ namespace UI {
         FontAwesome::PushRegular();
         GUI::SetWindowFontScale(1.25F);
 
-        const bool clicked = GUI::Button((editText + "##" + a_id).c_str(), GUI::ImVec2{ 48.0F, 0.0F });
+        const bool clicked = GUI::Button((iconText + "##" + a_id).c_str(), GUI::ImVec2{ 48.0F, 0.0F });
 
         GUI::SetWindowFontScale(1.0F);
         FontAwesome::Pop();
         GUI::PopStyleColor(4);
         GUI::PopStyleVar(2);
         return clicked;
+    }
+
+    inline bool EditButton(const char* a_id)
+    {
+        return IconButton(a_id, Icons::kEdit);
     }
 
     void Register();

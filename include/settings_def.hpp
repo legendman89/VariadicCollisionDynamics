@@ -21,6 +21,7 @@
 	S(fixPlayerSitting, true) \
 	S(fixNPCSitting, true) \
 	S(fixPlayerSneaking, true) \
+	S(fixPlayerSliding, true) \
 	S(fixNPCSneaking, true)
 
 #define FOREACH_BOOL_SETTING(S) \
@@ -43,6 +44,7 @@
 	S(npcSittingScale, 0.65F) \
 	S(grindstoneSittingScale, 0.5F) \
 	S(playerSneakingScale, 0.7F) \
+	S(playerSlidingScale, 0.5F) \
 	S(npcSneakingScale, 0.7F)
 
 #define FOREACH_FLOAT_SETTING(S) \

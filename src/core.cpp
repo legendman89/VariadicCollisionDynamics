@@ -52,7 +52,7 @@ bool Manager::SetCollisionData(const RE::Actor* a_actor, const CollisionData& a_
     auto& lastActorState = actorStates[actorFormID];
     auto& bumperAnchorState = bumperAnchorStates[actorFormID];
     const bool refreshSittingAnchor = !a_poseFlags.isSitting && bumperAnchorState.fromSitting;
-    const bool useStandingAnchor = (a_poseFlags.isSitting || a_poseFlags.isSneaking) && lastActorState.hasStandingCapsule;
+    const bool useStandingAnchor = (a_poseFlags.isSitting || a_poseFlags.isSneaking || a_poseFlags.isSliding) && lastActorState.hasStandingCapsule;
     if (!bumperAnchorState.valid || bumperAnchorState.preset != a_anchorPreset || refreshSittingAnchor) {
         if (refreshSittingAnchor) {
             const auto* name = const_cast<RE::Actor*>(a_actor)->GetDisplayFullName();
@@ -98,10 +98,10 @@ bool Manager::SetCollisionData(const RE::Actor* a_actor, const CollisionData& a_
         mappedHeight = ApplySittingCapsule(lastActorState, mappedPoint1Z, mappedPoint2Z, mappedRadius, a_poseFlags, scale);
     }
     const auto* player = RE::PlayerCharacter::GetSingleton();
-    const auto isPlayerSneaking = player && a_actor == player && a_poseFlags.isSneaking && !a_poseFlags.isSitting;
+    const auto isPlayerSneaking = player && a_actor == player && (a_poseFlags.isSneaking || a_poseFlags.isSliding) && !a_poseFlags.isSitting;
     const auto isNPCSneaking = player && a_actor != player && a_poseFlags.isSneaking && !a_poseFlags.isSitting;
     if (isPlayerSneaking || isNPCSneaking) {
-        const auto scale = isPlayerSneaking ? Settings::GetSettings().playerSneakingScale : Settings::GetSettings().npcSneakingScale;
+        const auto scale = isPlayerSneaking ? PoseFixes::GetPlayerCrouchScale(a_poseFlags) : Settings::GetSettings().npcSneakingScale;
         ApplySneakingCapsule(lastActorState, mappedPoint1Z, mappedPoint2Z, scale);
         mappedHeight = GetCapsuleHeight(mappedPoint1Z, mappedPoint2Z, mappedRadius);
     }
@@ -135,7 +135,7 @@ bool Manager::SetCollisionData(const RE::Actor* a_actor, const CollisionData& a_
             "  Radius         : {} -> {}, \n"
             "  Height         : {} -> {}, \n"
             "  Convex Rebuild : {}",
-            a_poseFlags.isSitting ? "Sitting" : "Standing",
+            a_poseFlags.isSitting ? "Sitting" : (a_poseFlags.isSliding ? "Sliding" : (a_poseFlags.isSneaking ? "Sneaking" : "Standing")),
             previousPosition.x,
             previousPosition.y,
             previousPosition.z,

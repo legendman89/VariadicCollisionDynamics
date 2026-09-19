@@ -164,7 +164,7 @@ bool Manager::FixSneakingPose(const RE::Actor* a_actor, const PoseFlags& a_poseF
     }
 
     auto& lastActorState = actorStates[a_actor->GetFormID()];
-    if (!a_poseFlags.isSneaking) {
+    if (!a_poseFlags.isSneaking && !a_poseFlags.isSliding) {
         if (!lastActorState.sneakingPoseApplied || !lastActorState.hasStandingCapsule) {
             return true;
         }
@@ -187,7 +187,7 @@ bool Manager::FixSneakingPose(const RE::Actor* a_actor, const PoseFlags& a_poseF
 
     auto mappedPoint1Z = lastActorState.standingPoint1Z;
     auto mappedPoint2Z = lastActorState.standingPoint2Z;
-    ApplySneakingCapsule(lastActorState, mappedPoint1Z, mappedPoint2Z, Settings::GetSettings().playerSneakingScale);
+    ApplySneakingCapsule(lastActorState, mappedPoint1Z, mappedPoint2Z, PoseFixes::GetPlayerCrouchScale(a_poseFlags));
     ApplyCapsulePoseHeight(worldCapsuleShape, lastActorState.standingRadius, mappedPoint1Z, mappedPoint2Z);
     if (a_rebuildConvex && a_actor == RE::PlayerCharacter::GetSingleton() && lastActorState.hasStandingTranslation) {
         SetConvexShape(a_actor, context.controller, lastActorState.standingRadius, mappedPoint1Z, mappedPoint2Z, lastActorState.standingTranslation, "sneak_crouch", a_log);

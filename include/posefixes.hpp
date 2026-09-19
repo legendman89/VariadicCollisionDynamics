@@ -73,6 +73,12 @@ namespace PoseFixes {
             (eventName && VCD::ContainsInsensitive(eventName, "ChildSitOnKnees"));
     }
 
+    inline bool IsSkyParkourSliding(const RE::Actor* a_actor)
+    {
+        bool sliding = false;
+        return a_actor && a_actor->GetGraphVariableBool("SkyParkourSliding", sliding) && sliding;
+    }
+
     inline VCD::PoseFlags GetPoseFlags(const RE::Actor* a_actor)
     {
         VCD::PoseFlags poseFlags{};
@@ -105,6 +111,12 @@ namespace PoseFixes {
         return a_actor == RE::PlayerCharacter::GetSingleton() ? settings.playerSittingScale : settings.npcSittingScale;
     }
 
+    inline float GetPlayerCrouchScale(const VCD::PoseFlags& a_poseFlags)
+    {
+        const auto& settings = Settings::GetSettings();
+        return a_poseFlags.isSliding ? settings.playerSlidingScale : settings.playerSneakingScale;
+    }
+
     inline bool IsReallySitting(const RE::Actor* a_actor)
     {
         return GetPoseFlags(a_actor).isSitting;
@@ -120,6 +132,7 @@ namespace PoseFixes {
 			poseFlags.isGrindstone = false;
 		}
 		poseFlags.isSneaking = settings.fixPlayerSneaking && poseFlags.isSneaking;
+		poseFlags.isSliding = settings.fixPlayerSliding && IsSkyParkourSliding(a_actor);
 		return poseFlags;
 	}
 

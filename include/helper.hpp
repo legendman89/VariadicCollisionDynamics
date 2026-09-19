@@ -21,6 +21,7 @@ namespace VCD {
         bool isChildSittingOnKnees{ false };
         bool isGrindstone{ false };
         bool isSneaking{ false };
+        bool isSliding{ false };
 
         bool operator==(const PoseFlags&) const = default;
     };

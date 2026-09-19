@@ -47,7 +47,7 @@ namespace Scan {
 
     bool CanScanNearbyActor(const RE::Actor* a_actor, const RE::PlayerCharacter* a_player, const float& a_radiusSquared, NearbyActorScanState* a_state)
     {
-        if (!Dynamics::CanApplyNPCDynamics(const_cast<RE::Actor*>(a_actor), a_player, a_radiusSquared)) {
+        if (!Dynamics::CanApplyNPCDynamics(const_cast<RE::Actor*>(a_actor), a_player, a_radiusSquared, !GetNearbyActorScanState().showUnregistered)) {
             if (a_state) {
                 a_state->rejectedCount++;
             }
@@ -126,6 +126,20 @@ namespace Scan {
         LogNearbyActorScan(state, settings);
     }
 
+    bool UpdateNearbyActorCache(const RE::PlayerCharacter* a_player, bool a_force)
+    {
+        auto& state = GetNearbyActorScanState();
+        const auto now = std::chrono::steady_clock::now();
+        if (!a_force && now < state.nextScan) {
+            return false;
+        }
+
+        RefreshNearbyActorCache(a_player);
+        const auto interval = std::chrono::duration<float>(Settings::GetSettings().nearbyActorScanInterval);
+        state.nextScan = now + std::chrono::duration_cast<std::chrono::steady_clock::duration>(interval);
+        return true;
+    }
+
     std::vector<NearbyActorScanOption> GetNearbyNPCActorOptions()
     {
         auto& scanState = ::Scan::GetNearbyActorScanState();
@@ -135,31 +149,20 @@ namespace Scan {
         std::unordered_map<std::string, int> nameCounts{};
         std::unordered_map<RE::FormID, bool> seen{};
 
-        auto addNPCInfo = [&](const RE::ActorHandle& a_handle) {
-            auto actorPtr = a_handle.get();
-            auto* actor = actorPtr.get();
-            if (!actor || seen[actor->GetFormID()]) {
-                return;
+        const auto* player = RE::PlayerCharacter::GetSingleton();
+        const auto radius = Settings::GetSettings().nearbyActorScanRadius;
+        for (const auto* handles : { &npcState.nearbyActors, &scanState.handles }) {
+            for (const auto& handle : *handles) {
+                auto actorPtr = handle.get();
+                auto* actor = actorPtr.get();
+                if (!CanScanNearbyActor(actor, player, radius * radius) || seen[actor->GetFormID()]) {
+                    continue;
+                }
+                seen[actor->GetFormID()] = true;
+                const auto name = VCD::GetActorName(actor);
+                nameCounts[name]++;
+                options.push_back({ handle, name, name, actor->GetFormID() });
             }
-
-            seen[actor->GetFormID()] = true;
-            const auto name = VCD::GetActorName(actor);
-            nameCounts[name]++;
-            options.push_back({ a_handle, name, name, actor->GetFormID() });
-        };
-
-        for (auto& handle : npcState.nearbyActors) {
-            addNPCInfo(handle);
-        }
-
-        for (auto& handle : scanState.handles) {
-            auto actorPtr = handle.get();
-            auto* actor = actorPtr.get();
-            if (!VCD::Race::IsSupportedNPCPresetActor(actor)) {
-                continue;
-            }
-
-            addNPCInfo(handle);
         }
 
         for (auto& option : options) {
@@ -168,11 +171,7 @@ namespace Scan {
             }
         }
 
-        std::sort(options.begin(), options.end(),
-            [](const NearbyActorScanOption& a_left, const NearbyActorScanOption& a_right) {
-                return a_left.label < a_right.label;
-            }
-        );
+        std::sort(options.begin(), options.end(), CompareNearbyActorLabels);
 
         return options;
     }

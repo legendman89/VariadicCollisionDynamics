@@ -28,11 +28,12 @@ add_include_folder(vendor/include)
 
 
 cmake_minimum_required(VERSION 3.21)
-set(AUTHOR_NAME "VCDTeam")
+set(AUTHOR_NAME "Legendman & Truman")
 set(PRODUCT_NAME "VariadicCollisionDynamics")
 set(BEAUTIFUL_NAME "Variadic Collision Dynamics")
+set(CURR_VERSION "1.3.5.0")
 
-project(${PRODUCT_NAME} VERSION 1.0.0.0 LANGUAGES CXX)
+project(${PRODUCT_NAME} VERSION ${CURR_VERSION} LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_INTERPROCEDURAL_OPTIMIZATION ON)
@@ -118,8 +119,13 @@ if (MSVC)
 endif()
 
 # Make PRODUCT_NAME available as a string macro in C++ files
-target_compile_definitions(${PROJECT_NAME}
-    PRIVATE PRODUCT_NAME=\"${PRODUCT_NAME}\"
+target_compile_definitions(
+    ${PROJECT_NAME}
+    PRIVATE
+    BEAUTIFUL_NAME="${BEAUTIFUL_NAME}"
+    CURR_VERSION="${CURR_VERSION}"
+    AUTHOR_NAME="${AUTHOR_NAME}"
+    PRODUCT_NAME="${PRODUCT_NAME}"
 )
 
 

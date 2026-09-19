@@ -92,8 +92,11 @@ namespace UI {
         return changed;
     }
 
-    VCD::Preset GetDefaultNPCActorEditorPreset(const RE::Actor* a_actor)
+    VCD::Preset GetDefaultNPCActorEditorPreset(const RE::Actor* a_actor, const VCD::Race::RegisteredRace* a_registration)
     {
+        if (a_registration) {
+            return VCD::Race::GetRegisteredRacePreset(*a_registration);
+        }
         if (const auto presetName = VCD::Race::GetSupportedNPCPresetName(a_actor); !presetName.empty()) {
             if (const auto* presetConfig = VCD::Manager::GetSingleton().GetPresetConfigByName(presetName); presetConfig && presetConfig->fileBacked) {
                 return presetConfig->preset;
@@ -101,6 +104,11 @@ namespace UI {
         }
 
         return VCD::Preset::kVanilla;
+    }
+
+    VCD::Preset GetDefaultNPCActorEditorPreset(const RE::Actor* a_actor)
+    {
+        return GetDefaultNPCActorEditorPreset(a_actor, VCD::Race::FindRegisteredRace(a_actor));
     }
 
     const VCD::CollisionData* GetDefaultNPCActorPresetData(const VCD::Preset& a_preset, const RE::Actor* a_actor)
@@ -477,6 +485,9 @@ namespace UI {
     bool StartNPCEditorPreview(RE::Actor* a_actor)
     {
         auto& editor = GetPresetEditorState();
+        if (!VCD::Race::IsSupportedNPCPresetActor(a_actor)) {
+            a_actor = nullptr;
+        }
         if (!a_actor && !editor.npcGlobal) {
             editor.preview = false;
             editor.previewActor = {};
@@ -1125,11 +1136,52 @@ namespace UI {
         GUI::PopStyleColor(2);
     }
 
+    const std::string& RenderRaceRegistration(RE::Actor* a_actor, VCD::Preset a_preset)
+    {
+        static RaceRegistrationEditorState state;
+        auto* race = a_actor ? a_actor->GetRace() : nullptr;
+        if (state.race != race) {
+            state = {};
+            state.race = race;
+        }
+
+        const auto* registration = VCD::Race::FindRegisteredRace(a_actor);
+        if (IconCTAButton(Trans::Tr("Dynamics.NPC.RegisterRace").c_str(), race && race->GetFile(0), Icons::kSave)) {
+            const auto limits = VCD::Race::GetCollisionLimitClass(a_actor, registration);
+            const bool saved = VCD::Race::RegisterRace(race, a_preset, limits);
+            state.message = saved ? std::string{} : Trans::Tr("Dynamics.NPC.RaceSaveFailed");
+            if (saved) {
+                Dynamics::GetNPCDynamicsState().nextScan = {};
+                Scan::UpdateNearbyActorCache(RE::PlayerCharacter::GetSingleton(), true);
+            }
+        }
+        Tooltip(Trans::Tr("Dynamics.NPC.RegisterRaceTooltip").c_str());
+        return state.message;
+    }
+
     void RenderNPCActorSelector(VCD::Preset& a_selectedPreset)
     {
+        auto& scan = Scan::GetNearbyActorScanState();
+        const bool filterChanged = GUI::Checkbox(Trans::Tr("Dynamics.NPC.ShowUnregistered").c_str(), &scan.showUnregistered);
+        Tooltip(Trans::Tr("Dynamics.NPC.ShowUnregisteredTooltip").c_str());
+        Scan::UpdateNearbyActorCache(RE::PlayerCharacter::GetSingleton(), filterChanged);
+        
         auto options = Scan::GetNearbyNPCActorOptions();
         auto* selectedActor = GetSelectedNPCActorPtr();
         std::string preview = Trans::Tr("Dynamics.NPC.SelectActorPreview");
+
+        bool selectedAvailable = false;
+        for (const auto& option : options) {
+            if (option.handle.get().get() == selectedActor) {
+                selectedAvailable = true;
+                break;
+            }
+        }
+        
+        if (!selectedAvailable) {
+            GetSelectedNPCActor() = {};
+            selectedActor = nullptr;
+        }
 
         if (!selectedActor && !options.empty()) {
             GetSelectedNPCActor() = options.front().handle;
@@ -1169,12 +1221,28 @@ namespace UI {
         Tooltip(Trans::Tr("Dynamics.NPC.ActorComboTooltip").c_str());
 
         GUI::SameLine(0.0F, 12.0F);
+        GUI::BeginDisabled(!GetSelectedNPCActorPtr());
+        PresetCombo("##SelectedActorPreset", a_selectedPreset);
+        GUI::EndDisabled();
 
+        GUI::SameLine(0.0F, 12.0F);
+        const auto& registrationError = RenderRaceRegistration(GetSelectedNPCActorPtr(), a_selectedPreset);
+
+        GUI::SameLine(0.0F, 12.0F);
+
+        GUI::BeginDisabled(!Settings::GetSettings().enableNPCDynamics || !VCD::Race::IsSupportedNPCPresetActor(GetSelectedNPCActorPtr()));
+        
         if (EditTextButton(Trans::Tr("Dynamics.NPC.EditSelectedActorButton").c_str())) {
             OpenNPCPresetEditor(a_selectedPreset, GetSelectedNPCActorPtr());
         }
+        
+        GUI::EndDisabled();
 
         Tooltip(Trans::Tr("Dynamics.NPC.EditSelectedActorTooltip").c_str());
+        
+        if (!registrationError.empty()) {
+            GUI::TextWrapped("%s", registrationError.c_str());
+        }
     }
 
     void RenderCreateDeleteButtons()
@@ -1456,9 +1524,9 @@ namespace UI {
         }
 
         GUI::Spacing();
-        RenderNPCActorSelector(GetSelectedNPCPreset());
-
         GUI::EndDisabled();
+        
+        RenderNPCActorSelector(GetSelectedNPCPreset());
     }
 
     void RenderCameraDynamics()

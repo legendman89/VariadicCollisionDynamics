@@ -1,13 +1,12 @@
 ﻿#pragma once
 
-#include <nlohmann/json.hpp>
-#include <fstream>
 #include <string>
 #include <filesystem>
 #include <unordered_map>
 
 #include "logger.hpp"
 #include "helper.hpp"
+#include "json_file.hpp"
 
 namespace fs = std::filesystem;
 using json = nlohmann::json;
@@ -34,15 +33,12 @@ namespace Trans {
 
             table.clear();
 
-            std::ifstream in(path);
-            if (!in) {
-                logger::error("Translation: could not open file {}", VCD::ToUTF8(path));
+            json data;
+            if (!JSON::ReadFile(path, data, "Translation")) {
                 return false;
             }
 
             try {
-                json data = json::parse(in, nullptr, true, true);
-
                 if (!data.is_object()) {
                     logger::error("Translation: JSON root is not an object in file {}", VCD::ToUTF8(path));
                     return false;
