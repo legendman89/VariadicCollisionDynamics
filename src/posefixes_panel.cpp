@@ -19,7 +19,7 @@ namespace UI {
 
 		auto& manager = VCD::Manager::GetSingleton();
 		const auto poseFlags = PoseFixes::PlayerPose(player);
-		if (player->IsSneaking() || PoseFixes::IsSkyParkourSliding(player)) {
+		if (player->IsSneaking() || PoseFixes::IsSliding(player)) {
 			return manager.FixSneakingPose(player, poseFlags, false, a_rebuildConvex);
 		}
 

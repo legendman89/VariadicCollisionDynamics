@@ -9,6 +9,10 @@ namespace PoseFixes {
 
     inline constexpr auto kPoseFixApplyDebounce = std::chrono::milliseconds(250);
 
+    #define FOREACH_SLIDING_VAR(VAR) \
+        VAR(bSliding) \
+        VAR(SkyParkourSliding)
+
     struct PoseFixApplyState
     {
         bool pending{ false };
@@ -73,10 +77,23 @@ namespace PoseFixes {
             (eventName && VCD::ContainsInsensitive(eventName, "ChildSitOnKnees"));
     }
 
-    inline bool IsSkyParkourSliding(const RE::Actor* a_actor)
+    inline bool IsSliding(const RE::Actor* a_actor)
     {
-        bool sliding = false;
-        return a_actor && a_actor->GetGraphVariableBool("SkyParkourSliding", sliding) && sliding;
+        if (!a_actor) 
+            return false;
+
+#define DECLARE_SLIDING_VARS(VAR) \
+    bool is_ ## VAR = false; \
+    const bool got_## VAR = a_actor->GetGraphVariableBool(# VAR, is_ ## VAR);
+
+#define CHECK_SLIDING_VARS(VAR) (got_## VAR && is_ ## VAR) ||
+
+        FOREACH_SLIDING_VAR(DECLARE_SLIDING_VARS)
+        
+        return (FOREACH_SLIDING_VAR(CHECK_SLIDING_VARS) false);
+
+#undef DECLARE_SLIDING_VARS
+#undef CHECK_SLIDING_VARS
     }
 
     inline VCD::PoseFlags GetPoseFlags(const RE::Actor* a_actor)
@@ -132,7 +149,7 @@ namespace PoseFixes {
 			poseFlags.isGrindstone = false;
 		}
 		poseFlags.isSneaking = settings.fixPlayerSneaking && poseFlags.isSneaking;
-		poseFlags.isSliding = settings.fixPlayerSliding && IsSkyParkourSliding(a_actor);
+		poseFlags.isSliding = settings.fixPlayerSliding && IsSliding(a_actor);
 		return poseFlags;
 	}
 
