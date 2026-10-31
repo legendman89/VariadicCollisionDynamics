@@ -1,0 +1,62 @@
+#pragma once
+
+#include "eventsinks.hpp"
+#include "logger.hpp"
+#include "settings.hpp"
+#include "dynamics.hpp"
+
+namespace EventSinks
+{
+    void InputEventSink::RegisterEventSink()
+    {
+        auto inputEventSource =
+            RE::BSInputDeviceManager::GetSingleton();
+
+        if (!inputEventSource) {
+            logger::error("Failed to get BSInputDeviceManager");
+            return;
+        }
+
+        inputEventSource->AddEventSink(
+            InputEventSink::GetSingleton());
+
+        logger::info("InputEventSink registered");
+    }
+
+    RE::BSEventNotifyControl InputEventSink::ProcessEvent(
+        RE::InputEvent* const* a_event,
+        RE::BSTEventSource<RE::InputEvent*>*)
+    {
+        if (!a_event || !*a_event)
+            return RE::BSEventNotifyControl::kContinue;
+
+        const auto keybind = static_cast<std::uint32_t>(Settings::GetSettings().customKeybind);
+
+        for (auto event = *a_event; event; event = event->next)
+        {
+            if (event->eventType != RE::INPUT_EVENT_TYPE::kButton)
+                continue;
+
+            auto* buttonEvent = static_cast<RE::ButtonEvent*>(event);
+
+            if (buttonEvent->GetDevice() != RE::INPUT_DEVICE::kKeyboard)
+                continue;
+
+            if (buttonEvent->GetIDCode() != keybind)
+                continue;
+
+            if (buttonEvent->IsDown()) {
+                Dynamics::GetCustomKeybindHeld().store(true);
+                logger::debug("VCD Custom Keybind with idCode {} is currently held down", buttonEvent->GetIDCode());
+            }
+            else if (buttonEvent->IsUp()) {
+                Dynamics::GetCustomKeybindHeld().store(false);
+                logger::debug("VCD Custom Keybind with idCode {} is NOT currently held down", buttonEvent->GetIDCode());
+            }
+
+        }
+
+        return RE::BSEventNotifyControl::kContinue;
+    }
+
+}

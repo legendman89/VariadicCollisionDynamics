@@ -34,6 +34,7 @@
     S(Swimming, "Swimming") \
     S(Werewolf, "Werewolf") \
     S(VampireLord, "Vampire Lord") \
+    S(CustomKeyBind, "Custom Key Bind") \
     S(NPCNeutral, "NPC Neutral") \
     S(NPCCombat, "NPC Combat") \
     S(GuardNeutral, "Guard Neutral") \

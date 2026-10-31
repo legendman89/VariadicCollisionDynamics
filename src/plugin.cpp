@@ -8,6 +8,7 @@
 #include "settings.hpp"
 #include "translate.hpp"
 #include "transformations.hpp"
+#include "eventsinks.hpp"
 
 static void MessageHandler(SKSE::MessagingInterface::Message* msg) {
     switch (msg->type) {
@@ -37,6 +38,8 @@ static void MessageHandler(SKSE::MessagingInterface::Message* msg) {
         Settings::Load();
 
         VCD::Race::LoadRegisteredRaces();
+
+        EventSinks::InputEventSink::RegisterEventSink();
 
         break;
     }

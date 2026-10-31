@@ -9,7 +9,8 @@
 	S(swimming, VCD::Preset::kSwimming) \
 	S(werewolf, VCD::Preset::kWerewolf) \
 	S(vampireLord, VCD::Preset::kVampireLord) \
-	S(neutral, VCD::Preset::kVanilla)
+	S(neutral, VCD::Preset::kVanilla)\
+	S(keybindPreset, VCD::Preset::kCustomKeyBind)
 
 #define FOREACH_NPC_PRESET_STATE(S) \
 	S(npcNeutral, VCD::Preset::kNPCNeutral) \

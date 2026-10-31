@@ -374,6 +374,10 @@ namespace Dynamics {
 			a_stateName = "vampireLord";
 			preset = config.vampireLord;
 		}
+		else if (IsCustomKeyBindHeldDown()) {
+			a_stateName = "keybind";
+			preset = config.keybindPreset;
+		}
 		else if (IsSwimming(a_player)) {
 			a_stateName = "swimming";
 			preset = config.swimming;

@@ -151,6 +151,7 @@ namespace UI {
         case VCD::Preset::kGuardNeutral:
         case VCD::Preset::kGuardCombat:
         case VCD::Preset::kDraugr:
+        case VCD::Preset::kCustomKeyBind:
             return VCD::Race::CollisionLimitClass::kHumanoid;
         case VCD::Preset::kCameraVanilla:
         case VCD::Preset::kCameraDialogue:
@@ -1477,6 +1478,7 @@ namespace UI {
             RenderStateRow(Trans::Tr("Dynamics.PlayerDynamics.State.Outdoor").c_str(), config.outdoor);
             RenderStateRow(Trans::Tr("Dynamics.PlayerDynamics.State.Indoor").c_str(), config.indoor);
             RenderStateRow(Trans::Tr("Dynamics.PlayerDynamics.State.Neutral").c_str(), config.neutral);
+            RenderStateRow(Trans::Tr("Dynamics.PlayerDynamics.State.Keybind").c_str(), config.keybindPreset);
 
             GUI::EndTable();
         }

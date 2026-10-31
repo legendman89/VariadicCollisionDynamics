@@ -402,7 +402,7 @@ void CameraLinearCastHook::Install()
 }
 
 void Hook::Install() {
-	SKSE::AllocTrampoline(1 << 8);
+	SKSE::AllocTrampoline(1 << 5);
 
 	CharacterProxyProcessConstraints::Install();
 

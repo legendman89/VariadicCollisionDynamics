@@ -1,16 +1,15 @@
-  
 {
 
-  "Common.Unknown" : "Unknown",
+  "Common.Unknown": "Unknown",
 
   /* ============================================================
     TOOLS TAB
     ============================================================ */
 
-  "Tools.Visualization.Header" : "Bump Visualization",
+  "Tools.Visualization.Header": "Bump Visualization",
   "Tools.Visualization.DrawPlayerCollision": "Draw Player Collision",
   "Tools.Visualization.DrawNearbyActors": "Draw Nearby Actors",
-    "Tools.Visualization.DrawCameraCollision": "Draw Camera Collision",
+  "Tools.Visualization.DrawCameraCollision": "Draw Camera Collision",
 
   "Tools.Visualization.AutoDrawWhileEditing": "Auto Draw While Editing",
   "Tools.Visualization.AutoDrawWhileEditing.Tooltip": "Temporarily enables drawing when preset sliders are changed, then restores the previous draw setting when the editor closes.",
@@ -24,7 +23,7 @@
   "Tools.Visualization.PreviewRestoreDelay": "Preview Restore Delay",
   "Tools.Visualization.PreviewRestoreDelay.Tooltip": "How long an inactive preset preview remains after closing the editor.",
 
-  "Tools.Logging.Header" : "Logging",
+  "Tools.Logging.Header": "Logging",
   "Tools.Logging.LogLevel": "Log Level",
 
   "Tools.Save.Button": "Save Tools",

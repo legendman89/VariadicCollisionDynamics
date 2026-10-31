@@ -119,6 +119,12 @@ namespace Dynamics {
 		return state;
 	}
 
+	inline std::atomic_bool& GetCustomKeybindHeld()
+	{
+		static std::atomic_bool held{ false };
+		return held;
+	}
+
 	inline bool HasActorHandleWithFormID(const std::vector<RE::ActorHandle>& a_handles, const RE::FormID& a_formID)
 	{
 		for (auto& handle : a_handles) {
@@ -182,6 +188,11 @@ namespace Dynamics {
 	inline bool IsTransformationState(const char* a_state)
 	{
 		return std::strcmp(a_state, "werewolf") == 0 || std::strcmp(a_state, "vampireLord") == 0;
+	}
+
+	inline bool IsCustomKeyBindHeldDown()
+	{
+		return GetCustomKeybindHeld().load();
 	}
 
 	void ApplyCameraCollisionRadius(float a_radiusSkyrim);
