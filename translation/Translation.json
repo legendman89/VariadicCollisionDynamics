@@ -85,6 +85,7 @@
   "Dynamics.PlayerDynamics.State.Outdoor": "Outdoor",
   "Dynamics.PlayerDynamics.State.Indoor": "Indoor",
   "Dynamics.PlayerDynamics.State.Neutral": "Neutral",
+  "Dynamics.PlayerDynamics.State.Keybind": "Keybind",
 
   "Dynamics.NPC.EnableCheckbox": "Enable NPC Dynamics",
   "Dynamics.NPC.NearbyActorRadius": "Nearby NPC Radius",
