@@ -54,7 +54,7 @@
 
 #define FOREACH_TOOL_INT_SETTING(S) \
 	S(logLevel, 2) \
-	S(customKeybind, 16)
+	S(customKeybind, -1)
 
 #define FOREACH_DYNAMICS_INT_SETTING(S) \
 	S(nearbyActorScanLimit, 16)

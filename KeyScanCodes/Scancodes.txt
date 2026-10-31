@@ -5,7 +5,7 @@ KEYBOARD SCANCODES (DirectInput DIK Codes)
 NOTE:
 These are raw scancodes (0–255, extended codes exceed 255).
 Decimal and Hex are interchangeable.
-Use these values in CustomDodge.ini (e.g., DodgeKey = 47 or 0x2F).
+Use these values to change custom keybind key (e.g., "customKeybind": 16 (or 0x2F)).
 
 ------------------------------------------------------------
 ALPHABET KEYS (A–Z)
