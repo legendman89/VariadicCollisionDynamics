@@ -172,6 +172,7 @@ namespace VCD {
         std::string name{};
 
         CollisionData data;
+        std::vector<std::string> collisionLayers{};
 
         bool loaded{ false };
         bool builtIn{ false };
@@ -190,6 +191,7 @@ namespace VCD {
                 kPresetKeys[i],
                 kPresetNames[i],
                 vanillaData,
+                {},
                 isVanilla,
                 true
             });

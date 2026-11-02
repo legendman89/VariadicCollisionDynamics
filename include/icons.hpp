@@ -7,5 +7,6 @@ namespace UI::Icons {
     inline constexpr unsigned kEdit = 0xF044;
     inline constexpr unsigned kSave = 0xF0C7;
     inline constexpr unsigned kReset = 0xF0E2;
+    inline constexpr unsigned kCollisionLayers = 0xF5FD;
 
 }

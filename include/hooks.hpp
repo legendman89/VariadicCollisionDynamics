@@ -79,6 +79,33 @@ namespace Hook {
         static void Install();
     };
 
+  // Game processes collision filters through this hook, 
+  // there is no way to tell through the arguemnts what is being psased through,
+  // however by hooking different callers using "write_call" 
+  // we can hook functions that call the func itself, that were used for specific game objects only
+  //for example func1 is used only for actors / npcs, and func 2 is called only for the player
+
+    struct CollisionFilterFunc
+    {
+
+        //npcs commented out because no way to know what NPC (needs to be disabled via menu for NPC Specific Presets)
+      /*  static bool funcForActors(
+            RE::bhkCollisionFilter* filter,
+            RE::CFilter filterA,
+            RE::CFilter filterB);
+            */
+
+        //player
+        static bool funcForPlayer(
+            RE::bhkCollisionFilter* filter,
+            RE::CFilter filterA,
+            RE::CFilter filterB);
+
+      //  static inline REL::Relocation<decltype(funcForActors)> func1;
+        static inline REL::Relocation<decltype(funcForPlayer)> originalFuncForPlayer;
+
+        static void Install();
+    };
 
     void Install(); 
 

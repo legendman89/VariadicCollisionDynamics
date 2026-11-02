@@ -101,6 +101,17 @@ add_commonlibsse_plugin(
   AUTHOR AUTHOR_NAME
   SOURCES ${headers} ${sources}
 )
+
+# CLibUtilsQTR
+find_path(CLIB_UTILS_QTR_INCLUDE_DIRS "CLibUtilsQTR/utils.hpp" REQUIRED)
+target_include_directories(${PROJECT_NAME} PRIVATE ${CLIB_UTILS_QTR_INCLUDE_DIRS})
+
+find_path(DETOURS_INCLUDE_DIRS "detours/detours.h" REQUIRED)
+find_library(DETOURS_LIBRARY detours REQUIRED)
+
+target_include_directories(${PROJECT_NAME} PRIVATE ${DETOURS_INCLUDE_DIRS})
+target_link_libraries(${PROJECT_NAME} PRIVATE ${DETOURS_LIBRARY})
+
 target_compile_features(${PROJECT_NAME} PRIVATE cxx_std_23) 
 target_precompile_headers(${PROJECT_NAME} PRIVATE include/plugin.hpp)
 target_compile_definitions(${PROJECT_NAME}  PRIVATE BEAUTIFUL_NAME="${BEAUTIFUL_NAME}" IMGUI_DEFINE_MATH_OPERATORS)

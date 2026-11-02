@@ -4,6 +4,7 @@
 #include "posefixes.hpp"
 #include "settings.hpp"
 #include "transformations.hpp"
+#include "collision_Layers.hpp"
 
 #include <algorithm>
 #include <chrono>
@@ -381,6 +382,7 @@ namespace Dynamics {
 		else if (IsSwimming(a_player)) {
 			a_stateName = "swimming";
 			preset = config.swimming;
+
 		}
 		else if (a_player && a_player->IsInCombat()) {
 			a_stateName = "combat";

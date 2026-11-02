@@ -8,10 +8,14 @@
 #include "settings.hpp"
 #include "raycast.hpp"
 #include "posefixes.hpp"
+#include "collision_layers.hpp"
+
 #include <CLibUtilsQTR/DrawDebug.hpp>
+#include <CLibUtilsQTR/Hooks.hpp>
 
 #include <array>
 #include <cmath>
+
 
 using namespace Hook; 
 using namespace DebugAPI_IMPL;
@@ -63,6 +67,7 @@ void PlayerUpdate::thunk(RE::PlayerCharacter* player, float delta) {
 			manager.FixSneakingPose(player, PoseFixes::PlayerPose(player), false);
 		}
 	}
+
 
 	Dynamics::Update(player);
 
@@ -289,6 +294,7 @@ void ThirdPersonState_SetRotation::Install()
 	logger::info("ThirdPersonState_SetRotation hook installed");
 }
 
+// allows us to decouple camera position from collision for first person camera 
 void CameraLinearCastHook::thunk(
 	std::int64_t* param_1,   // unk120 phantom wrapper
 	std::int64_t* param_2,   // bhkWorld
@@ -401,8 +407,112 @@ void CameraLinearCastHook::Install()
 	logger::info("CameraLinearCastHook installed");
 }
 
+// Game processes collision filters through this hook, there is no way to tell through the arguements
+// the origin of the collisions being passed in. However, we can hook specific call sites using write_call 
+// allowing us to target the objects handled by that caller.
+// for example 3rd function that calls this is used only for actors / npcs, and the 7th fuction that calls this function
+// is used only y for the player
+
+
+bool CollisionFilterFunc::funcForPlayer(
+	RE::bhkCollisionFilter* filter,
+	RE::CFilter filterA,
+	RE::CFilter filterB)
+{
+	//char controller is used for all humanoid NPCs 
+	constexpr auto actorLayer = RE::COL_LAYER::kCharController;
+
+	//Camera Pick is confirmed used for the cam over kCameraSpheres
+	constexpr auto cameraLayer = RE::COL_LAYER::kCameraPick;
+
+	const auto layerA = filterA.GetCollisionLayer();
+	const auto layerB = filterB.GetCollisionLayer();
+
+	// funcForPlayer is also called for player camera, kCamerPick over kCameraSphere
+	if (layerA == RE::COL_LAYER::kCameraPick ||
+		layerB == RE::COL_LAYER::kCameraPick) {
+
+		const auto otherLayer = layerA == RE::COL_LAYER::kCameraPick ? layerB : layerA;
+		const auto index = std::to_underlying(otherLayer);
+
+		if (index >= CollisionLayers::kCollisionLayerNames.size()) {
+			return originalFuncForPlayer(filter, filterA, filterB);
+		}
+
+		const auto& state = Dynamics::GetPresetState();
+
+		auto& manager = VCD::Manager::GetSingleton();
+		const auto* cameraConfig = manager.GetPresetConfig(state.currentCamera);
+
+		if (!cameraConfig) {
+			return originalFuncForPlayer(filter, filterA, filterB);
+		}
+
+		const auto& layerName = CollisionLayers::kCollisionLayerNames[index];
+
+		if (CollisionLayers::IsLayerOverridden(
+			cameraConfig->collisionLayers, layerName)) {
+			return false;
+		}
+
+		return originalFuncForPlayer(filter, filterA, filterB);
+	}
+
+	// for actors
+	if (layerA != actorLayer && layerB != actorLayer) {
+		return originalFuncForPlayer(filter, filterA, filterB);
+	}
+
+	const auto otherLayer = layerA == actorLayer ? layerB : layerA;
+	const auto index = std::to_underlying(otherLayer);
+
+	// Omit the unknown layers.
+	if (index >= CollisionLayers::kCollisionLayerNames.size()) {
+		return originalFuncForPlayer(filter, filterA, filterB);
+	}
+
+	const auto& state = Dynamics::GetPresetState();
+	auto& manager = VCD::Manager::GetSingleton();
+	const auto* presetConfig = manager.GetPresetConfig(state.current);
+
+	if (!presetConfig) {
+		return originalFuncForPlayer(filter, filterA, filterB);
+	}
+
+	const auto& layerName = CollisionLayers::kCollisionLayerNames[index];
+
+	if (CollisionLayers::IsLayerOverridden(
+		presetConfig->collisionLayers, layerName)) {
+		return false;
+	}
+
+	return originalFuncForPlayer(filter, filterA, filterB);
+}
+
+void CollisionFilterFunc::Install()
+{
+	auto& trampoline = SKSE::GetTrampoline();
+
+	//enable for NPCS Functionality (No way to discern origin TESObjectREFR)
+/*	REL::Relocation<std::uintptr_t> ActorsTarget{
+		RELOCATION_ID(76680, 78552), 0x118
+	};
+
+	funcForActors = trampoline.write_call<5>(
+		ActorsTarget.address(), func1Thunk);	*/
+
+	REL::Relocation<std::uintptr_t> playerTarget{
+		RELOCATION_ID(76677, 78549), 0xBC
+	};
+
+	originalFuncForPlayer = trampoline.write_call<5>(
+		playerTarget.address(), funcForPlayer);
+
+	logger::info("Installed CollisionFilterSub hooks");
+}
+
 void Hook::Install() {
-	SKSE::AllocTrampoline(1 << 5);
+	SKSE::AllocTrampoline(1 << 6);
 
 	CharacterProxyProcessConstraints::Install();
 
@@ -415,4 +525,6 @@ void Hook::Install() {
 	MenuTopicManagerHook::Install();
 
 	ThirdPersonState_SetRotation::Install();
+
+	CollisionFilterFunc::Install(); 
 }

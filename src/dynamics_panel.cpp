@@ -4,6 +4,7 @@
 #include "draw.hpp"
 #include "scan.hpp"
 #include "translate.hpp"
+#include "collision_layers.hpp"
 
 #include <algorithm>
 #include <chrono>
@@ -1715,9 +1716,21 @@ namespace UI {
             }
       //  }
 
-        GUI::Spacing();
+            GUI::Spacing();
 
-        const bool differsFromDefault = !editor.current.IsSame(editor.defaults);
+            static const auto collisionLayersText = FontAwesome::UnicodeToUtf8(Icons::kCollisionLayers);
+
+            FontAwesome::PushSolid();
+            if (GUI::Button((collisionLayersText + "##EditCollisionLayers").c_str())) {
+                GetCollisionLayerEditorState().open = true;
+            }
+            FontAwesome::Pop();
+
+            Tooltip("Edit collision layers");
+
+            GUI::SameLine(0.0F, 6.0F);
+
+            const bool differsFromDefault = !editor.current.IsSame(editor.defaults);
 
         if (IconCTAButton(Trans::Tr("Dynamics.Editor.ResetButton").c_str(), differsFromDefault, Icons::kReset)) {
             if (editor.camera) {
@@ -1775,6 +1788,52 @@ namespace UI {
             ClosePresetEditor();
         }
 
+        GUI::PopStyleColor();
+    }
+
+    void RenderCollisionLayerEditor()
+    {
+        auto& editor = GetCollisionLayerEditorState();
+        if (!editor.open) {
+            return;
+        }
+
+        auto& presetEditor = GetPresetEditorState();
+        auto* presetConfig = VCD::Manager::GetSingleton().GetPresetConfig(presetEditor.preset);
+        if (!presetConfig) {
+            return;
+        }
+
+        static constexpr GUI::ImVec2 windowSize{ 520.0F, 600.0F };
+        GUI::SetNextWindowSize(windowSize, GUI::ImGuiCond_FirstUseEver);
+        CenterNextWindow();
+
+        GUI::PushStyleColor(GUI::ImGuiCol_WindowBg, Color::kEditWindowBg);
+
+        if (GUI::Begin("Collision Layer Editor", &editor.open, 0)) {
+            GUI::Text("Collision layer overrides");
+            GUI::Separator();
+
+            for (std::size_t i = 0; i < CollisionLayers::kCollisionLayerNames.size(); ++i) {
+                bool enabled = CollisionLayers::GetLayerEnabled(i, presetConfig->collisionLayers);
+
+                const std::string label(CollisionLayers::kCollisionLayerNames[i]);
+
+                if (GUI::Checkbox(label.c_str(), &enabled)) {
+                    auto& overrides = presetConfig->collisionLayers;
+                    const auto layer = CollisionLayers::kCollisionLayerNames[i];
+
+                    if (CollisionLayers::IsLayerOverridden(overrides, layer)) {
+                        std::erase(overrides, layer);
+                    }
+                    else {
+                        overrides.emplace_back(layer);
+                    }
+                }
+            }
+        }
+
+        GUI::End();
         GUI::PopStyleColor();
     }
 
@@ -1971,6 +2030,7 @@ namespace UI {
         GUI::EndChild();
 
         RenderPresetEditor();
+        RenderCollisionLayerEditor();
         RenderCreatePresetEditor();
         RenderDeletePresetEditor();
     }

@@ -73,6 +73,11 @@ namespace UI {
         std::chrono::steady_clock::time_point collisionApplyAt{};
     };
 
+    struct CollisionLayerEditorState
+    {
+        bool open{ false };
+    };
+
     struct CreatePresetEditorState
     {
         bool open{ false };
@@ -106,6 +111,12 @@ namespace UI {
     inline PresetEditorState& GetPresetEditorState()
     {
         static PresetEditorState state{};
+        return state;
+    }
+
+    inline CollisionLayerEditorState& GetCollisionLayerEditorState()
+    {
+        static CollisionLayerEditorState state{};
         return state;
     }
 

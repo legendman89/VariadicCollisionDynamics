@@ -53,6 +53,10 @@ namespace VCD {
                 a_preset.name = a_data["name"].get<std::string>();
             }
 
+            if (a_data.contains("collisionLayers")) {
+                a_preset.collisionLayers = a_data["collisionLayers"].get<std::vector<std::string>>();
+            }
+
             if (a_data.contains("position")) {
                 JSON::ReadNiPoint3(a_preset.data.bump.translation, a_data["position"]);
             }
@@ -140,12 +144,12 @@ namespace VCD {
             }
 
             // For now, preset display name is iinitialized to key.
-            PresetConfig loadedConfig = builtIn != a_presets.end() ? *builtIn : PresetConfig{ Preset::kTotal, key, key, {}, false, false };
+            PresetConfig loadedConfig = builtIn != a_presets.end() ? *builtIn : PresetConfig{ Preset::kTotal, key, key, {}, {}, false, false };
 
             if (!LoadPresetConfiguration(loadedConfig, data)) {
                 continue;
             }
-
+            
             if (builtIn != a_presets.end()) {
                 if (loadedConfig.preset == Preset::kVanilla) {
                     loadedConfig.name = kPresetNames[0];
@@ -214,6 +218,7 @@ namespace VCD {
         const auto path = GetPresetDir() / (a_preset.key + ".json");
         auto data = JSON::CollisionDataToJson(a_preset.data);
         data["name"] = a_preset.name;
+        data["collisionLayers"] = a_preset.collisionLayers;
         return JSON::WriteFile(path, data, "Preset", &a_error, { 2, false });
     }
 }

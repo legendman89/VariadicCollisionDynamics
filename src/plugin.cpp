@@ -27,6 +27,7 @@ static void MessageHandler(SKSE::MessagingInterface::Message* msg) {
         // Thus, we reapply after a short time.
         Dynamics::ClearRuntimeState();
         Dynamics::SchedulePostLoadApply();
+
         break;
     }
     case SKSE::MessagingInterface::kDataLoaded:
@@ -40,6 +41,27 @@ static void MessageHandler(SKSE::MessagingInterface::Message* msg) {
         VCD::Race::LoadRegisteredRaces();
 
         EventSinks::InputEventSink::RegisterEventSink();
+
+
+        auto* filter = RE::bhkCollisionFilter::GetSingleton();
+        if (!filter) {
+            logger::error("Cannot capture collision masks: bhkCollisionFilter is null.");
+            return;
+        }
+
+        logger::info("========== VANILLA COLLISION LAYER MASKS ==========");
+
+        for (std::size_t i = 0; i < std::size(filter->layerBitfields); ++i) {
+            const auto layer = static_cast<RE::COL_LAYER>(i);
+
+            logger::info(
+                "[{}] {} = 0x{:08X}",
+                i,
+                RE::CollisionLayerToString(layer),
+                filter->layerBitfields[i]);
+        }
+
+        logger::info("========== END COLLISION LAYER MASKS ==========");
 
         break;
     }
