@@ -12,10 +12,8 @@
 
 #include <CLibUtilsQTR/DrawDebug.hpp>
 #include <CLibUtilsQTR/Hooks.hpp>
-
 #include <array>
 #include <cmath>
-
 
 using namespace Hook; 
 using namespace DebugAPI_IMPL;
@@ -407,108 +405,273 @@ void CameraLinearCastHook::Install()
 	logger::info("CameraLinearCastHook installed");
 }
 
-// Game processes collision filters through this hook, there is no way to tell through the arguements
-// the origin of the collisions being passed in. However, we can hook specific call sites using write_call 
-// allowing us to target the objects handled by that caller.
-// for example 3rd function that calls this is used only for actors / npcs, and the 7th fuction that calls this function
-// is used only y for the player
-
-
-bool CollisionFilterFunc::funcForPlayer(
-	RE::bhkCollisionFilter* filter,
-	RE::CFilter filterA,
-	RE::CFilter filterB)
+//Used to make our own collision layer filtering logic, 
+//Player or player camera doesent come through here see playerFilter below
+std::uint8_t* CollisionFilterHooks::actorFilter(
+	const RE::hkpShapeCollectionFilter* a_this,
+	std::uint8_t* a_result,
+	const RE::hkpCollisionInput& a_input,
+	const RE::hkpCdBody& a_bodyA,
+	const RE::hkpCdBody& a_bodyB,
+	const RE::hkpShapeContainer& a_shapeA,
+	const RE::hkpShapeContainer& a_shapeB,
+	RE::hkpShapeKey a_keyA,
+	RE::hkpShapeKey a_keyB)
 {
-	//char controller is used for all humanoid NPCs 
-	constexpr auto actorLayer = RE::COL_LAYER::kCharController;
+	auto* result = actorFunc(
+		a_this,
+		a_result,
+		a_input,
+		a_bodyA,
+		a_bodyB,
+		a_shapeA,
+		a_shapeB,
+		a_keyA,
+		a_keyB);
 
-	//Camera Pick is confirmed used for the cam over kCameraSpheres
-	constexpr auto cameraLayer = RE::COL_LAYER::kCameraPick;
+	if (!result || !*result || !Settings::GetSettings().enableNPCDynamics) {
+		return result;
+	}
 
-	const auto layerA = filterA.GetCollisionLayer();
-	const auto layerB = filterB.GetCollisionLayer();
+	const auto getActor = [](const RE::hkpCdBody& a_body) -> RE::Actor* {
+		auto* root = &a_body;
 
-	// funcForPlayer is also called for player camera, kCamerPick over kCameraSphere
-	if (layerA == RE::COL_LAYER::kCameraPick ||
-		layerB == RE::COL_LAYER::kCameraPick) {
-
-		const auto otherLayer = layerA == RE::COL_LAYER::kCameraPick ? layerB : layerA;
-		const auto index = std::to_underlying(otherLayer);
-
-		if (index >= CollisionLayers::kCollisionLayerNames.size()) {
-			return originalFuncForPlayer(filter, filterA, filterB);
+		while (root->parent) {
+			root = root->parent;
 		}
 
-		const auto& state = Dynamics::GetPresetState();
+		const auto& collidable = static_cast<const RE::hkpCollidable&>(*root);
+
+		if (collidable.GetCollisionLayer() != RE::COL_LAYER::kCharController) {
+			return nullptr;
+		}
+
+		auto* ref = RE::TESHavokUtilities::FindCollidableRef(collidable);
+		return ref ? ref->As<RE::Actor>() : nullptr;
+		};
+
+	const auto checkNPC = [](RE::Actor* a_actor, RE::COL_LAYER a_otherLayer) -> bool {
+		if (!a_actor) {
+			return false;
+		}
+
+		
+		auto* actorState = Dynamics::FindNPCPresetState(a_actor->GetFormID());
+
+		if (!actorState) {
+			return false;
+		}
+
+		const auto index = std::to_underlying(a_otherLayer);
+
+		if (index >= CollisionLayers::kCollisionLayerNames.size()) {
+			return false;
+		}
 
 		auto& manager = VCD::Manager::GetSingleton();
-		const auto* cameraConfig = manager.GetPresetConfig(state.currentCamera);
+		const auto* presetConfig = manager.GetPresetConfig(actorState->preset);
 
-		if (!cameraConfig) {
-			return originalFuncForPlayer(filter, filterA, filterB);
+		if (!presetConfig) {
+			return false;
 		}
 
 		const auto& layerName = CollisionLayers::kCollisionLayerNames[index];
 
+		const bool overridden = CollisionLayers::IsLayerOverridden(
+			presetConfig->collisionLayers,
+			layerName);
+
+		logger::debug(
+			"[NPC Collision] {} [{:08X}] | Preset: {} | Other layer: {} | Override: {}",
+			a_actor->GetDisplayFullName(),
+			a_actor->GetFormID(),
+			VCD::PresetName(actorState->preset),
+			layerName,
+			overridden);
+
+		return overridden;
+		};
+
+	const auto layerA =
+		static_cast<const RE::hkpCollidable&>(a_bodyA).GetCollisionLayer();
+
+	const auto layerB =
+		static_cast<const RE::hkpCollidable&>(a_bodyB).GetCollisionLayer();
+
+	auto* actorA = getActor(a_bodyA);
+	auto* actorB = getActor(a_bodyB);
+
+	//see if char controller collision layer meaning its a actor amd see if actors Preset should return false on this collision interaction
+	if (checkNPC(actorA, layerB)) {
+		logger::debug("[NPC Collision] Rejected collision through body A");
+		*result = false;
+		return result;
+	}
+
+	//see if char controller collision layer meaning its a actor amd see if actors Preset should return false on this collision interaction
+	if (checkNPC(actorB, layerA)) {
+		logger::debug("[NPC Collision] Rejected collision through body B");
+		*result = false;
+		return result;
+	}
+
+	return result;
+}
+
+void CollisionFilterHooks::Install()
+{
+	auto& trampoline = SKSE::GetTrampoline();
+
+	REL::Relocation<std::uintptr_t> vtable{ RE::VTABLE_bhkCollisionFilter[2] };
+
+	actorFunc = vtable.write_vfunc(0, actorFilter);
+
+	REL::Relocation<std::uintptr_t> playerTarget{
+		RELOCATION_ID(76677, 78549), 0xBC
+	};
+	playerFunc = trampoline.write_call<5>(
+		playerTarget.address(), playerFilter);
+
+	logger::info("Collision Filter Hooks installed");
+}
+
+// at this write_call address only the player and his camera comes through here 
+bool CollisionFilterHooks::playerFilter(
+	RE::bhkCollisionFilter* filter,
+	RE::CFilter filterA,
+	RE::CFilter filterB)
+{
+	//char controller is used for Npcs, Player
+	constexpr auto actorLayer = RE::COL_LAYER::kCharController;
+
+	//Camera Pick is confirmed used for the cam over kCameraSpheres
+	constexpr auto cameraLayer = RE::COL_LAYER::kCameraPick;
+	const auto layerA = filterA.GetCollisionLayer();
+	const auto layerB = filterB.GetCollisionLayer();
+
+	//player camera collision layer logic here
+	if (layerA == RE::COL_LAYER::kCameraPick ||
+		layerB == RE::COL_LAYER::kCameraPick && Settings::GetSettings().enableCameraDynamics) {
+		const auto otherLayer = layerA == RE::COL_LAYER::kCameraPick ? layerB : layerA;
+		const auto index = std::to_underlying(otherLayer);
+		if (index >= CollisionLayers::kCollisionLayerNames.size()) {
+			return playerFunc(filter, filterA, filterB);
+		}
+		const auto& state = Dynamics::GetPresetState();
+		auto& manager = VCD::Manager::GetSingleton();
+		const auto* cameraConfig = manager.GetPresetConfig(state.currentCamera);
+		if (!cameraConfig) {
+			return playerFunc(filter, filterA, filterB);
+		}
+		const auto& layerName = CollisionLayers::kCollisionLayerNames[index];
 		if (CollisionLayers::IsLayerOverridden(
 			cameraConfig->collisionLayers, layerName)) {
 			return false;
 		}
-
-		return originalFuncForPlayer(filter, filterA, filterB);
+		return playerFunc(filter, filterA, filterB);
 	}
 
-	// for actors
 	if (layerA != actorLayer && layerB != actorLayer) {
-		return originalFuncForPlayer(filter, filterA, filterB);
+		return playerFunc(filter, filterA, filterB);
 	}
-
 	const auto otherLayer = layerA == actorLayer ? layerB : layerA;
 	const auto index = std::to_underlying(otherLayer);
 
 	// Omit the unknown layers.
 	if (index >= CollisionLayers::kCollisionLayerNames.size()) {
-		return originalFuncForPlayer(filter, filterA, filterB);
+		return playerFunc(filter, filterA, filterB);
 	}
-
 	const auto& state = Dynamics::GetPresetState();
 	auto& manager = VCD::Manager::GetSingleton();
 	const auto* presetConfig = manager.GetPresetConfig(state.current);
-
 	if (!presetConfig) {
-		return originalFuncForPlayer(filter, filterA, filterB);
+		return playerFunc(filter, filterA, filterB);
 	}
 
+	//return false if active preset says the current collision layers should not interact
 	const auto& layerName = CollisionLayers::kCollisionLayerNames[index];
-
 	if (CollisionLayers::IsLayerOverridden(
 		presetConfig->collisionLayers, layerName)) {
 		return false;
 	}
-
-	return originalFuncForPlayer(filter, filterA, filterB);
+	return playerFunc(filter, filterA, filterB);
 }
 
-void CollisionFilterFunc::Install()
+//TODO:: finish implementing the weapon collision layer logic for NPCS and the player
+
+//For SE weapon collision layers are unused so another hook is required for them
+void MeleeHitHookSE::func(
+	RE::Character* a_aggressor,
+	RE::Actor* a_victim,
+	std::int64_t a3,
+	char a4,
+	float a5)
 {
+
+	if (a_victim && a_victim->IsPlayerRef()) {
+		logger::info("MeleeHitHook: blocked melee hit against player");
+		return;
+	}
+
+	originalFunc(a_aggressor, a_victim, a3, a4, a5);
+}
+
+void MeleeHitHookSE::Install()
+{
+	if (REL::Module::IsAE()) {
+		return;
+	}
+
 	auto& trampoline = SKSE::GetTrampoline();
 
-	//enable for NPCS Functionality (No way to discern origin TESObjectREFR)
-/*	REL::Relocation<std::uintptr_t> ActorsTarget{
-		RELOCATION_ID(76680, 78552), 0x118
+	REL::Relocation<std::uintptr_t> meleeTarget{
+		REL::ID(37650)
 	};
 
-	funcForActors = trampoline.write_call<5>(
-		ActorsTarget.address(), func1Thunk);	*/
+	originalFunc = trampoline.write_call<5>(
+		meleeTarget.address() + 0x38B,
+		func);
 
-	REL::Relocation<std::uintptr_t> playerTarget{
-		RELOCATION_ID(76677, 78549), 0xBC
+	logger::info("Installed MeleeHitHook");
+}
+
+
+//TODO:: finish implementing the weapon collision layer logic for NPCS and the player
+void MeleeHitHookAE::func(
+	RE::Actor* a_aggressor,
+	RE::Actor* a_victim,
+	std::int64_t a3,
+	char a4)
+{
+	if (a_victim && a_victim->IsPlayerRef()) {
+	
+		if (Dynamics::IsCustomKeyBindHeldDown()) {
+			return;
+		}
+	}
+
+	originalFunc(a_aggressor, a_victim, a3, a4);
+}
+
+//For AE weapon collision weapon collision layers are unused so another hook is required for them
+void MeleeHitHookAE::Install()
+{
+	if (REL::Module::GetRuntime() != REL::Module::Runtime::AE) {
+		return;
+	}
+
+	REL::Relocation<std::uintptr_t> target{
+		REL::RelocationID(0, 38627)
 	};
 
-	originalFuncForPlayer = trampoline.write_call<5>(
-		playerTarget.address(), funcForPlayer);
+	auto trampoline = clib_utilsQTR::write_prologue_hook(
+		target.address(),
+		&func
+	);
 
-	logger::info("Installed CollisionFilterSub hooks");
+	if (trampoline) {
+		originalFunc = reinterpret_cast<HitFunction*>(trampoline);
+	}
 }
 
 void Hook::Install() {
@@ -526,5 +689,11 @@ void Hook::Install() {
 
 	ThirdPersonState_SetRotation::Install();
 
-	CollisionFilterFunc::Install(); 
+	CollisionFilterHooks::Install(); 
+
+	MeleeHitHookSE::Install(); 
+
+	MeleeHitHookAE::Install(); 
+
+	void InstallHook(); 
 }

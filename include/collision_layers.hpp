@@ -13,7 +13,7 @@ namespace CollisionLayers
 {
     inline constexpr std::size_t kCollisionLayerCount = 64;
 
-    //default values captured at k new game on the player 
+    //default values captured at k new game of the collision layer filter for the entire game. 
     inline constexpr std::array<std::uint64_t, kCollisionLayerCount> kVanillaCollisionMasks = {
         0x7FD95FFFF7FFULL,       // 0  Unidentified
         0x17FCD5E1B67FFULL,      // 1  Static
@@ -139,6 +139,7 @@ namespace CollisionLayers
         return std::find(a_overrides.begin(), a_overrides.end(), a_layer) != a_overrides.end();
     }
 
+    // we only seraialize the difference in layers from vanilla
     inline bool GetLayerEnabled(
         const std::size_t a_index,
         const std::vector<std::string>& a_overrides)
@@ -146,15 +147,11 @@ namespace CollisionLayers
         if (a_index >= kCollisionLayerNames.size()) {
             return false;
         }
-
         constexpr auto charControllerIndex =
             std::to_underlying(RE::COL_LAYER::kCharController);
-
         const auto vanillaMask = kVanillaCollisionMasks[charControllerIndex];
         const auto bit = std::uint64_t{ 1 } << a_index;
-
         const bool vanillaEnabled = (vanillaMask & bit) != 0;
-
         return IsLayerOverridden(a_overrides, kCollisionLayerNames[a_index])
             ? !vanillaEnabled
             : vanillaEnabled;

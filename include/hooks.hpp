@@ -79,33 +79,67 @@ namespace Hook {
         static void Install();
     };
 
-  // Game processes collision filters through this hook, 
-  // there is no way to tell through the arguemnts what is being psased through,
-  // however by hooking different callers using "write_call" 
-  // we can hook functions that call the func itself, that were used for specific game objects only
-  //for example func1 is used only for actors / npcs, and func 2 is called only for the player
-
-    struct CollisionFilterFunc
+    struct CollisionFilterHooks
     {
+        static void Install();
 
-        //npcs commented out because no way to know what NPC (needs to be disabled via menu for NPC Specific Presets)
-      /*  static bool funcForActors(
+        static std::uint8_t* actorFilter(
+            const RE::hkpShapeCollectionFilter* a_this,
+            std::uint8_t* a_result,
+            const RE::hkpCollisionInput& a_input,
+            const RE::hkpCdBody& a_bodyA,
+            const RE::hkpCdBody& a_bodyB,
+            const RE::hkpShapeContainer& a_shapeA,
+            const RE::hkpShapeContainer& a_shapeB,
+            RE::hkpShapeKey a_keyA,
+            RE::hkpShapeKey a_keyB);
+
+        static bool playerFilter(
             RE::bhkCollisionFilter* filter,
             RE::CFilter filterA,
             RE::CFilter filterB);
-            */
 
-        //player
-        static bool funcForPlayer(
-            RE::bhkCollisionFilter* filter,
-            RE::CFilter filterA,
-            RE::CFilter filterB);
+        static inline REL::Relocation<decltype(playerFilter)> playerFunc;
 
-      //  static inline REL::Relocation<decltype(funcForActors)> func1;
-        static inline REL::Relocation<decltype(funcForPlayer)> originalFuncForPlayer;
+        static inline REL::Relocation<decltype(actorFilter)*> actorFunc;
+    };
+
+    struct MeleeHitHookSE
+    {
+        static void func(
+            RE::Character* a_aggressor,
+            RE::Actor* a_victim,
+            std::int64_t a3,
+            char a4,
+            float a5);
+
+        static inline REL::Relocation<decltype(func)> originalFunc;
 
         static void Install();
     };
+
+    struct MeleeHitHookAE
+    {
+        using HitFunction = void(
+            RE::Actor*,
+            RE::Actor*,
+            std::int64_t,
+            char
+            );
+
+        static void func(
+            RE::Actor* a_aggressor,
+            RE::Actor* a_victim,
+            std::int64_t a3,
+            char a4
+        );
+
+        static inline HitFunction* originalFunc = nullptr;
+
+        static void Install();
+    };
+
+  
 
     void Install(); 
 

@@ -1819,6 +1819,7 @@ namespace UI {
 
                 const std::string label(CollisionLayers::kCollisionLayerNames[i]);
 
+                // we only seraialize the difference in layers from vanilla
                 if (GUI::Checkbox(label.c_str(), &enabled)) {
                     auto& overrides = presetConfig->collisionLayers;
                     const auto layer = CollisionLayers::kCollisionLayerNames[i];

@@ -28,6 +28,15 @@ static void MessageHandler(SKSE::MessagingInterface::Message* msg) {
         Dynamics::ClearRuntimeState();
         Dynamics::SchedulePostLoadApply();
 
+        auto* filter = RE::bhkCollisionFilter::GetSingleton();
+        if (!filter) {
+            logger::error("Cannot modify collision masks: bhkCollisionFilter is null.");
+            return;
+        }
+
+        constexpr auto weaponLayer = std::to_underlying(RE::COL_LAYER::kWeapon);
+        const auto weaponBit = std::uint32_t{ 1 } << weaponLayer;
+
         break;
     }
     case SKSE::MessagingInterface::kDataLoaded:
@@ -41,27 +50,6 @@ static void MessageHandler(SKSE::MessagingInterface::Message* msg) {
         VCD::Race::LoadRegisteredRaces();
 
         EventSinks::InputEventSink::RegisterEventSink();
-
-
-        auto* filter = RE::bhkCollisionFilter::GetSingleton();
-        if (!filter) {
-            logger::error("Cannot capture collision masks: bhkCollisionFilter is null.");
-            return;
-        }
-
-        logger::info("========== VANILLA COLLISION LAYER MASKS ==========");
-
-        for (std::size_t i = 0; i < std::size(filter->layerBitfields); ++i) {
-            const auto layer = static_cast<RE::COL_LAYER>(i);
-
-            logger::info(
-                "[{}] {} = 0x{:08X}",
-                i,
-                RE::CollisionLayerToString(layer),
-                filter->layerBitfields[i]);
-        }
-
-        logger::info("========== END COLLISION LAYER MASKS ==========");
 
         break;
     }

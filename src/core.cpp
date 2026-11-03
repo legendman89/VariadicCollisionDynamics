@@ -28,7 +28,6 @@ bool Manager::SetCollisionData(const RE::Actor* a_actor, const CollisionData& a_
         return false;
     }
 
-
     CharacterBumperShape bumperShape{};
     if (!FindWorldCharacterBumperShapeData(context.controller, bumperShape)) {
         if (a_log) {
