@@ -107,8 +107,13 @@ namespace UI {
 
         RenderGlobalStatus(Trans::Tr("Tools.CustomKey.VLock"), settings.customKeyGlobalVLock,
             API::CustomKeyGlobals::g_vLock, "##CustomKeyGlobalVLock");
+
+        WrappedTooltip(Trans::Tr("Tools.CustomKey.VLock.Tooltip").c_str());
+
         RenderGlobalStatus(Trans::Tr("Tools.CustomKey.VState"), settings.customKeyGlobalVState,
             API::CustomKeyGlobals::g_vState, "##CustomKeyGlobalVState");
+
+        WrappedTooltip(Trans::Tr("Tools.CustomKey.VState.Tooltip").c_str()); 
     }
 
 

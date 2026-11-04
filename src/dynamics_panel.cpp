@@ -1352,6 +1352,24 @@ namespace UI {
         GUI::EndDisabled();
     }
 
+    void ClearAllPresetCollisionLayers()
+    {
+        auto& manager = VCD::Manager::GetSingleton();
+
+        // Collect ids first, then go through GetPresetConfig(), which gives mutable access.
+        std::vector<VCD::Preset> presets;
+        for (const auto& config : manager.GetPresetConfigs()) {
+            presets.push_back(config.preset);
+        }
+
+        for (const auto& preset : presets) {
+            if (auto* config = manager.GetPresetConfig(preset)) {
+                config->collisionLayers.clear();
+            }
+        }
+    }
+
+ 
     void ResetDynamicsToDefaults()
     {
         const auto wasNPCDynamicsEnabled = Settings::GetSettings().enableNPCDynamics;
@@ -1364,6 +1382,15 @@ namespace UI {
         }
         if (wasCameraDynamicsEnabled) {
             Dynamics::RestoreCameraToVanilla();
+        }
+
+        //clear collision layer vectors 
+        auto& manager = VCD::Manager::GetSingleton();
+
+        for (const auto& config : manager.GetPresetConfigs()) {
+            if (auto* mutableConfig = manager.GetPresetConfig(config.preset)) {
+                mutableConfig->collisionLayers.clear();
+            }
         }
 
         if (RefreshPresetEditor()) {

@@ -36,8 +36,10 @@
   "Tools.CustomKey.Keybind": "Custom Keybind",
   "Tools.CustomKey.Keybind.Tooltip": "Type a key name such as Q, F5, Left Shift or Numpad 3. Type None to disable. The number in brackets is the stored key code.",
   "Tools.CustomKey.Keybind.Invalid": "Unknown key name. The previous key was kept.",
-  "Tools.CustomKey.VLock": "Custom Key Global V Lock",
-  "Tools.CustomKey.VState": "Custom Key Global V State",
+  "Tools.CustomKey.VLock": "Custom Key Global Variable Lock",
+  "Tools.CustomKey.VState": "Custom Key Global Varible State",
+  "Tools.CustomKey.VLock.Tooltip": "Optional global variable that locks the custom keybind when its value is non-zero.",
+  "Tools.CustomKey.VState.Tooltip": "Optional global variable that is set to 1 while the custom keybind is pressed and 0 when released.",
   "Tools.CustomKey.Active": "Active",
   "Tools.CustomKey.NotActive": "Not Active",
 
