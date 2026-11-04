@@ -7,6 +7,7 @@
 #include <string>
 #include <vector>
 
+#include "dynamics.hpp"
 #include "logger.hpp"
 
 namespace CollisionLayers
@@ -39,7 +40,7 @@ namespace CollisionLayers
         0x41584ADC0001ULL,       // 21 AcousticSpace
         0x184058200001ULL,       // 22 ActorZone
         0x1840082000C1ULL,       // 23 ProjectileZone
-        0x3840480000C1ULL,       // 24 GasTrap
+        0x3840480000C1ULL,       // 24 GasTrapa
         0x3859023A6637ULL,       // 25 ShellCasting
         0x5D8D5C1367FFULL,       // 26 TransparentSmall
         0x3D415DF7F7DFULL,       // 27 InvisibleWall
@@ -155,6 +156,67 @@ namespace CollisionLayers
         return IsLayerOverridden(a_overrides, kCollisionLayerNames[a_index])
             ? !vanillaEnabled
             : vanillaEnabled;
+    }
+
+    inline bool ShouldRejectMeleeHit(RE::Actor* a_aggressor, RE::Actor* a_victim)
+    {
+        constexpr auto weaponLayer = RE::COL_LAYER::kWeapon;
+        constexpr auto layerIndex = std::to_underlying(weaponLayer);
+
+        if (!a_victim || layerIndex >= CollisionLayers::kCollisionLayerNames.size()) {
+            return false;
+        }
+
+        const auto& layerName = CollisionLayers::kCollisionLayerNames[layerIndex];
+        auto& manager = VCD::Manager::GetSingleton();
+
+        // Player cannot attack an actor while the player's active preset kWeapon collision layer disabled.
+        if (a_aggressor && a_aggressor->IsPlayerRef() && !a_victim->IsPlayerRef()) {
+            const auto& state = Dynamics::GetPresetState();
+            const auto* playerConfig = manager.GetPresetConfig(state.current);
+
+            if (playerConfig &&
+                CollisionLayers::IsLayerOverridden(playerConfig->collisionLayers, layerName)) {
+                return true;
+            }
+        }
+
+        if (a_victim->IsPlayerRef()) {
+            const auto& state = Dynamics::GetPresetState();
+            const auto* presetConfig = manager.GetPresetConfig(state.current);
+
+            if (presetConfig &&
+                CollisionLayers::IsLayerOverridden(presetConfig->collisionLayers, layerName)) {
+                logger::debug(
+                    "[Melee Hit] Weapon collision disabled for player preset {}, ignoring hit from {} [{:08X}]",
+                    VCD::PresetName(state.current),
+                    a_aggressor ? a_aggressor->GetDisplayFullName() : "null",
+                    a_aggressor ? a_aggressor->GetFormID() : 0);
+                return true;
+            }
+            return false;
+        }
+
+        if (!Settings::GetSettings().enableNPCDynamics) {
+            return false;
+        }
+
+        const auto* actorState = Dynamics::FindNPCPresetState(a_victim->GetFormID());
+        if (!actorState) {
+            return false;
+        }
+
+        const auto* presetConfig = manager.GetPresetConfig(actorState->preset);
+        if (presetConfig &&
+            CollisionLayers::IsLayerOverridden(presetConfig->collisionLayers, layerName)) {
+            logger::debug(
+                "[Melee Hit] Weapon collision disabled for {} [{:08X}] preset {}, ignoring hit",
+                a_victim->GetDisplayFullName(),
+                a_victim->GetFormID(),
+                VCD::PresetName(actorState->preset));
+            return true;
+        }
+        return false;
     }
 
 };

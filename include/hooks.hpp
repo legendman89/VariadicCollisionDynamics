@@ -110,8 +110,7 @@ namespace Hook {
             RE::Character* a_aggressor,
             RE::Actor* a_victim,
             std::int64_t a3,
-            char a4,
-            float a5);
+            char a4);
 
         static inline REL::Relocation<decltype(func)> originalFunc;
 

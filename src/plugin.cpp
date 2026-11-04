@@ -9,6 +9,7 @@
 #include "translate.hpp"
 #include "transformations.hpp"
 #include "eventsinks.hpp"
+#include "API.hpp"
 
 static void MessageHandler(SKSE::MessagingInterface::Message* msg) {
     switch (msg->type) {
@@ -50,6 +51,8 @@ static void MessageHandler(SKSE::MessagingInterface::Message* msg) {
         VCD::Race::LoadRegisteredRaces();
 
         EventSinks::InputEventSink::RegisterEventSink();
+
+        API::CustomKeyGlobals::Resolve(); 
 
         break;
     }

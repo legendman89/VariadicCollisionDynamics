@@ -57,6 +57,13 @@ namespace Settings {
 		}
 	}
 
+	inline void getString(const nlohmann::json& a_json, const char* a_key, std::string& a_value)
+	{
+		if (a_json.contains(a_key)) {
+			a_value = a_json.at(a_key).get<std::string>();
+		}
+	}
+
 	inline void getColor(const nlohmann::json& a_json, const char* a_key, std::array<float, 4>& a_value)
 	{
 		if (!a_json.contains(a_key) || !a_json.at(a_key).is_array()) {

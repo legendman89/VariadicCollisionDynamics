@@ -518,22 +518,6 @@ std::uint8_t* CollisionFilterHooks::actorFilter(
 	return result;
 }
 
-void CollisionFilterHooks::Install()
-{
-	auto& trampoline = SKSE::GetTrampoline();
-
-	REL::Relocation<std::uintptr_t> vtable{ RE::VTABLE_bhkCollisionFilter[2] };
-
-	actorFunc = vtable.write_vfunc(0, actorFilter);
-
-	REL::Relocation<std::uintptr_t> playerTarget{
-		RELOCATION_ID(76677, 78549), 0xBC
-	};
-	playerFunc = trampoline.write_call<5>(
-		playerTarget.address(), playerFilter);
-
-	logger::info("Collision Filter Hooks installed");
-}
 
 // at this write_call address only the player and his camera comes through here 
 bool CollisionFilterHooks::playerFilter(
@@ -597,28 +581,77 @@ bool CollisionFilterHooks::playerFilter(
 	return playerFunc(filter, filterA, filterB);
 }
 
-//TODO:: finish implementing the weapon collision layer logic for NPCS and the player
+void CollisionFilterHooks::Install()
+{
+	auto& trampoline = SKSE::GetTrampoline();
 
-//For SE weapon collision layers are unused so another hook is required for them
+	REL::Relocation<std::uintptr_t> vtable{ RE::VTABLE_bhkCollisionFilter[2] };
+
+	actorFunc = vtable.write_vfunc(0, actorFilter);
+
+	REL::Relocation<std::uintptr_t> playerTarget{
+		RELOCATION_ID(76677, 78549), 0xBC
+	};
+	playerFunc = trampoline.write_call<5>(
+		playerTarget.address(), playerFilter);
+
+	logger::info("Collision Filter Hooks installed");
+}
+
+//Collision layer "kWeapon" does not take into account hitting/damaging player or NPCS
+//I wanted that functionality so with this hook, if kWeapon layer is disabled for active preset of any actor
+//Said actor cannot be hit by weapons. 
+void MeleeHitHookAE::func(
+	RE::Actor* a_aggressor,
+	RE::Actor* a_victim,
+	std::int64_t a3,
+	char a4)
+{
+	if (CollisionLayers::ShouldRejectMeleeHit(a_aggressor, a_victim)) {
+		return;
+	}
+	originalFunc(a_aggressor, a_victim, a3, a4);
+}
+
+void MeleeHitHookAE::Install()
+{
+	if (!REL::Module::IsAE) {
+		return;
+	}
+
+	// i dont think this func exists in SE 
+	REL::Relocation<std::uintptr_t> target{
+		REL::RelocationID(0, 38627)
+	};
+
+	//detour but safe so others can still hook this without crashing
+	auto trampoline = clib_utilsQTR::write_prologue_hook(
+		target.address(),
+		&func
+	);
+
+	if (trampoline) {
+		originalFunc = reinterpret_cast<HitFunction*>(trampoline);
+	}
+
+	logger::info("Installed MeleeHitHookAE");
+}
+
 void MeleeHitHookSE::func(
 	RE::Character* a_aggressor,
 	RE::Actor* a_victim,
 	std::int64_t a3,
-	char a4,
-	float a5)
+	char a4)
 {
-
-	if (a_victim && a_victim->IsPlayerRef()) {
-		logger::info("MeleeHitHook: blocked melee hit against player");
+	if (CollisionLayers::ShouldRejectMeleeHit(a_aggressor, a_victim)) {
 		return;
 	}
-
-	originalFunc(a_aggressor, a_victim, a3, a4, a5);
+	originalFunc(a_aggressor, a_victim, a3, a4);
 }
 
 void MeleeHitHookSE::Install()
 {
-	if (REL::Module::IsAE()) {
+	if (!REL::Module::IsSE()) {
 		return;
 	}
 
@@ -632,46 +665,7 @@ void MeleeHitHookSE::Install()
 		meleeTarget.address() + 0x38B,
 		func);
 
-	logger::info("Installed MeleeHitHook");
-}
-
-
-//TODO:: finish implementing the weapon collision layer logic for NPCS and the player
-void MeleeHitHookAE::func(
-	RE::Actor* a_aggressor,
-	RE::Actor* a_victim,
-	std::int64_t a3,
-	char a4)
-{
-	if (a_victim && a_victim->IsPlayerRef()) {
-	
-		if (Dynamics::IsCustomKeyBindHeldDown()) {
-			return;
-		}
-	}
-
-	originalFunc(a_aggressor, a_victim, a3, a4);
-}
-
-//For AE weapon collision weapon collision layers are unused so another hook is required for them
-void MeleeHitHookAE::Install()
-{
-	if (REL::Module::GetRuntime() != REL::Module::Runtime::AE) {
-		return;
-	}
-
-	REL::Relocation<std::uintptr_t> target{
-		REL::RelocationID(0, 38627)
-	};
-
-	auto trampoline = clib_utilsQTR::write_prologue_hook(
-		target.address(),
-		&func
-	);
-
-	if (trampoline) {
-		originalFunc = reinterpret_cast<HitFunction*>(trampoline);
-	}
+	logger::info("Installed MeleeHitHookSE");
 }
 
 void Hook::Install() {

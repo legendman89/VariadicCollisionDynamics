@@ -51,6 +51,8 @@ namespace JSON {
 #define FLOAT2GETTER(S, D) Settings::getFloat(a_json, #S, a_settings.S);
 #define INT2GETTER(S, D) Settings::getInt(a_json, #S, a_settings.S);
 #define COLOR2GETTER(S, D0, D1, D2, D3) Settings::getColor(a_json, #S, a_settings.S);
+#define STRING2JSON(S, D) { #S, a_settings.S },
+#define STRING2GETTER(S, D) Settings::getString(a_json, #S, a_settings.S);
 
 	inline json ToolsToJson(const Settings::VCDSettings& a_settings)
 	{
@@ -59,6 +61,7 @@ namespace JSON {
 			FOREACH_FLOAT_SETTING(FLOAT2JSON)
 			FOREACH_INT_SETTING(INT2JSON)
 			FOREACH_COLOR_SETTING(COLOR2JSON)
+			FOREACH_STRING_SETTING(STRING2JSON)
 		};
 
 		return data;
@@ -70,6 +73,7 @@ namespace JSON {
 		FOREACH_FLOAT_SETTING(FLOAT2GETTER)
 		FOREACH_INT_SETTING(INT2GETTER)
 		FOREACH_COLOR_SETTING(COLOR2GETTER)
+		FOREACH_STRING_SETTING(STRING2GETTER)
 	}
 
 	inline bool PresetOverridesEqual(const Settings::VCDSettings::PresetOverride& a_left, const Settings::VCDSettings::PresetOverride& a_right)

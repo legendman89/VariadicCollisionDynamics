@@ -68,11 +68,19 @@
 	S(drawNPCColor, 1.0F, 0.0F, 1.0F, 1.0F) \
 	S(drawCameraColor, 1.0F, 0.0F, 1.0F, 1.0F)
 
+#define FOREACH_TOOL_STRING_SETTING(S) \
+	S(customKeyGlobalVLock, "") \
+	S(customKeyGlobalVState, "")
+
+#define FOREACH_STRING_SETTING(S) \
+	FOREACH_TOOL_STRING_SETTING(S)
+
 #define BOOL2DEF(S, D) bool S = D;
 #define FLOAT2DEF(S, D) float S = D;
 #define INT2DEF(S, D) int S = D;
 #define PRESET2DEF(S, D) VCD::Preset S = D;
 #define COLOR2DEF(S, D0, D1, D2, D3) std::array<float, 4> S{ D0, D1, D2, D3 };
+#define STRING2DEF(S, D) std::string S = D;
 
 namespace Settings {
 
@@ -96,6 +104,7 @@ namespace Settings {
 		FOREACH_BOOL_SETTING(BOOL2DEF);
 		FOREACH_FLOAT_SETTING(FLOAT2DEF);
 		FOREACH_INT_SETTING(INT2DEF);
+		FOREACH_STRING_SETTING(STRING2DEF);
 		FOREACH_PRESET_STATE(PRESET2DEF);
 		FOREACH_COLOR_SETTING(COLOR2DEF);
 

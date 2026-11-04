@@ -23,4 +23,10 @@ namespace UI {
 
     void ApplyLogLevel(const int& a_level);
 
+    bool InputStringSetting(const char* a_label, std::string& a_value);
+
+    void RenderGlobalStatus(const std::string& a_label, std::string& a_editorID, RE::TESGlobal* const& a_resolved, const char* a_inputID);
+
+    void RenderCustomKey();
+
 }

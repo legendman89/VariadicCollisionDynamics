@@ -32,6 +32,14 @@
   "Tools.Default.Button": "Reset Tools",
   "Tools.Default.Tooltip": "Reset Tools panel settings to defaults without saving.",
 
+  "Tools.CustomKey.Header": "Custom Keybind",
+  "Tools.CustomKey.Keybind": "Custom Keybind",
+  "Tools.CustomKey.Keybind.Tooltip": "Key code for the custom keybind. Use -1 to disable it.",
+  "Tools.CustomKey.VLock": "Custom Key Global V Lock",
+  "Tools.CustomKey.VState": "Custom Key Global V State",
+  "Tools.CustomKey.Active": "Active",
+  "Tools.CustomKey.NotActive": "Not Active",
+
 
   /* ============================================================
      DYNAMICS TAB
@@ -128,6 +136,8 @@
 
   "Dynamics.Editor.ResetButton": "Default",
   "Dynamics.Editor.ResetTooltip": "Restore this editor to its base preset values without saving it to disk.",
+
+  "Dynamics.Editor.CollisionLayerToolTip": "Edit what collision layers the active preset can interact with in the physical world",
 
   "Dynamics.CreatePreset.Button": "Create New Preset",
   "Dynamics.CreatePreset.Tooltip": "Create a reusable collision preset for players and NPCs, starting from the default vanilla shape.",

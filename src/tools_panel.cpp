@@ -1,5 +1,6 @@
 #include "tools_panel.hpp"
 #include "draw.hpp"
+#include "API.hpp"
 
 #include <CLibUtilsQTR/DrawDebug.hpp>
 #include <algorithm>
@@ -25,6 +26,52 @@ namespace UI {
         spdlog::set_level(level);
         spdlog::flush_on(level);
     }
+
+    bool InputStringSetting(const char* a_label, std::string& a_value)
+    {
+        std::array<char, 128> buffer{};
+        a_value.copy(buffer.data(), buffer.size() - 1);
+
+        if (GUI::InputText(a_label, buffer.data(), buffer.size(), 0, nullptr, nullptr)) {
+            a_value = buffer.data();
+        }
+        return GUI::IsItemDeactivatedAfterEdit();
+    }
+
+    void RenderGlobalStatus(const std::string& a_label, std::string& a_editorID, RE::TESGlobal* const& a_resolved, const char* a_inputID)
+    {
+        GUI::AlignTextToFramePadding();
+        GUI::TextUnformatted(a_label.c_str());
+        GUI::SameLine(0.0F, 10.0F);
+
+        GUI::SetNextItemWidth(kFixedDelaySliderWidth);
+        if (InputStringSetting(a_inputID, a_editorID)) {
+            API::CustomKeyGlobals::Resolve();
+        }
+
+        GUI::SameLine(0.0F, 10.0F);
+        const bool active = !a_editorID.empty() && a_resolved != nullptr;
+        GUI::TextUnformatted(active
+            ? Trans::Tr("Tools.CustomKey.Active").c_str()
+            : Trans::Tr("Tools.CustomKey.NotActive").c_str());
+    }
+
+    void RenderCustomKey()
+    {
+        auto& settings = Settings::GetSettings();
+
+        GUI::SetNextItemWidth(kFixedLogComboWidth);
+        GUI::InputInt(Trans::Tr("Tools.CustomKey.Keybind").c_str(), &settings.customKeybind);
+        Tooltip(Trans::Tr("Tools.CustomKey.Keybind.Tooltip").c_str());
+
+        GUI::Spacing();
+
+        RenderGlobalStatus(Trans::Tr("Tools.CustomKey.VLock"), settings.customKeyGlobalVLock,
+            API::CustomKeyGlobals::g_vLock, "##CustomKeyGlobalVLock");
+        RenderGlobalStatus(Trans::Tr("Tools.CustomKey.VState"), settings.customKeyGlobalVState,
+            API::CustomKeyGlobals::g_vState, "##CustomKeyGlobalVState");
+    }
+
 
     void RenderVisualization()
     {
@@ -161,6 +208,7 @@ namespace UI {
 
         if (IconCTAButton(Trans::Tr("Tools.Default.Button").c_str(), !Settings::IsToolsDefault(), Icons::kReset)) {
             Settings::ResetTools();
+            API::CustomKeyGlobals::Resolve();
             ClearDrawLines();
         }
 
@@ -188,6 +236,12 @@ namespace UI {
 
         if (GUI::CollapsingHeader(Trans::Tr("Tools.Logging.Header").c_str(), defaultOpen)) {
             RenderLogging();
+        }
+
+        GUI::Spacing();
+
+        if (GUI::CollapsingHeader(Trans::Tr("Tools.CustomKey.Header").c_str(), defaultOpen)) {
+            RenderCustomKey();
         }
     }
 

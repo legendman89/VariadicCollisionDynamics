@@ -1616,6 +1616,16 @@ namespace UI {
 
         const auto isCurrentPreset = Dynamics::IsPresetCurrent(editor.preset);
 
+        static const auto collisionLayersText = FontAwesome::UnicodeToUtf8(Icons::kCollisionLayers);
+
+         FontAwesome::PushSolid();
+         if (GUI::Button((collisionLayersText + "##EditCollisionLayers").c_str())) {
+                GetCollisionLayerEditorState().open = true;
+         }
+         FontAwesome::Pop();
+
+         WrappedTooltip(Trans::Tr("Dynamics.Editor.CollisionLayerToolTip").c_str());
+
         if (editor.camera) {
             if (!editor.preview) {
                 editor.preview = true;
@@ -1627,6 +1637,9 @@ namespace UI {
                 Trans::Tr("Dynamics.Editor.PreviewPrefix") + " " +
                 actorName + " " +
                 Trans::Tr("Dynamics.Editor.PresetLabel");
+
+            //Collision Layer
+            ImGuiMCP::SameLine(0.0f, 10.0f);
 
             if (GUI::Checkbox(previewLabel.c_str(), &editor.preview)) {
                 if (editor.preview) {
@@ -1646,6 +1659,9 @@ namespace UI {
                 actorName +
                 " " +
                 Trans::Tr("Dynamics.Editor.PresetLabel");
+
+            //Collision Layer
+            ImGuiMCP::SameLine();
 
             if (!editor.npcPreview && !editor.npcGlobal &&
                 GUI::Checkbox(previewLabel.c_str(), &editor.preview))
@@ -1717,16 +1733,6 @@ namespace UI {
       //  }
 
             GUI::Spacing();
-
-            static const auto collisionLayersText = FontAwesome::UnicodeToUtf8(Icons::kCollisionLayers);
-
-            FontAwesome::PushSolid();
-            if (GUI::Button((collisionLayersText + "##EditCollisionLayers").c_str())) {
-                GetCollisionLayerEditorState().open = true;
-            }
-            FontAwesome::Pop();
-
-            Tooltip("Edit collision layers");
 
             GUI::SameLine(0.0F, 6.0F);
 
