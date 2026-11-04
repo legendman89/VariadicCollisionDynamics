@@ -6,6 +6,7 @@
 #include <algorithm>
 #include <iterator>
 #include "translate.hpp"
+#include "KeyCodes.hpp"
 
 namespace UI {
 
@@ -38,7 +39,7 @@ namespace UI {
         return GUI::IsItemDeactivatedAfterEdit();
     }
 
-    void RenderGlobalStatus(const std::string& a_label, std::string& a_editorID, RE::TESGlobal* const& a_resolved, const char* a_inputID)
+    void RenderGlobalStatus(const std::string& a_label, std::string& a_editorID, const RE::TESGlobal* a_resolved, const char* a_inputID)
     {
         GUI::AlignTextToFramePadding();
         GUI::TextUnformatted(a_label.c_str());
@@ -47,10 +48,11 @@ namespace UI {
         GUI::SetNextItemWidth(kFixedDelaySliderWidth);
         if (InputStringSetting(a_inputID, a_editorID)) {
             API::CustomKeyGlobals::Resolve();
+            a_resolved = nullptr;  // re-read below via the cached pointers
         }
 
         GUI::SameLine(0.0F, 10.0F);
-        const bool active = !a_editorID.empty() && a_resolved != nullptr;
+        const bool active = a_editorID.empty() ? false : (a_resolved != nullptr);
         GUI::TextUnformatted(active
             ? Trans::Tr("Tools.CustomKey.Active").c_str()
             : Trans::Tr("Tools.CustomKey.NotActive").c_str());
@@ -60,9 +62,46 @@ namespace UI {
     {
         auto& settings = Settings::GetSettings();
 
+        static std::array<char, 64> buffer{};
+        static bool wasActive = false;
+        static bool invalid = false;
+
+        // While the user isn't typing, show the current key's name, so Reset and loads show up too.
+        if (!wasActive) {
+            const auto name = KeyNames::NameFromCode(settings.customKeybind);
+            std::string shown = name.empty()
+                ? (settings.customKeybind < 0 ? std::string("None") : std::to_string(settings.customKeybind))
+                : std::string(name);
+            std::snprintf(buffer.data(), buffer.size(), "%s", shown.c_str());
+        }
+
         GUI::SetNextItemWidth(kFixedLogComboWidth);
-        GUI::InputInt(Trans::Tr("Tools.CustomKey.Keybind").c_str(), &settings.customKeybind);
+        const auto keybindLabel = Trans::Tr("Tools.CustomKey.Keybind") + "##CustomKeybindInput";
+        GUI::InputText(keybindLabel.c_str(), buffer.data(), buffer.size(), 0, nullptr, nullptr);
         Tooltip(Trans::Tr("Tools.CustomKey.Keybind.Tooltip").c_str());
+
+        wasActive = GUI::IsItemActive();
+        if (wasActive) {
+            invalid = false;
+        }
+
+        if (GUI::IsItemDeactivatedAfterEdit()) {
+            int code = -1;
+            if (KeyNames::TryParse(buffer.data(), code)) {
+                settings.customKeybind = code;
+                invalid = false;
+            }
+            else {
+                invalid = true;  // keep the old key, buffer refreshes next frame
+            }
+        }
+
+        GUI::SameLine(0.0F, 10.0F);
+        GUI::TextUnformatted(("(" + std::to_string(settings.customKeybind) + ")").c_str());
+
+        if (invalid) {
+            GUI::TextUnformatted(Trans::Tr("Tools.CustomKey.Keybind.Invalid").c_str());
+        }
 
         GUI::Spacing();
 

@@ -4,29 +4,18 @@
 #include "logger.hpp"
 #include "settings.hpp"
 #include "dynamics.hpp"
-
-#include "API.hpp"   // API::CustomKeyGlobals
+#include "API.hpp"   
 
 namespace EventSinks
 {
-    namespace
+    // Set User Defined GLobal Variable Cutom Key Bind Preset Active State
+    void SyncStateGlobal()
     {
-        // Mirrors the held flag into the state global, if it exists.
-        void SyncStateGlobal()
-        {
-            auto* state = API::CustomKeyGlobals::g_vState;
-            if (!state) {
-                return;
-            }
-            state->value = Dynamics::GetCustomKeybindHeld().load() ? 1.0F : 0.0F;
+        auto* state = API::CustomKeyGlobals::g_vState;
+        if (!state) {
+            return;
         }
-
-        // The lock only counts if the global exists and is currently 1.
-        bool IsLocked()
-        {
-            const auto* lock = API::CustomKeyGlobals::g_vLock;
-            return lock && lock->value == 1.0F;
-        }
+        state->value = Dynamics::GetCustomKeybindHeld().load() ? 1.0F : 0.0F;
     }
 
     RE::BSEventNotifyControl InputEventSink::ProcessEvent(
@@ -52,7 +41,7 @@ namespace EventSinks
                 continue;
 
             if (buttonEvent->IsDown()) {
-                if (IsLocked()) {
+                if (API::CustomKeyGlobals::IsCustomKeyBindPresetLocked()) {
                     logger::debug("VCD Custom Keybind with idCode {} blocked by lock global", buttonEvent->GetIDCode());
                 }
                 else {

@@ -4,42 +4,47 @@
 #include "settings.hpp"
 
 namespace API
-{ 
-
-namespace CustomKeyGlobals
 {
-	inline RE::TESGlobal* g_vLock{ nullptr };
-	inline RE::TESGlobal* g_vState{ nullptr };
 
-	inline RE::TESGlobal* LookupGlobal(const std::string& a_editorID)
+	namespace CustomKeyGlobals
 	{
-		if (a_editorID.empty()) {
-			return nullptr;
+		inline RE::TESGlobal* g_vLock{ nullptr };
+		inline RE::TESGlobal* g_vState{ nullptr };
+
+		inline RE::TESGlobal* LookupGlobal(const std::string& a_editorID)
+		{
+			if (a_editorID.empty()) {
+				return nullptr;
+			}
+
+			auto* global = RE::TESForm::LookupByEditorID<RE::TESGlobal>(a_editorID);
+			if (!global) {
+				logger::warn("Global with editor ID '{}' was not found", a_editorID);
+			}
+			return global;
 		}
 
-		auto* global = RE::TESForm::LookupByEditorID<RE::TESGlobal>(a_editorID);
-		if (!global) {
-			logger::warn("Global with editor ID '{}' was not found", a_editorID);
+		inline RE::TESGlobal* LookupVLock()
+		{
+			return LookupGlobal(Settings::GetSettings().customKeyGlobalVLock);
 		}
-		return global;
-	}
 
-	inline RE::TESGlobal* LookupVLock()
-	{
-		return LookupGlobal(Settings::GetSettings().customKeyGlobalVLock);
-	}
+		inline RE::TESGlobal* LookupVState()
+		{
+			return LookupGlobal(Settings::GetSettings().customKeyGlobalVState);
+		}
 
-	inline RE::TESGlobal* LookupVState()
-	{
-		return LookupGlobal(Settings::GetSettings().customKeyGlobalVState);
-	}
+		// Call at kDataLoaded, and again if the user edits either string.
+		inline void Resolve()
+		{
+			g_vLock = LookupVLock();
+			g_vState = LookupVState();
+		}
 
-	// Call at kDataLoaded, and again if the user edits either string.
-	inline void Resolve()
-	{
-		g_vLock = LookupVLock();
-		g_vState = LookupVState();
+		// User has defined a lock global variable to prevent then custom keybind from working
+		//until a condition they define has been met
+		bool IsCustomKeyBindPresetLocked();
+
 	}
-}
 
 }

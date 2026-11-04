@@ -23,4 +23,7 @@ namespace EventSinks
 			RE::BSTEventSource<RE::InputEvent*>* a_eventSource) override;
 	};
 
+
+	void SyncStateGlobal();
+
 }
