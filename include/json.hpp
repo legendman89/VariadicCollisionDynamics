@@ -78,7 +78,13 @@ namespace JSON {
 
 	inline bool PresetOverridesEqual(const Settings::VCDSettings::PresetOverride& a_left, const Settings::VCDSettings::PresetOverride& a_right)
 	{
-		return a_left.edited == a_right.edited && a_left.relative == a_right.relative && a_left.data.IsSame(a_right.data);
+		auto leftLayers = a_left.collisionLayers;
+		auto rightLayers = a_right.collisionLayers;
+		std::sort(leftLayers.begin(), leftLayers.end());
+		std::sort(rightLayers.begin(), rightLayers.end());
+
+		return a_left.edited == a_right.edited && a_left.relative == a_right.relative &&
+			a_left.data.IsSame(a_right.data) && leftLayers == rightLayers;
 	}
 
 	inline json PointToJson(const VCD::Vec3& a_point)

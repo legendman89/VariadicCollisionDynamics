@@ -1387,12 +1387,6 @@ namespace UI {
         //clear collision layer vectors 
         auto& manager = VCD::Manager::GetSingleton();
 
-        for (const auto& config : manager.GetPresetConfigs()) {
-            if (auto* mutableConfig = manager.GetPresetConfig(config.preset)) {
-                mutableConfig->collisionLayers.clear();
-            }
-        }
-
         if (RefreshPresetEditor()) {
             auto& editor = GetPresetEditorState();
 
@@ -1847,6 +1841,7 @@ namespace UI {
             GUI::Text("Collision layer overrides");
             GUI::Separator();
 
+
             for (std::size_t i = 0; i < CollisionLayers::kCollisionLayerNames.size(); ++i) {
                 bool enabled = CollisionLayers::GetLayerEnabled(i, presetConfig->collisionLayers);
 
@@ -1863,9 +1858,12 @@ namespace UI {
                     else {
                         overrides.emplace_back(layer);
                     }
+
+                    Settings::MarkPresetEdited(presetEditor.preset, presetConfig->data);
                 }
             }
         }
+
 
         GUI::End();
         GUI::PopStyleColor();

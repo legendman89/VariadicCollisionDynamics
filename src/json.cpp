@@ -88,6 +88,10 @@ namespace JSON {
 
 			if (presetOverride.edited) {
 				entry.update(CollisionDataToJson(presetOverride.data));
+
+				if (!presetOverride.collisionLayers.empty()) {
+					entry["collisionLayers"] = presetOverride.collisionLayers;
+				}
 			}
 
 			presets[key] = entry;
@@ -114,6 +118,12 @@ namespace JSON {
 			presetOverride.edited = true;
 			presetOverride.relative = entry.contains("relative") && entry.at("relative").get<bool>();
 			CollisionDataFromJson(entry, presetOverride.data);
+
+			CollisionDataFromJson(entry, presetOverride.data);
+
+			if (entry.contains("collisionLayers") && entry.at("collisionLayers").is_array()) {
+				presetOverride.collisionLayers = entry.at("collisionLayers").get<std::vector<std::string>>();
+			}
 		}
 	}
 

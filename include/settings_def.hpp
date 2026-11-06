@@ -91,6 +91,7 @@ namespace Settings {
 			bool edited{ false };
 			bool relative{ false };
 			VCD::CollisionData data{};
+			std::vector<std::string> collisionLayers{};
 		};
 
 		struct NPCActorPresetOverride
@@ -99,6 +100,7 @@ namespace Settings {
 			std::string name{};
 			VCD::Preset preset{ VCD::Preset::kVanilla };
 			VCD::CollisionData data{};
+			std::vector<std::string> collisionLayers{};
 		};
 
 		FOREACH_BOOL_SETTING(BOOL2DEF);

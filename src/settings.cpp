@@ -175,6 +175,7 @@ namespace Settings {
 			if (auto* presetConfig = manager.GetPresetConfig(key)) {
 				presetConfig->data = presetOverride.data;
 				presetConfig->data.RecalculateHeight();
+				presetConfig->collisionLayers = presetOverride.collisionLayers;
 			}
 		}
 
@@ -199,6 +200,7 @@ namespace Settings {
 		presetOverride.edited = true;
 		presetOverride.data = a_data;
 		presetOverride.data.RecalculateHeight();
+		presetOverride.collisionLayers = presetConfig->collisionLayers;
 	}
 
 	void ClearPresetEdited(const VCD::Preset& a_preset)
