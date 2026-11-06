@@ -35,9 +35,6 @@ static void MessageHandler(SKSE::MessagingInterface::Message* msg) {
             return;
         }
 
-        constexpr auto weaponLayer = std::to_underlying(RE::COL_LAYER::kWeapon);
-        const auto weaponBit = std::uint32_t{ 1 } << weaponLayer;
-
         break;
     }
     case SKSE::MessagingInterface::kDataLoaded:
