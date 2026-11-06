@@ -248,6 +248,20 @@ namespace VCD {
             const auto sittingHeight = GetCapsuleHeight(a_state.standingPoint1Z, a_state.standingPoint2Z, a_state.standingRadius) * a_scale;
             const auto sittingCenterlineHeight = std::max(0.0F, sittingHeight - 2.0F * a_state.standingRadius);
 
+            // Ledge seats restores the standing lower endpoint and shorten from the top.
+            if (a_poseFlags.isLedgeSitting) {
+                if (a_state.standingPoint1Z >= a_state.standingPoint2Z) {
+                    a_point2Z = a_state.standingPoint2Z;
+                    a_point1Z = a_point2Z + sittingCenterlineHeight;
+                }
+                else {
+                    a_point1Z = a_state.standingPoint1Z;
+                    a_point2Z = a_point1Z + sittingCenterlineHeight;
+                }
+
+                return GetCapsuleHeight(a_point1Z, a_point2Z, a_radius);
+            }
+
             if (a_state.standingPoint1Z >= a_state.standingPoint2Z) {
                 a_point1Z = a_poseFlags.isChildSittingOnKnees ? 0.0F : sittingCenterlineHeight;
                 a_point2Z = a_poseFlags.isChildSittingOnKnees ? a_state.standingPoint2Z : 0.0F;

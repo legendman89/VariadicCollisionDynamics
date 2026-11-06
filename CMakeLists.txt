@@ -31,7 +31,7 @@ cmake_minimum_required(VERSION 3.21)
 set(AUTHOR_NAME "Legendman & Truman")
 set(PRODUCT_NAME "VariadicCollisionDynamics")
 set(BEAUTIFUL_NAME "Variadic Collision Dynamics")
-set(CURR_VERSION "1.3.5.0")
+set(CURR_VERSION "1.4.0.0")
 
 project(${PRODUCT_NAME} VERSION ${CURR_VERSION} LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD 23)
@@ -98,7 +98,7 @@ include(${COMMONLIB_SRC_DIR}/cmake/CommonLibSSE.cmake)
 
 add_commonlibsse_plugin(
   ${PROJECT_NAME}
-  AUTHOR AUTHOR_NAME
+  AUTHOR "${AUTHOR_NAME}"
   SOURCES ${headers} ${sources}
 )
 

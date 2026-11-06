@@ -19,6 +19,7 @@ namespace VCD {
     {
         bool isSitting{ false };
         bool isChildSittingOnKnees{ false };
+        bool isLedgeSitting{ false };
         bool isGrindstone{ false };
         bool isSneaking{ false };
         bool isSliding{ false };

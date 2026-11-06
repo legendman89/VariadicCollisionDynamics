@@ -7,6 +7,8 @@
 
 namespace PoseFixes {
 
+    bool IsLedgeSitting(const RE::Actor* a_actor);
+
     inline constexpr auto kPoseFixApplyDebounce = std::chrono::milliseconds(250);
 
     #define FOREACH_SLIDING_VAR(VAR) \
@@ -39,6 +41,7 @@ namespace PoseFixes {
             VCD::ContainsInsensitive(name, "chair") ||
             VCD::ContainsInsensitive(name, "stool") ||
             VCD::ContainsInsensitive(name, "throne") ||
+            VCD::ContainsInsensitive(name, "ferry seat") ||
             VCD::ContainsInsensitive(name, "grindstone") ||
             VCD::ContainsInsensitive(name, "tanning rack");
     }
@@ -107,6 +110,7 @@ namespace PoseFixes {
         }
 
         const auto* furnitureName = VCD::GetOccupiedFurnitureName(a_actor);
+        poseFlags.isLedgeSitting = IsLedgeSitting(a_actor);
         poseFlags.isGrindstone = IsGrindstoneFurnitureName(furnitureName);
         if (IsSittingFurnitureName(furnitureName)) {
             poseFlags.isSitting = true;
@@ -114,7 +118,7 @@ namespace PoseFixes {
         }
 
         poseFlags.isChildSittingOnKnees = IsChildSittingOnKnees(a_actor);
-        poseFlags.isSitting = poseFlags.isChildSittingOnKnees;
+        poseFlags.isSitting = poseFlags.isChildSittingOnKnees || poseFlags.isLedgeSitting;
         return poseFlags;
     }
 
@@ -146,6 +150,7 @@ namespace PoseFixes {
 		if (!settings.fixPlayerSitting) {
 			poseFlags.isSitting = false;
 			poseFlags.isChildSittingOnKnees = false;
+			poseFlags.isLedgeSitting = false;
 			poseFlags.isGrindstone = false;
 		}
 		poseFlags.isSneaking = settings.fixPlayerSneaking && poseFlags.isSneaking;
@@ -160,6 +165,7 @@ namespace PoseFixes {
 		if (!settings.fixNPCSitting) {
 			poseFlags.isSitting = false;
 			poseFlags.isChildSittingOnKnees = false;
+			poseFlags.isLedgeSitting = false;
 			poseFlags.isGrindstone = false;
 		}
 		poseFlags.isSneaking = settings.enableNPCDynamics && settings.fixNPCSneaking && poseFlags.isSneaking;
