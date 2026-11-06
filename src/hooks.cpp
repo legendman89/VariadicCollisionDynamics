@@ -651,7 +651,7 @@ void MeleeHitHookSE::func(
 
 void MeleeHitHookSE::Install()
 {
-	if (!REL::Module::IsSE()) {
+	if (!REL::Module::IsSE() || !REL::Module::IsVR()) {
 		return;
 	}
 
@@ -666,6 +666,64 @@ void MeleeHitHookSE::Install()
 		func);
 
 	logger::info("Installed MeleeHitHookSE");
+}
+
+//to block kill moves if player / npc has weapon layer enabled
+// kill moves needed to be blocked in addition to the melee hooks above
+bool AdmitAnimationHook::thunk(
+	void* a_manager,
+	RE::BGSActionData* a_data)
+{
+	constexpr std::string_view killmovePrefix = "pa_Kill";
+
+	if (!a_data) {
+		return originalFunc(a_manager, a_data);
+	}
+
+	const auto& event = a_data->animEvent;
+
+	if (event.empty()) {
+		return originalFunc(a_manager, a_data);
+	}
+
+	if (_strnicmp(event.c_str(), killmovePrefix.data(),
+		killmovePrefix.size()) == 0 &&
+		a_data->target.get() == RE::PlayerCharacter::GetSingleton()) {
+		return false;
+	}
+
+	return originalFunc(a_manager, a_data);
+}
+
+void AdmitAnimationHook::Install()
+{
+	auto& trampoline = SKSE::GetTrampoline();
+
+	if (REL::Module::IsAE) {
+		REL::Relocation<std::uintptr_t> target1{
+			REL::RelocationID(0, 38949), 0xF8
+		};
+
+		REL::Relocation<std::uintptr_t> target2{
+			REL::RelocationID(0, 38953), 0x3D
+		};
+
+		originalFunc = trampoline.write_call<5>(
+			target1.address(), thunk);
+
+		trampoline.write_call<5>(
+			target2.address(), thunk);
+	}
+	else {
+		REL::Relocation<std::uintptr_t> target{
+			REL::RelocationID(37999, 0), 0x33
+		};
+
+		originalFunc = trampoline.write_call<5>(
+			target.address(), thunk);
+	}
+
+	logger::info("Installed AdmitAnimationHook");
 }
 
 void Hook::Install() {
@@ -689,5 +747,5 @@ void Hook::Install() {
 
 	MeleeHitHookAE::Install(); 
 
-	void InstallHook(); 
+	AdmitAnimationHook::Install();
 }
