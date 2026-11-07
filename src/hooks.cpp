@@ -615,7 +615,7 @@ void MeleeHitHookAE::func(
 
 void MeleeHitHookAE::Install()
 {
-	if (!REL::Module::IsAE) {
+	if (!REL::Module::IsAE()) {
 		return;
 	}
 
@@ -699,7 +699,7 @@ void AdmitAnimationHook::Install()
 {
 	auto& trampoline = SKSE::GetTrampoline();
 
-	if (REL::Module::IsAE) {
+	if (REL::Module::IsAE()) {
 		REL::Relocation<std::uintptr_t> target1{
 			REL::RelocationID(0, 38949), 0xF8
 		};
