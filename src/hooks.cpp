@@ -518,7 +518,6 @@ std::uint8_t* CollisionFilterHooks::actorFilter(
 	return result;
 }
 
-
 // at this write_call address only the player and his camera comes through here 
 bool CollisionFilterHooks::playerFilter(
 	RE::bhkCollisionFilter* filter,
@@ -651,7 +650,8 @@ void MeleeHitHookSE::func(
 
 void MeleeHitHookSE::Install()
 {
-	if (!REL::Module::IsSE() || !REL::Module::IsVR()) {
+	// let VR and SE through
+	if (REL::Module::IsAE()) {
 		return;
 	}
 
@@ -727,7 +727,7 @@ void AdmitAnimationHook::Install()
 }
 
 void Hook::Install() {
-	SKSE::AllocTrampoline(1 << 6);
+	SKSE::AllocTrampoline(1 << 7);
 
 	CharacterProxyProcessConstraints::Install();
 
