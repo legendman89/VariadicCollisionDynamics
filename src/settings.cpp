@@ -179,6 +179,17 @@ namespace Settings {
 			}
 		}
 
+		for (const auto* overrides : { &a_settings.npcPresets, &a_settings.cameraPresets }) {
+			for (const auto& [key, presetOverride] : *overrides) {
+				if (!presetOverride.edited || presetOverride.collisionLayers.empty()) {
+					continue;
+				}
+				if (auto* presetConfig = manager.GetPresetConfig(key)) {
+					presetConfig->collisionLayers = presetOverride.collisionLayers;
+				}
+			}
+		}
+
 	}
 
 	void ApplyToolSettings(const VCDSettings& a_settings)
@@ -264,6 +275,7 @@ namespace Settings {
 		presetOverride.relative = a_relative;
 		presetOverride.data = a_data;
 		presetOverride.data.RecalculateHeight();
+		presetOverride.collisionLayers = presetConfig->collisionLayers;
 	}
 
 	void ClearNPCPresetEdited(const VCD::Preset& a_preset)
@@ -289,6 +301,7 @@ namespace Settings {
 		presetOverride.edited = true;
 		presetOverride.data = a_data;
 		presetOverride.data.RecalculateHeight();
+		presetOverride.collisionLayers = presetConfig->collisionLayers;
 	}
 
 	void ClearCameraPresetEdited(const VCD::Preset& a_preset)

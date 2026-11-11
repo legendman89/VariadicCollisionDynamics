@@ -1843,13 +1843,14 @@ namespace UI {
             GUI::Text("Collision layer overrides");
             GUI::Separator();
 
+            GUI::BeginDisabled(presetEditor.npcPreview);
 
             for (std::size_t i = 0; i < CollisionLayers::kCollisionLayerNames.size(); ++i) {
                 bool enabled = CollisionLayers::GetLayerEnabled(i, presetConfig->collisionLayers);
 
                 const std::string label(CollisionLayers::kCollisionLayerNames[i]);
 
-                // we only seraialize the difference in layers from vanilla
+                // we only serialize the difference in layers from vanilla
                 if (GUI::Checkbox(label.c_str(), &enabled)) {
                     auto& overrides = presetConfig->collisionLayers;
                     const auto layer = CollisionLayers::kCollisionLayerNames[i];
@@ -1861,11 +1862,25 @@ namespace UI {
                         overrides.emplace_back(layer);
                     }
 
-                    Settings::MarkPresetEdited(presetEditor.preset, presetConfig->data);
+                    // Mark the override in the same map the editor's own edits go to.
+                    if (presetEditor.camera) {
+                        Settings::MarkCameraPresetEdited(presetEditor.preset, presetEditor.current);
+                    }
+                    else if (presetEditor.npcGlobal) {
+                        const auto relative = presetEditor.preset == VCD::Preset::kVanilla;
+                        Settings::MarkNPCPresetEdited(
+                            presetEditor.preset,
+                            relative ? VCD::GetCollisionDataDelta(presetEditor.current, presetEditor.defaults) : presetEditor.current,
+                            relative);
+                    }
+                    else if (!presetEditor.npcPreview) {
+                        Settings::MarkPresetEdited(presetEditor.preset, presetConfig->data);
+                    }
                 }
             }
-        }
 
+            GUI::EndDisabled();
+        }
 
         GUI::End();
         GUI::PopStyleColor();
