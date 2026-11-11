@@ -1543,8 +1543,8 @@ namespace UI {
             RenderNPCStateRow(Trans::Tr("Dynamics.NPC.State.NPCCombat").c_str(), config.npcCombat, "npcCombat");
             RenderNPCStateRow(Trans::Tr("Dynamics.NPC.State.GuardNeutral").c_str(), config.guardNeutral, "guardNeutral");
             RenderNPCStateRow(Trans::Tr("Dynamics.NPC.State.GuardCombat").c_str(), config.guardCombat, "guardCombat");
-            RenderNPCStateRow(Trans::Tr("Dynamics.NPC.State.GhostNeutral").c_str(), config.guardNeutral, "ghostNeutral");
-            RenderNPCStateRow(Trans::Tr("Dynamics.NPC.State.GhostCombat").c_str(), config.guardCombat, "ghostCombat");
+            RenderNPCStateRow(Trans::Tr("Dynamics.NPC.State.GhostNeutral").c_str(), config.ghostNeutral, "ghostNeutral");
+            RenderNPCStateRow(Trans::Tr("Dynamics.NPC.State.GhostCombat").c_str(), config.ghostCombat, "ghostCombat");
 
             GUI::EndTable();
         }
