@@ -47,6 +47,7 @@ namespace Dynamics {
 		}
 		const auto isCombat = a_actor && a_actor->IsInCombat();
 		const auto isGuard = a_actor && a_actor->IsGuard();
+		const auto isGhost = a_actor && a_actor->IsGhost(); 
 
 		// Ordered by priority: Specialized presets > Guard in combat > guard > combat > neutral.
 		if (const auto presetName = VCD::Race::GetSupportedNPCPresetName(a_actor); !presetName.empty()) {
@@ -66,6 +67,16 @@ namespace Dynamics {
 		if (isGuard) {
 			a_stateName = "guardNeutral";
 			return config.guardNeutral;
+		}
+
+		if (isGhost && isCombat) {
+			a_stateName = "ghostCombat";
+			return config.ghostCombat;
+		}
+
+		if (isGhost) {
+			a_stateName = "ghost";
+			return config.ghostNeutral;
 		}
 
 		if (isCombat) {

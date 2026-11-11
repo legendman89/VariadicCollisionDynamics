@@ -111,6 +111,8 @@
   "Dynamics.NPC.State.NPCCombat": "NPC Combat",
   "Dynamics.NPC.State.GuardNeutral": "Guard Neutral",
   "Dynamics.NPC.State.GuardCombat": "Guard Combat",
+  "Dynamics.NPC.State.GhostNeutral": "Ghost Neutral",
+  "Dynamics.NPC.State.GhostCombat": "Ghost Combat",
 
   "Dynamics.Camera.State.Indoor": "Indoor",
   "Dynamics.Camera.State.Outdoor": "Outdoor",

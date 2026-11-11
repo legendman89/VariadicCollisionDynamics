@@ -39,6 +39,8 @@
     S(NPCCombat, "NPC Combat") \
     S(GuardNeutral, "Guard Neutral") \
     S(GuardCombat, "Guard Combat") \
+    S(GhostNeutral, "Ghost Neutral") \
+    S(GhostCombat, "Ghost Combat") \
     S(Giant, "Giant") \
     S(Troll, "Troll") \
     S(Draugr, "Draugr") \

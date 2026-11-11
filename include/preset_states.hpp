@@ -16,7 +16,9 @@
 	S(npcNeutral, VCD::Preset::kNPCNeutral) \
 	S(npcCombat, VCD::Preset::kNPCCombat) \
 	S(guardNeutral, VCD::Preset::kGuardNeutral) \
-	S(guardCombat, VCD::Preset::kGuardCombat)
+	S(guardCombat, VCD::Preset::kGuardCombat) \
+	S(ghostNeutral, VCD::Preset::kGhostNeutral) \
+	S(ghostCombat, VCD::Preset::kGhostCombat)
 
 #define FOREACH_CAMERA_PRESET_STATE(S) \
     S(cameraIndoor, VCD::Preset::kCameraIndoor) \
