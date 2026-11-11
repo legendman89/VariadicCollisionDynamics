@@ -1,6 +1,6 @@
 {
   // Display name shown in logs and debug UI. Name-based preset matching uses this value.
-  "name": "Guard Neutral",
+  "name": "Ghost Neutral",
 
   // Position offset: [side, forward, unused z]. Keep z at 0.0.
   "position": [ 0.0, 13.0, 0.0 ],
