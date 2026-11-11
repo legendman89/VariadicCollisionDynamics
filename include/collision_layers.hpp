@@ -1,4 +1,4 @@
-#pragma once 
+#pragma once
 
 #include <algorithm>
 #include <array>
@@ -12,10 +12,10 @@
 
 namespace CollisionLayers
 {
-    inline constexpr std::size_t kCollisionLayerCount = 64;
+    inline constexpr size_t kCollisionLayerCount = 64;
 
-    //default values captured at k new game of the collision layer filter for the entire game. 
-    inline constexpr std::array<std::uint64_t, kCollisionLayerCount> kVanillaCollisionMasks = {
+    //default values captured at k new game of the collision layer filter for the entire game.
+    inline constexpr std::array<uint64_t, kCollisionLayerCount> kVanillaCollisionMasks = {
         0x7FD95FFFF7FFULL,       // 0  Unidentified
         0x17FCD5E1B67FFULL,      // 1  Static
         0x17FED5E1B6FFFULL,      // 2  AnimStatic
@@ -82,87 +82,131 @@ namespace CollisionLayers
         0xFFFFFFFFFFFFFFFFULL    // 63 Unknown
     };
 
-
     inline constexpr std::array<std::string_view, 47> kCollisionLayerNames{
-    "Unidentified",
-    "Static",
-    "AnimStatic",
-    "Transparent",
-    "Clutter",
-    "Weapon",
-    "Projectile",
-    "Spell",
-    "Biped",
-    "Trees",
-    "Props",
-    "Water",
-    "Trigger",
-    "Terrain",
-    "Trap",
-    "NonCollidable",
-    "CloudTrap",
-    "Ground",
-    "Portal",
-    "DebrisSmall",
-    "DebrisLarge",
-    "AcousticSpace",
-    "ActorZone",
-    "ProjectileZone",
-    "GasTrap",
-    "ShellCasting",
-    "TransparentSmall",
-    "InvisibleWall",
-    "TransparentSmallAnim",
-    "Ward",
-    "CharController",
-    "StairHelper",
-    "DeadBip",
-    "BipedNoCC",
-    "AvoidBox",
-    "CollisionBox",
-    "CameraSphere",
-    "DoorDetection",
-    "ConeProjectile",
-    "CameraPick",
-    "ItemPick",
-    "LineOfSight",
-    "PathPick",
-    "CustomPick1",
-    "CustomPick2",
-    "SpellExplosion",
-    "DroppingPick"
+        "Unidentified",
+        "Static",
+        "AnimStatic",
+        "Transparent",
+        "Clutter",
+        "Weapon",
+        "Projectile",
+        "Spell",
+        "Biped",
+        "Trees",
+        "Props",
+        "Water",
+        "Trigger",
+        "Terrain",
+        "Trap",
+        "NonCollidable",
+        "CloudTrap",
+        "Ground",
+        "Portal",
+        "DebrisSmall",
+        "DebrisLarge",
+        "AcousticSpace",
+        "ActorZone",
+        "ProjectileZone",
+        "GasTrap",
+        "ShellCasting",
+        "TransparentSmall",
+        "InvisibleWall",
+        "TransparentSmallAnim",
+        "Ward",
+        "CharController",
+        "StairHelper",
+        "DeadBip",
+        "BipedNoCC",
+        "AvoidBox",
+        "CollisionBox",
+        "CameraSphere",
+        "DoorDetection",
+        "ConeProjectile",
+        "CameraPick",
+        "ItemPick",
+        "LineOfSight",
+        "PathPick",
+        "CustomPick1",
+        "CustomPick2",
+        "SpellExplosion",
+        "DroppingPick"
     };
 
-    inline bool IsLayerOverridden(
-        const std::vector<std::string>& a_overrides,
-        const std::string_view a_layer)
+    inline bool IsLayerOverridden(const std::vector<std::string>& a_overrides, const std::string_view a_layer)
     {
         return std::find(a_overrides.begin(), a_overrides.end(), a_layer) != a_overrides.end();
     }
 
     // we only seraialize the difference in layers from vanilla
-    inline bool GetLayerEnabled(
-        const std::size_t a_index,
-        const std::vector<std::string>& a_overrides)
+    inline bool GetLayerEnabled(const size_t a_index, const std::vector<std::string>& a_overrides)
     {
         if (a_index >= kCollisionLayerNames.size()) {
             return false;
         }
-        constexpr auto charControllerIndex =
-            std::to_underlying(RE::COL_LAYER::kCharController);
+        constexpr auto charControllerIndex = std::to_underlying(RE::COL_LAYER::kCharController);
         const auto vanillaMask = kVanillaCollisionMasks[charControllerIndex];
-        const auto bit = std::uint64_t{ 1 } << a_index;
+        const auto bit = uint64_t{ 1 } << a_index;
         const bool vanillaEnabled = (vanillaMask & bit) != 0;
-        return IsLayerOverridden(a_overrides, kCollisionLayerNames[a_index])
-            ? !vanillaEnabled
-            : vanillaEnabled;
+        return IsLayerOverridden(a_overrides, kCollisionLayerNames[a_index]) ? !vanillaEnabled : vanillaEnabled;
+    }
+
+    inline RE::Actor* GetCollisionActor(const RE::hkpCdBody& a_body)
+    {
+        auto* root = &a_body;
+
+        while (root->parent) {
+            root = root->parent;
+        }
+
+        const auto& collidable = static_cast<const RE::hkpCollidable&>(*root);
+
+        if (collidable.GetCollisionLayer() != RE::COL_LAYER::kCharController) {
+            return nullptr;
+        }
+
+        auto* ref = RE::TESHavokUtilities::FindCollidableRef(collidable);
+        return ref ? ref->As<RE::Actor>() : nullptr;
+    }
+
+    inline bool ShouldRejectNPCCollision(RE::Actor* a_actor, RE::COL_LAYER a_otherLayer)
+    {
+        if (!a_actor) {
+            return false;
+        }
+
+        auto* actorState = Dynamics::FindNPCPresetState(a_actor->GetFormID());
+
+        if (!actorState) {
+            return false;
+        }
+
+        const auto index = std::to_underlying(a_otherLayer);
+
+        if (index >= CollisionLayers::kCollisionLayerNames.size()) {
+            return false;
+        }
+
+        auto& manager = VCD::Manager::GetSingleton();
+        const auto* presetConfig = manager.GetPresetConfig(actorState->preset);
+
+        if (!presetConfig) {
+            return false;
+        }
+
+        const auto& layerName = CollisionLayers::kCollisionLayerNames[index];
+
+        const bool overridden = CollisionLayers::IsLayerOverridden(presetConfig->collisionLayers, layerName);
+
+        logger::debug("[NPC Collision] {} [{:08X}] | Preset: {} | Other layer: {} | Override: {}", a_actor->GetDisplayFullName(), a_actor->GetFormID(), VCD::PresetName(actorState->preset), layerName, overridden);
+
+        return overridden;
     }
 
     inline RE::TESObjectWEAP* GetMeleeHitWeapon(RE::Actor* a_attacker, char a_left)
     {
         if (!a_attacker) return nullptr;
 
-        //ignore bashes 
+        //ignore bashes
         if (a_attacker->AsActorState()->GetAttackState() == RE::ATTACK_STATE_ENUM::kBash) return nullptr;
 
         const bool left = a_left != 0;
@@ -176,51 +220,47 @@ namespace CollisionLayers
         return a_weapon && a_weapon->formEnchanting != nullptr;
     }
 
-    inline bool ShouldRejectMeleeHit(
-        RE::Actor* a_aggressor,
-        RE::Actor* a_victim,
-        std::int64_t a3,
-        char a4)
+    inline bool ShouldRejectPresetMeleeHit(const VCD::PresetConfig* a_config, RE::Actor* a_aggressor, char a_left)
+    {
+        constexpr auto weaponLayer = std::to_underlying(RE::COL_LAYER::kWeapon);
+        constexpr auto spellLayer = std::to_underlying(RE::COL_LAYER::kSpell);
+        const auto& weaponName = kCollisionLayerNames[weaponLayer];
+        const auto& spellName = kCollisionLayerNames[spellLayer];
+
+        if (!a_config || !CollisionLayers::IsLayerOverridden(a_config->collisionLayers, weaponName)) {
+            return false;
+        }
+
+        // Weapon collision is disabled. Allow enchanted attacks if spell collision is enabled.
+        // Enchanted weapons count as spells.
+        if (!CollisionLayers::IsLayerOverridden(a_config->collisionLayers, spellName)) {
+            auto* weapon = GetMeleeHitWeapon(a_aggressor, a_left);
+
+            if (weapon && IsEnchanted(weapon)) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    inline bool ShouldRejectMeleeHit(RE::Actor* a_aggressor, RE::Actor* a_victim, int64_t a3, char a4)
     {
         constexpr auto weaponLayer = std::to_underlying(RE::COL_LAYER::kWeapon);
         constexpr auto spellLayer = std::to_underlying(RE::COL_LAYER::kSpell);
 
-        if (!a_victim ||
-            weaponLayer >= CollisionLayers::kCollisionLayerNames.size() ||
-            spellLayer >= CollisionLayers::kCollisionLayerNames.size()) {
+        if (!a_victim || weaponLayer >= CollisionLayers::kCollisionLayerNames.size() || spellLayer >= CollisionLayers::kCollisionLayerNames.size()) {
             return false;
         }
 
-        const auto& weaponName = CollisionLayers::kCollisionLayerNames[weaponLayer];
-        const auto& spellName = CollisionLayers::kCollisionLayerNames[spellLayer];
-
         auto& manager = VCD::Manager::GetSingleton();
-
-        const auto shouldReject = [&](const VCD::PresetConfig* config) {
-            if (!config ||
-                !CollisionLayers::IsLayerOverridden(config->collisionLayers, weaponName)) {
-                return false;
-            }
-
-            // Weapon collision is disabled. Allow enchanted attacks if spell collision is enabled.
-            //(Enchanted weapons count as spells)
-            if (!CollisionLayers::IsLayerOverridden(config->collisionLayers, spellName)) {
-                auto* weapon = GetMeleeHitWeapon(a_aggressor, a4);
-
-                if (weapon && IsEnchanted(weapon)) {
-                    return false;
-                }
-            }
-
-            return true;
-            };
 
         // Player attacking an NPC.
         if (a_aggressor && a_aggressor->IsPlayerRef() && !a_victim->IsPlayerRef()) {
             const auto& state = Dynamics::GetPresetState();
             const auto* playerConfig = manager.GetPresetConfig(state.current);
 
-            if (shouldReject(playerConfig)) {
+            if (ShouldRejectPresetMeleeHit(playerConfig, a_aggressor, a4)) {
                 return true;
             }
         }
@@ -230,12 +270,8 @@ namespace CollisionLayers
             const auto& state = Dynamics::GetPresetState();
             const auto* presetConfig = manager.GetPresetConfig(state.current);
 
-            if (shouldReject(presetConfig)) {
-                logger::debug(
-                    "[Melee Hit] Weapon collision disabled for player preset {}, ignoring hit from {} [{:08X}]",
-                    VCD::PresetName(state.current),
-                    a_aggressor ? a_aggressor->GetDisplayFullName() : "null",
-                    a_aggressor ? a_aggressor->GetFormID() : 0);
+            if (ShouldRejectPresetMeleeHit(presetConfig, a_aggressor, a4)) {
+                logger::debug("[Melee Hit] Weapon collision disabled for player preset {}, ignoring hit from {} [{:08X}]", VCD::PresetName(state.current), a_aggressor ? a_aggressor->GetDisplayFullName() : "null", a_aggressor ? a_aggressor->GetFormID() : 0);
                 return true;
             }
 
@@ -253,12 +289,8 @@ namespace CollisionLayers
 
         const auto* presetConfig = manager.GetPresetConfig(actorState->preset);
 
-        if (shouldReject(presetConfig)) {
-            logger::debug(
-                "[Melee Hit] Weapon collision disabled for {} [{:08X}] preset {}, ignoring hit",
-                a_victim->GetDisplayFullName(),
-                a_victim->GetFormID(),
-                VCD::PresetName(actorState->preset));
+        if (ShouldRejectPresetMeleeHit(presetConfig, a_aggressor, a4)) {
+            logger::debug("[Melee Hit] Weapon collision disabled for {} [{:08X}] preset {}, ignoring hit", a_victim->GetDisplayFullName(), a_victim->GetFormID(), VCD::PresetName(actorState->preset));
             return true;
         }
 

@@ -405,111 +405,32 @@ void CameraLinearCastHook::Install()
 	logger::info("CameraLinearCastHook installed");
 }
 
-//Used to make our own collision layer filtering logic, 
+//Used to make our own collision layer filtering logic,
 //Player or player camera doesent come through here see playerFilter below
-std::uint8_t* CollisionFilterHooks::actorFilter(
-	const RE::hkpShapeCollectionFilter* a_this,
-	std::uint8_t* a_result,
-	const RE::hkpCollisionInput& a_input,
-	const RE::hkpCdBody& a_bodyA,
-	const RE::hkpCdBody& a_bodyB,
-	const RE::hkpShapeContainer& a_shapeA,
-	const RE::hkpShapeContainer& a_shapeB,
-	RE::hkpShapeKey a_keyA,
-	RE::hkpShapeKey a_keyB)
+uint8_t* CollisionFilterHooks::actorFilter(const RE::hkpShapeCollectionFilter* a_this, uint8_t* a_result, const RE::hkpCollisionInput& a_input, const RE::hkpCdBody& a_bodyA, const RE::hkpCdBody& a_bodyB, const RE::hkpShapeContainer& a_shapeA, const RE::hkpShapeContainer& a_shapeB, RE::hkpShapeKey a_keyA, RE::hkpShapeKey a_keyB)
 {
-	auto* result = actorFunc(
-		a_this,
-		a_result,
-		a_input,
-		a_bodyA,
-		a_bodyB,
-		a_shapeA,
-		a_shapeB,
-		a_keyA,
-		a_keyB);
+	auto* result = actorFunc(a_this, a_result, a_input, a_bodyA, a_bodyB, a_shapeA, a_shapeB, a_keyA, a_keyB);
 
 	if (!result || !*result || !Settings::GetSettings().enableNPCDynamics) {
 		return result;
 	}
 
-	const auto getActor = [](const RE::hkpCdBody& a_body) -> RE::Actor* {
-		auto* root = &a_body;
+	const auto layerA = static_cast<const RE::hkpCollidable&>(a_bodyA).GetCollisionLayer();
 
-		while (root->parent) {
-			root = root->parent;
-		}
+	const auto layerB = static_cast<const RE::hkpCollidable&>(a_bodyB).GetCollisionLayer();
 
-		const auto& collidable = static_cast<const RE::hkpCollidable&>(*root);
-
-		if (collidable.GetCollisionLayer() != RE::COL_LAYER::kCharController) {
-			return nullptr;
-		}
-
-		auto* ref = RE::TESHavokUtilities::FindCollidableRef(collidable);
-		return ref ? ref->As<RE::Actor>() : nullptr;
-		};
-
-	const auto checkNPC = [](RE::Actor* a_actor, RE::COL_LAYER a_otherLayer) -> bool {
-		if (!a_actor) {
-			return false;
-		}
-
-		
-		auto* actorState = Dynamics::FindNPCPresetState(a_actor->GetFormID());
-
-		if (!actorState) {
-			return false;
-		}
-
-		const auto index = std::to_underlying(a_otherLayer);
-
-		if (index >= CollisionLayers::kCollisionLayerNames.size()) {
-			return false;
-		}
-
-		auto& manager = VCD::Manager::GetSingleton();
-		const auto* presetConfig = manager.GetPresetConfig(actorState->preset);
-
-		if (!presetConfig) {
-			return false;
-		}
-
-		const auto& layerName = CollisionLayers::kCollisionLayerNames[index];
-
-		const bool overridden = CollisionLayers::IsLayerOverridden(
-			presetConfig->collisionLayers,
-			layerName);
-
-		logger::debug(
-			"[NPC Collision] {} [{:08X}] | Preset: {} | Other layer: {} | Override: {}",
-			a_actor->GetDisplayFullName(),
-			a_actor->GetFormID(),
-			VCD::PresetName(actorState->preset),
-			layerName,
-			overridden);
-
-		return overridden;
-		};
-
-	const auto layerA =
-		static_cast<const RE::hkpCollidable&>(a_bodyA).GetCollisionLayer();
-
-	const auto layerB =
-		static_cast<const RE::hkpCollidable&>(a_bodyB).GetCollisionLayer();
-
-	auto* actorA = getActor(a_bodyA);
-	auto* actorB = getActor(a_bodyB);
+	auto* actorA = CollisionLayers::GetCollisionActor(a_bodyA);
+	auto* actorB = CollisionLayers::GetCollisionActor(a_bodyB);
 
 	//see if char controller collision layer meaning its a actor amd see if actors Preset should return false on this collision interaction
-	if (checkNPC(actorA, layerB)) {
+	if (CollisionLayers::ShouldRejectNPCCollision(actorA, layerB)) {
 		logger::debug("[NPC Collision] Rejected collision through body A");
 		*result = false;
 		return result;
 	}
 
 	//see if char controller collision layer meaning its a actor amd see if actors Preset should return false on this collision interaction
-	if (checkNPC(actorB, layerA)) {
+	if (CollisionLayers::ShouldRejectNPCCollision(actorB, layerA)) {
 		logger::debug("[NPC Collision] Rejected collision through body B");
 		*result = false;
 		return result;
@@ -518,11 +439,8 @@ std::uint8_t* CollisionFilterHooks::actorFilter(
 	return result;
 }
 
-// at this write_call address only the player and his camera comes through here 
-bool CollisionFilterHooks::playerFilter(
-	RE::bhkCollisionFilter* filter,
-	RE::CFilter filterA,
-	RE::CFilter filterB)
+// at this write_call address only the player and his camera comes through here
+bool CollisionFilterHooks::playerFilter(RE::bhkCollisionFilter* filter, RE::CFilter filterA, RE::CFilter filterB)
 {
 	//char controller is used for Npcs, Player
 	constexpr auto actorLayer = RE::COL_LAYER::kCharController;
@@ -533,8 +451,7 @@ bool CollisionFilterHooks::playerFilter(
 	const auto layerB = filterB.GetCollisionLayer();
 
 	//player camera collision layer logic here
-	if (layerA == RE::COL_LAYER::kCameraPick ||
-		layerB == RE::COL_LAYER::kCameraPick && Settings::GetSettings().enableCameraDynamics) {
+	if (layerA == RE::COL_LAYER::kCameraPick || layerB == RE::COL_LAYER::kCameraPick && Settings::GetSettings().enableCameraDynamics) {
 		const auto otherLayer = layerA == RE::COL_LAYER::kCameraPick ? layerB : layerA;
 		const auto index = std::to_underlying(otherLayer);
 		if (index >= CollisionLayers::kCollisionLayerNames.size()) {
@@ -547,8 +464,7 @@ bool CollisionFilterHooks::playerFilter(
 			return playerFunc(filter, filterA, filterB);
 		}
 		const auto& layerName = CollisionLayers::kCollisionLayerNames[index];
-		if (CollisionLayers::IsLayerOverridden(
-			cameraConfig->collisionLayers, layerName)) {
+		if (CollisionLayers::IsLayerOverridden(cameraConfig->collisionLayers, layerName)) {
 			return false;
 		}
 		return playerFunc(filter, filterA, filterB);
@@ -573,8 +489,7 @@ bool CollisionFilterHooks::playerFilter(
 
 	//return false if active preset says the current collision layers should not interact
 	const auto& layerName = CollisionLayers::kCollisionLayerNames[index];
-	if (CollisionLayers::IsLayerOverridden(
-		presetConfig->collisionLayers, layerName)) {
+	if (CollisionLayers::IsLayerOverridden(presetConfig->collisionLayers, layerName)) {
 		return false;
 	}
 	return playerFunc(filter, filterA, filterB);
@@ -584,27 +499,20 @@ void CollisionFilterHooks::Install()
 {
 	auto& trampoline = SKSE::GetTrampoline();
 
-	REL::Relocation<std::uintptr_t> vtable{ RE::VTABLE_bhkCollisionFilter[2] };
+	REL::Relocation<uintptr_t> vtable{ RE::VTABLE_bhkCollisionFilter[2] };
 
 	actorFunc = vtable.write_vfunc(0, actorFilter);
 
-	REL::Relocation<std::uintptr_t> playerTarget{
-		RELOCATION_ID(76677, 78549), 0xBC
-	};
-	playerFunc = trampoline.write_call<5>(
-		playerTarget.address(), playerFilter);
+	REL::Relocation<uintptr_t> playerTarget{ RELOCATION_ID(76677, 78549), 0xBC };
+	playerFunc = trampoline.write_call<5>(playerTarget.address(), playerFilter);
 
 	logger::info("Collision Filter Hooks installed");
 }
 
 //Collision layer "kWeapon" does not take into account hitting/damaging player or NPCS
 //I wanted that functionality so with this hook, if kWeapon layer is disabled for active preset of any actor
-//Said actor cannot be hit by weapons. 
-void MeleeHitHookAE::func(
-	RE::Actor* a_aggressor,
-	RE::Actor* a_victim,
-	std::int64_t a3,
-	char a4)
+//Said actor cannot be hit by weapons.
+void MeleeHitHookAE::func(RE::Actor* a_aggressor, RE::Actor* a_victim, int64_t a3, char a4)
 {
 	if (CollisionLayers::ShouldRejectMeleeHit(a_aggressor, a_victim, a3, a4)) {
 		return;
@@ -621,9 +529,7 @@ void MeleeHitHookAE::Install()
 
 	auto& trampoline = SKSE::GetTrampoline();
 
-	REL::Relocation<std::uintptr_t> target{
-		REL::RelocationID(0, 38603)
-	};
+	REL::Relocation<uintptr_t> target{ REL::RelocationID(0, 38603) };
 
 	//unlike SE sweep and melee hit are both done in 1 function
 	// (additional call for projectiles, we ignore it, switching projectile collision layer off is enough)
@@ -633,10 +539,7 @@ void MeleeHitHookAE::Install()
 	};
 
 	for (const auto offset : offsets) {
-		auto original = trampoline.write_call<5>(
-			target.address() + offset,
-			func
-		);
+		auto original = trampoline.write_call<5>(target.address() + offset, func);
 
 		if (!originalFunc) {
 			originalFunc = reinterpret_cast<HitFunction*>(original);
@@ -646,11 +549,7 @@ void MeleeHitHookAE::Install()
 	logger::info("Installed MeleeHitHookAE");
 }
 
-void MeleeHitHookSE::func(
-	RE::Character* a_aggressor,
-	RE::Actor* a_victim,
-	std::int64_t a3,
-	char a4)
+void MeleeHitHookSE::func(RE::Character* a_aggressor, RE::Actor* a_victim, int64_t a3, char a4)
 {
 	if (CollisionLayers::ShouldRejectMeleeHit(a_aggressor, a_victim, a3, a4)) {
 		return;
@@ -666,26 +565,20 @@ void MeleeHitHookSE::Install()
 
 	auto& trampoline = SKSE::GetTrampoline();
 
-	REL::Relocation<std::uintptr_t> meleeTarget{ REL::ID(37650) };
-	REL::Relocation<std::uintptr_t> sweepTarget{ REL::ID(37689) };
+	REL::Relocation<uintptr_t> meleeTarget{ REL::ID(37650) };
+	REL::Relocation<uintptr_t> sweepTarget{ REL::ID(37689) };
 
 	//unlike AE there are 2 seperate functions sweep and melee
-	originalFunc = trampoline.write_call<5>(
-		meleeTarget.address() + 0x38B, // melee hit
-		func);
+	originalFunc = trampoline.write_call<5>(meleeTarget.address() + 0x38B, /* melee hit */ func);
 
-	trampoline.write_call<5>(
-		sweepTarget.address() + 0xDD, //sweep hit
-		func);
+	trampoline.write_call<5>(sweepTarget.address() + 0xDD, /* sweep hit */ func);
 
 	logger::info("Installed MeleeHitHookSE");
 }
 
 //to block kill moves if player / npc has weapon layer enabled
 // kill moves needed to be blocked in addition to the melee hooks above
-bool AdmitAnimationHook::thunk(
-	void* a_manager,
-	RE::BGSActionData* a_data)
+bool AdmitAnimationHook::thunk(void* a_manager, RE::BGSActionData* a_data)
 {
 	constexpr std::string_view killmovePrefix = "pa_Kill";
 
@@ -699,9 +592,7 @@ bool AdmitAnimationHook::thunk(
 		return originalFunc(a_manager, a_data);
 	}
 
-	if (_strnicmp(event.c_str(), killmovePrefix.data(),
-		killmovePrefix.size()) == 0 &&
-		a_data->target.get() == RE::PlayerCharacter::GetSingleton()) {
+	if (_strnicmp(event.c_str(), killmovePrefix.data(), killmovePrefix.size()) == 0 && a_data->target.get() == RE::PlayerCharacter::GetSingleton()) {
 		return false;
 	}
 
@@ -713,27 +604,18 @@ void AdmitAnimationHook::Install()
 	auto& trampoline = SKSE::GetTrampoline();
 
 	if (REL::Module::IsAE()) {
-		REL::Relocation<std::uintptr_t> target1{
-			REL::RelocationID(0, 38949), 0xF8
-		};
+		REL::Relocation<uintptr_t> target1{ REL::RelocationID(0, 38949), 0xF8 };
 
-		REL::Relocation<std::uintptr_t> target2{
-			REL::RelocationID(0, 38953), 0x3D
-		};
+		REL::Relocation<uintptr_t> target2{ REL::RelocationID(0, 38953), 0x3D };
 
-		originalFunc = trampoline.write_call<5>(
-			target1.address(), thunk);
+		originalFunc = trampoline.write_call<5>(target1.address(), thunk);
 
-		trampoline.write_call<5>(
-			target2.address(), thunk);
+		trampoline.write_call<5>(target2.address(), thunk);
 	}
 	else {
-		REL::Relocation<std::uintptr_t> target{
-			REL::RelocationID(37999, 0), 0x33
-		};
+		REL::Relocation<uintptr_t> target{ REL::RelocationID(37999, 0), 0x33 };
 
-		originalFunc = trampoline.write_call<5>(
-			target.address(), thunk);
+		originalFunc = trampoline.write_call<5>(target.address(), thunk);
 	}
 
 	logger::info("Installed AdmitAnimationHook");
@@ -744,7 +626,7 @@ void Hook::Install() {
 
 	CharacterProxyProcessConstraints::Install();
 
-	CameraLinearCastHook::Install(); 
+	CameraLinearCastHook::Install();
 
 	PlayerUpdate::Install();
 
@@ -754,11 +636,11 @@ void Hook::Install() {
 
 	ThirdPersonState_SetRotation::Install();
 
-	CollisionFilterHooks::Install(); 
+	CollisionFilterHooks::Install();
 
-	MeleeHitHookSE::Install(); 
+	MeleeHitHookSE::Install();
 
-	MeleeHitHookAE::Install(); 
+	MeleeHitHookAE::Install();
 
 	AdmitAnimationHook::Install();
 }

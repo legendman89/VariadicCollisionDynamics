@@ -53,9 +53,7 @@ namespace UI {
 
         GUI::SameLine(0.0F, 10.0F);
         const bool active = a_editorID.empty() ? false : (a_resolved != nullptr);
-        GUI::TextUnformatted(active
-            ? Trans::Tr("Tools.CustomKey.Active").c_str()
-            : Trans::Tr("Tools.CustomKey.NotActive").c_str());
+        GUI::TextUnformatted(active ? Trans::Tr("Tools.CustomKey.Active").c_str() : Trans::Tr("Tools.CustomKey.NotActive").c_str());
     }
 
     void RenderCustomKey()
@@ -69,9 +67,7 @@ namespace UI {
         // While the user isn't typing, show the current key's name, so Reset and loads show up too.
         if (!wasActive) {
             const auto name = KeyNames::NameFromCode(settings.customKeybind);
-            std::string shown = name.empty()
-                ? (settings.customKeybind < 0 ? std::string("None") : std::to_string(settings.customKeybind))
-                : std::string(name);
+            std::string shown = name.empty() ? (settings.customKeybind < 0 ? std::string("None") : std::to_string(settings.customKeybind)) : std::string(name);
             std::snprintf(buffer.data(), buffer.size(), "%s", shown.c_str());
         }
 
@@ -105,17 +101,14 @@ namespace UI {
 
         GUI::Spacing();
 
-        RenderGlobalStatus(Trans::Tr("Tools.CustomKey.VLock"), settings.customKeyGlobalVLock,
-            API::CustomKeyGlobals::g_vLock, "##CustomKeyGlobalVLock");
+        RenderGlobalStatus(Trans::Tr("Tools.CustomKey.VLock"), settings.customKeyGlobalVLock, API::CustomKeyGlobals::g_vLock, "##CustomKeyGlobalVLock");
 
         WrappedTooltip(Trans::Tr("Tools.CustomKey.VLock.Tooltip").c_str());
 
-        RenderGlobalStatus(Trans::Tr("Tools.CustomKey.VState"), settings.customKeyGlobalVState,
-            API::CustomKeyGlobals::g_vState, "##CustomKeyGlobalVState");
+        RenderGlobalStatus(Trans::Tr("Tools.CustomKey.VState"), settings.customKeyGlobalVState, API::CustomKeyGlobals::g_vState, "##CustomKeyGlobalVState");
 
-        WrappedTooltip(Trans::Tr("Tools.CustomKey.VState.Tooltip").c_str()); 
+        WrappedTooltip(Trans::Tr("Tools.CustomKey.VState.Tooltip").c_str());
     }
-
 
     void RenderVisualization()
     {

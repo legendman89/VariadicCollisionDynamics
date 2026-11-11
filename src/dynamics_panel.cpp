@@ -1638,13 +1638,13 @@ namespace UI {
 
         static const auto collisionLayersText = FontAwesome::UnicodeToUtf8(Icons::kCollisionLayers);
 
-         FontAwesome::PushSolid();
-         if (GUI::Button((collisionLayersText + "##EditCollisionLayers").c_str())) {
-                GetCollisionLayerEditorState().open = true;
-         }
-         FontAwesome::Pop();
+        FontAwesome::PushSolid();
+        if (GUI::Button((collisionLayersText + "##EditCollisionLayers").c_str())) {
+            GetCollisionLayerEditorState().open = true;
+        }
+        FontAwesome::Pop();
 
-         WrappedTooltip(Trans::Tr("Dynamics.Editor.CollisionLayerToolTip").c_str());
+        WrappedTooltip(Trans::Tr("Dynamics.Editor.CollisionLayerToolTip").c_str());
 
         if (editor.camera) {
             if (!editor.preview) {
@@ -1752,11 +1752,11 @@ namespace UI {
             }
       //  }
 
-            GUI::Spacing();
+        GUI::Spacing();
 
-            GUI::SameLine(0.0F, 6.0F);
+        GUI::SameLine(0.0F, 6.0F);
 
-            const bool differsFromDefault = !editor.current.IsSame(editor.defaults);
+        const bool differsFromDefault = !editor.current.IsSame(editor.defaults);
 
         if (IconCTAButton(Trans::Tr("Dynamics.Editor.ResetButton").c_str(), differsFromDefault, Icons::kReset)) {
             if (editor.camera) {
@@ -1842,7 +1842,7 @@ namespace UI {
 
             GUI::BeginDisabled(presetEditor.npcPreview);
 
-            for (std::size_t i = 0; i < CollisionLayers::kCollisionLayerNames.size(); ++i) {
+            for (size_t i = 0; i < CollisionLayers::kCollisionLayerNames.size(); ++i) {
                 bool enabled = CollisionLayers::GetLayerEnabled(i, presetConfig->collisionLayers);
 
                 const std::string label(CollisionLayers::kCollisionLayerNames[i]);
@@ -1865,10 +1865,7 @@ namespace UI {
                     }
                     else if (presetEditor.npcGlobal) {
                         const auto relative = presetEditor.preset == VCD::Preset::kVanilla;
-                        Settings::MarkNPCPresetEdited(
-                            presetEditor.preset,
-                            relative ? VCD::GetCollisionDataDelta(presetEditor.current, presetEditor.defaults) : presetEditor.current,
-                            relative);
+                        Settings::MarkNPCPresetEdited(presetEditor.preset, relative ? VCD::GetCollisionDataDelta(presetEditor.current, presetEditor.defaults) : presetEditor.current, relative);
                     }
                     else if (!presetEditor.npcPreview) {
                         Settings::MarkPresetEdited(presetEditor.preset, presetConfig->data);

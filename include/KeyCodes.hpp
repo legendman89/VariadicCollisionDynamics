@@ -72,6 +72,11 @@ namespace KeyNames
 		KeyEntry{ ",", 51 }, KeyEntry{ ".", 52 }, KeyEntry{ "/", 53 }
 	};
 
+	inline bool IsDigit(unsigned char a_character)
+	{
+		return std::isdigit(a_character) != 0;
+	}
+
 	inline std::string Normalize(std::string_view a_text)
 	{
 		std::string out;
@@ -117,7 +122,7 @@ namespace KeyNames
 			}
 		}
 
-		if (std::all_of(text.begin(), text.end(), [](unsigned char c) { return std::isdigit(c); }) && text.size() <= 3) {
+		if (std::all_of(text.begin(), text.end(), IsDigit) && text.size() <= 3) {
 			const int value = std::stoi(text);
 			if (value >= 1 && value <= 255) {
 				a_codeOut = value;

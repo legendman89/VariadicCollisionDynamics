@@ -83,21 +83,9 @@ namespace Hook {
     {
         static void Install();
 
-        static std::uint8_t* actorFilter(
-            const RE::hkpShapeCollectionFilter* a_this,
-            std::uint8_t* a_result,
-            const RE::hkpCollisionInput& a_input,
-            const RE::hkpCdBody& a_bodyA,
-            const RE::hkpCdBody& a_bodyB,
-            const RE::hkpShapeContainer& a_shapeA,
-            const RE::hkpShapeContainer& a_shapeB,
-            RE::hkpShapeKey a_keyA,
-            RE::hkpShapeKey a_keyB);
+        static uint8_t* actorFilter(const RE::hkpShapeCollectionFilter* a_this, uint8_t* a_result, const RE::hkpCollisionInput& a_input, const RE::hkpCdBody& a_bodyA, const RE::hkpCdBody& a_bodyB, const RE::hkpShapeContainer& a_shapeA, const RE::hkpShapeContainer& a_shapeB, RE::hkpShapeKey a_keyA, RE::hkpShapeKey a_keyB);
 
-        static bool playerFilter(
-            RE::bhkCollisionFilter* filter,
-            RE::CFilter filterA,
-            RE::CFilter filterB);
+        static bool playerFilter(RE::bhkCollisionFilter* filter, RE::CFilter filterA, RE::CFilter filterB);
 
         static inline REL::Relocation<decltype(playerFilter)> playerFunc;
 
@@ -106,11 +94,7 @@ namespace Hook {
 
     struct MeleeHitHookSE
     {
-        static void func(
-            RE::Character* a_aggressor,
-            RE::Actor* a_victim,
-            std::int64_t a3,
-            char a4);
+        static void func(RE::Character* a_aggressor, RE::Actor* a_victim, int64_t a3, char a4);
 
         static inline REL::Relocation<decltype(func)> originalFunc;
 
@@ -119,25 +103,14 @@ namespace Hook {
 
     struct MeleeHitHookAE
     {
-        using HitFunction = void(
-            RE::Actor*,
-            RE::Actor*,
-            std::int64_t,
-            char
-            );
+        using HitFunction = void(RE::Actor*, RE::Actor*, int64_t, char);
 
-        static void func(
-            RE::Actor* a_aggressor,
-            RE::Actor* a_victim,
-            std::int64_t a3,
-            char a4
-        );
+        static void func(RE::Actor* a_aggressor, RE::Actor* a_victim, int64_t a3, char a4);
 
         static inline HitFunction* originalFunc = nullptr;
 
         static void Install();
     };
-
 
     namespace AdmitAnimationHook
     {
@@ -150,8 +123,6 @@ namespace Hook {
         void Install();
     }
 
-  
-
-    void Install(); 
+    void Install();
 
 }

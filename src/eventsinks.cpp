@@ -1,10 +1,8 @@
-#pragma once
-
 #include "eventsinks.hpp"
 #include "logger.hpp"
 #include "settings.hpp"
 #include "dynamics.hpp"
-#include "API.hpp"   
+#include "API.hpp"
 
 namespace EventSinks
 {
@@ -18,14 +16,12 @@ namespace EventSinks
         state->value = Dynamics::GetCustomKeybindHeld().load() ? 1.0F : 0.0F;
     }
 
-    RE::BSEventNotifyControl InputEventSink::ProcessEvent(
-        RE::InputEvent* const* a_event,
-        RE::BSTEventSource<RE::InputEvent*>*)
+    RE::BSEventNotifyControl InputEventSink::ProcessEvent(RE::InputEvent* const* a_event, RE::BSTEventSource<RE::InputEvent*>*)
     {
         if (!a_event || !*a_event)
             return RE::BSEventNotifyControl::kContinue;
 
-        const auto keybind = static_cast<std::uint32_t>(Settings::GetSettings().customKeybind);
+        const auto keybind = static_cast<uint32_t>(Settings::GetSettings().customKeybind);
 
         for (auto event = *a_event; event; event = event->next)
         {
@@ -62,16 +58,14 @@ namespace EventSinks
 
     void InputEventSink::RegisterEventSink()
     {
-        auto inputEventSource =
-            RE::BSInputDeviceManager::GetSingleton();
+        auto inputEventSource = RE::BSInputDeviceManager::GetSingleton();
 
         if (!inputEventSource) {
             logger::error("Failed to get BSInputDeviceManager");
             return;
         }
 
-        inputEventSource->AddEventSink(
-            InputEventSink::GetSingleton());
+        inputEventSource->AddEventSink(InputEventSink::GetSingleton());
 
         logger::info("InputEventSink registered");
     }
