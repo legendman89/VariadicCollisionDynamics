@@ -606,31 +606,41 @@ void MeleeHitHookAE::func(
 	std::int64_t a3,
 	char a4)
 {
-	if (CollisionLayers::ShouldRejectMeleeHit(a_aggressor, a_victim)) {
+	if (CollisionLayers::ShouldRejectMeleeHit(a_aggressor, a_victim, a3, a4)) {
 		return;
 	}
 	originalFunc(a_aggressor, a_victim, a3, a4);
 }
 
+//not the same as SE cant use Relocation varient ID
 void MeleeHitHookAE::Install()
 {
 	if (!REL::Module::IsAE()) {
 		return;
 	}
 
-	// i dont think this func exists in SE 
+	auto& trampoline = SKSE::GetTrampoline();
+
 	REL::Relocation<std::uintptr_t> target{
-		REL::RelocationID(0, 38627)
+		REL::RelocationID(0, 38603)
 	};
 
-	//detour but safe so others can still hook this without crashing
-	auto trampoline = clib_utilsQTR::write_prologue_hook(
-		target.address(),
-		&func
-	);
+	//unlike SE sweep and melee hit are both done in 1 function
+	// (additional call for projectiles, we ignore it, switching projectile collision layer off is enough)
+	constexpr std::array offsets{
+		0x40A,  //  sweep hit
+		0x45A   //  melee hit
+	};
 
-	if (trampoline) {
-		originalFunc = reinterpret_cast<HitFunction*>(trampoline);
+	for (const auto offset : offsets) {
+		auto original = trampoline.write_call<5>(
+			target.address() + offset,
+			func
+		);
+
+		if (!originalFunc) {
+			originalFunc = reinterpret_cast<HitFunction*>(original);
+		}
 	}
 
 	logger::info("Installed MeleeHitHookAE");
@@ -642,7 +652,7 @@ void MeleeHitHookSE::func(
 	std::int64_t a3,
 	char a4)
 {
-	if (CollisionLayers::ShouldRejectMeleeHit(a_aggressor, a_victim)) {
+	if (CollisionLayers::ShouldRejectMeleeHit(a_aggressor, a_victim, a3, a4)) {
 		return;
 	}
 	originalFunc(a_aggressor, a_victim, a3, a4);
@@ -650,19 +660,22 @@ void MeleeHitHookSE::func(
 
 void MeleeHitHookSE::Install()
 {
-	// let VR and SE through
 	if (REL::Module::IsAE()) {
 		return;
 	}
 
 	auto& trampoline = SKSE::GetTrampoline();
 
-	REL::Relocation<std::uintptr_t> meleeTarget{
-		REL::ID(37650)
-	};
+	REL::Relocation<std::uintptr_t> meleeTarget{ REL::ID(37650) };
+	REL::Relocation<std::uintptr_t> sweepTarget{ REL::ID(37689) };
 
+	//unlike AE there are 2 seperate functions sweep and melee
 	originalFunc = trampoline.write_call<5>(
-		meleeTarget.address() + 0x38B,
+		meleeTarget.address() + 0x38B, // melee hit
+		func);
+
+	trampoline.write_call<5>(
+		sweepTarget.address() + 0xDD, //sweep hit
 		func);
 
 	logger::info("Installed MeleeHitHookSE");
@@ -727,7 +740,7 @@ void AdmitAnimationHook::Install()
 }
 
 void Hook::Install() {
-	SKSE::AllocTrampoline(1 << 7);
+	SKSE::AllocTrampoline(1 << 8);
 
 	CharacterProxyProcessConstraints::Install();
 

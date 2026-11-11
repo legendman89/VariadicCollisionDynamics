@@ -1384,9 +1384,6 @@ namespace UI {
             Dynamics::RestoreCameraToVanilla();
         }
 
-        //clear collision layer vectors 
-        auto& manager = VCD::Manager::GetSingleton();
-
         if (RefreshPresetEditor()) {
             auto& editor = GetPresetEditorState();
 

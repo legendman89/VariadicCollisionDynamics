@@ -158,35 +158,79 @@ namespace CollisionLayers
             : vanillaEnabled;
     }
 
-    inline bool ShouldRejectMeleeHit(RE::Actor* a_aggressor, RE::Actor* a_victim)
+    inline RE::TESObjectWEAP* GetMeleeHitWeapon(RE::Actor* a_attacker, char a_left)
     {
-        constexpr auto weaponLayer = RE::COL_LAYER::kWeapon;
-        constexpr auto layerIndex = std::to_underlying(weaponLayer);
+        if (!a_attacker) return nullptr;
 
-        if (!a_victim || layerIndex >= CollisionLayers::kCollisionLayerNames.size()) {
+        //ignore bashes 
+        if (a_attacker->AsActorState()->GetAttackState() == RE::ATTACK_STATE_ENUM::kBash) return nullptr;
+
+        const bool left = a_left != 0;
+        auto* obj = a_attacker->GetEquippedObject(left);
+        if (!obj && left) obj = a_attacker->GetEquippedObject(false);
+        return obj ? obj->As<RE::TESObjectWEAP>() : nullptr;
+    }
+
+    inline bool IsEnchanted(RE::TESObjectWEAP* a_weapon)
+    {
+        return a_weapon && a_weapon->formEnchanting != nullptr;
+    }
+
+    inline bool ShouldRejectMeleeHit(
+        RE::Actor* a_aggressor,
+        RE::Actor* a_victim,
+        std::int64_t a3,
+        char a4)
+    {
+        constexpr auto weaponLayer = std::to_underlying(RE::COL_LAYER::kWeapon);
+        constexpr auto spellLayer = std::to_underlying(RE::COL_LAYER::kSpell);
+
+        if (!a_victim ||
+            weaponLayer >= CollisionLayers::kCollisionLayerNames.size() ||
+            spellLayer >= CollisionLayers::kCollisionLayerNames.size()) {
             return false;
         }
 
-        const auto& layerName = CollisionLayers::kCollisionLayerNames[layerIndex];
+        const auto& weaponName = CollisionLayers::kCollisionLayerNames[weaponLayer];
+        const auto& spellName = CollisionLayers::kCollisionLayerNames[spellLayer];
+
         auto& manager = VCD::Manager::GetSingleton();
 
-        // Player cannot attack an actor while the player's active preset kWeapon collision layer disabled.
+        const auto shouldReject = [&](const VCD::PresetConfig* config) {
+            if (!config ||
+                !CollisionLayers::IsLayerOverridden(config->collisionLayers, weaponName)) {
+                return false;
+            }
+
+            // Weapon collision is disabled. Allow enchanted attacks if spell collision is enabled.
+            //(Enchanted weapons count as spells)
+            if (!CollisionLayers::IsLayerOverridden(config->collisionLayers, spellName)) {
+                auto* weapon = GetMeleeHitWeapon(a_aggressor, a4);
+
+                if (weapon && IsEnchanted(weapon)) {
+                    return false;
+                }
+            }
+
+            return true;
+            };
+
+        // Player attacking an NPC.
         if (a_aggressor && a_aggressor->IsPlayerRef() && !a_victim->IsPlayerRef()) {
             const auto& state = Dynamics::GetPresetState();
             const auto* playerConfig = manager.GetPresetConfig(state.current);
 
-            if (playerConfig &&
-                CollisionLayers::IsLayerOverridden(playerConfig->collisionLayers, layerName)) {
+            if (shouldReject(playerConfig)) {
                 return true;
             }
         }
 
+        // Player being attacked.
         if (a_victim->IsPlayerRef()) {
             const auto& state = Dynamics::GetPresetState();
             const auto* presetConfig = manager.GetPresetConfig(state.current);
 
-            if (presetConfig &&
-                CollisionLayers::IsLayerOverridden(presetConfig->collisionLayers, layerName)) {
+            if (shouldReject(presetConfig)) {
                 logger::debug(
                     "[Melee Hit] Weapon collision disabled for player preset {}, ignoring hit from {} [{:08X}]",
                     VCD::PresetName(state.current),
@@ -194,6 +238,7 @@ namespace CollisionLayers
                     a_aggressor ? a_aggressor->GetFormID() : 0);
                 return true;
             }
+
             return false;
         }
 
@@ -207,8 +252,8 @@ namespace CollisionLayers
         }
 
         const auto* presetConfig = manager.GetPresetConfig(actorState->preset);
-        if (presetConfig &&
-            CollisionLayers::IsLayerOverridden(presetConfig->collisionLayers, layerName)) {
+
+        if (shouldReject(presetConfig)) {
             logger::debug(
                 "[Melee Hit] Weapon collision disabled for {} [{:08X}] preset {}, ignoring hit",
                 a_victim->GetDisplayFullName(),
@@ -216,6 +261,7 @@ namespace CollisionLayers
                 VCD::PresetName(actorState->preset));
             return true;
         }
+
         return false;
     }
 
