@@ -84,7 +84,11 @@ namespace UI {
         if (GUI::IsItemDeactivatedAfterEdit()) {
             int code = -1;
             if (KeyNames::TryParse(buffer.data(), code)) {
-                settings.customKeybind = code;
+                if (code != settings.customKeybind) {
+                    settings.customKeybind = code;
+                    Dynamics::GetCustomKeybindHeld().store(false);
+                    API::CustomKeyGlobals::SyncStateGlobal();
+                }
                 invalid = false;
             }
             else {

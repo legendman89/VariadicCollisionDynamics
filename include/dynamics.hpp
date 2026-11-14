@@ -10,6 +10,8 @@
 
 namespace Dynamics {
 
+	inline RE::BGSKeyword* actorTypeGhost = nullptr;
+
 	struct PresetState
 	{
 		bool applied{ false };

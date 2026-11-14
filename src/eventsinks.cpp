@@ -3,58 +3,55 @@
 #include "settings.hpp"
 #include "dynamics.hpp"
 #include "API.hpp"
+#include "KeyCodes.hpp"
 
 namespace EventSinks
 {
-    // Set User Defined GLobal Variable Cutom Key Bind Preset Active State
-    void SyncStateGlobal()
-    {
-        auto* state = API::CustomKeyGlobals::g_vState;
-        if (!state) {
-            return;
-        }
-        state->value = Dynamics::GetCustomKeybindHeld().load() ? 1.0F : 0.0F;
-    }
 
-    RE::BSEventNotifyControl InputEventSink::ProcessEvent(RE::InputEvent* const* a_event, RE::BSTEventSource<RE::InputEvent*>*)
-    {
-        if (!a_event || !*a_event)
-            return RE::BSEventNotifyControl::kContinue;
+	RE::BSEventNotifyControl InputEventSink::ProcessEvent(RE::InputEvent* const* a_event, RE::BSTEventSource<RE::InputEvent*>*)
+	{
+		if (!a_event || !*a_event)
+			return RE::BSEventNotifyControl::kContinue;
 
-        const auto keybind = static_cast<uint32_t>(Settings::GetSettings().customKeybind);
+		const int keybind = Settings::GetSettings().customKeybind;
+		if (keybind < 0)
+			return RE::BSEventNotifyControl::kContinue;
 
-        for (auto event = *a_event; event; event = event->next)
-        {
-            if (event->eventType != RE::INPUT_EVENT_TYPE::kButton)
-                continue;
+		for (auto event = *a_event; event; event = event->next)
+		{
+			if (event->eventType != RE::INPUT_EVENT_TYPE::kButton)
+				continue;
 
-            auto* buttonEvent = static_cast<RE::ButtonEvent*>(event);
+			auto* buttonEvent = static_cast<RE::ButtonEvent*>(event);
+			const auto device = buttonEvent->GetDevice();
+			const auto id = buttonEvent->GetIDCode();
 
-            if (buttonEvent->GetDevice() != RE::INPUT_DEVICE::kKeyboard)
-                continue;
+			// Mouse wheel ids (8, 9) never send an IsUp, so they would leave the held flag stuck
+			if (device == RE::INPUT_DEVICE::kMouse && id >= 8)
+				continue;
 
-            if (buttonEvent->GetIDCode() != keybind)
-                continue;
+			if (KeyNames::Encode(device, id) != keybind)
+				continue;
 
-            if (buttonEvent->IsDown()) {
-                if (API::CustomKeyGlobals::IsCustomKeyBindPresetLocked()) {
-                    logger::debug("VCD Custom Keybind with idCode {} blocked by lock global", buttonEvent->GetIDCode());
-                }
-                else {
-                    Dynamics::GetCustomKeybindHeld().store(true);
-                    logger::debug("VCD Custom Keybind with idCode {} is currently held down", buttonEvent->GetIDCode());
-                }
-                SyncStateGlobal();
-            }
-            else if (buttonEvent->IsUp()) {
-                Dynamics::GetCustomKeybindHeld().store(false);
-                logger::debug("VCD Custom Keybind with idCode {} is NOT currently held down", buttonEvent->GetIDCode());
-                SyncStateGlobal();
-            }
-        }
+			if (buttonEvent->IsDown()) {
+				if (API::CustomKeyGlobals::IsCustomKeyBindPresetLocked()) {
+					logger::debug("VCD Custom Keybind {} blocked by lock global", keybind);
+				}
+				else {
+					Dynamics::GetCustomKeybindHeld().store(true);
+					logger::debug("VCD Custom Keybind {} is currently held down", keybind);
+				}
+				API::CustomKeyGlobals::SyncStateGlobal();
+			}
+			else if (buttonEvent->IsUp()) {
+				Dynamics::GetCustomKeybindHeld().store(false);
+				logger::debug("VCD Custom Keybind {} is NOT currently held down", keybind);
+				API::CustomKeyGlobals::SyncStateGlobal();
+			}
+		}
 
-        return RE::BSEventNotifyControl::kContinue;
-    }
+		return RE::BSEventNotifyControl::kContinue;
+	}
 
     void InputEventSink::RegisterEventSink()
     {

@@ -12,6 +12,8 @@
 
 namespace Dynamics {
 
+
+
 	constexpr auto kTransitionRetryDuration = std::chrono::duration<float>(2.0F);
 	constexpr auto kTransitionRetryInterval = std::chrono::duration<float>(0.15F);
 
@@ -47,7 +49,7 @@ namespace Dynamics {
 		}
 		const auto isCombat = a_actor && a_actor->IsInCombat();
 		const auto isGuard = a_actor && a_actor->IsGuard();
-		const auto isGhost = a_actor && a_actor->IsGhost(); 
+		const auto isGhost = a_actor && (const_cast<RE::Actor*>(a_actor)->HasKeywordString("ActorTypeGhost") || a_actor->IsGhost());
 
 		// Ordered by priority: Specialized presets > Guard in combat > guard > combat > neutral.
 		if (const auto presetName = VCD::Race::GetSupportedNPCPresetName(a_actor); !presetName.empty()) {
