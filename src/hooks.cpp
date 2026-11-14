@@ -503,7 +503,7 @@ void CollisionFilterHooks::Install()
 
 	actorFunc = vtable.write_vfunc(0, actorFilter);
 
-	REL::Relocation<uintptr_t> playerTarget{ RELOCATION_ID(76677, 78549), 0xBC };
+	REL::Relocation<std::uintptr_t> playerTarget{REL::VariantID(76677, 78549, 0xE2B740), 0xBC};
 	playerFunc = trampoline.write_call<5>(playerTarget.address(), playerFilter);
 
 	logger::info("Collision Filter Hooks installed");
