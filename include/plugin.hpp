@@ -9,11 +9,3 @@ using namespace std::literals;
 using namespace std;
 
 #define RELOCATION_OFFSET(SE, AE) REL::VariantOffset(SE, AE, 0).offset()
-
-SKSEPluginInfo(
-    .Version = REL::Version{ 1, 5, 3, 0 },
-    .Name = "VariadicCollisionDynamics",
-    .Author = "Truman",
-    .StructCompatibility = SKSE::StructCompatibility::Independent,
-    .RuntimeCompatibility = SKSE::VersionIndependence::AddressLibrary
-);
