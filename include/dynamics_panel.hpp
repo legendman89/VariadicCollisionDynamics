@@ -54,6 +54,15 @@ namespace UI {
 
     struct PresetEditorState
     {
+        std::vector<std::string> collisionLayers{};
+        std::chrono::steady_clock::time_point collisionApplyAt{};
+
+        RE::ActorHandle previewActor{};
+        VCD::Preset preset{ VCD::Preset::kVanilla };
+        VCD::CollisionData defaults{};
+        VCD::CollisionData current{};
+        CollisionEditorLimits limits{};
+
         bool open{ false };
         bool preview{ false };
         bool npcPreview{ false };
@@ -64,14 +73,6 @@ namespace UI {
         bool previousDrawNearbyActors{ false };
         bool collisionApplyPending{ false };
         bool collisionApplyAfterRelease{ false };
-
-        RE::ActorHandle previewActor{};
-        VCD::Preset preset{ VCD::Preset::kVanilla };
-        VCD::CollisionData defaults{};
-        VCD::CollisionData current{};
-        CollisionEditorLimits limits{};
-        std::vector<std::string> collisionLayers{};
-        std::chrono::steady_clock::time_point collisionApplyAt{};
     };
 
     struct CollisionLayerEditorState

@@ -17,8 +17,7 @@ namespace VCD::Race {
         return nullptr;
     }
 
-    const std::vector<std::string>* GetRaceCollisionLayers(
-        const RE::TESRace* a_race)
+    const std::vector<std::string>* GetRaceCollisionLayers(const RE::TESRace* a_race)
     {
         if (!a_race) {
             return nullptr;
@@ -106,18 +105,13 @@ namespace VCD::Race {
         }
     }
 
-    bool RegisterRace(
-        RE::TESRace* a_race,
-        Preset a_preset,
-        CollisionLimitClass a_limitClass,
-        const std::vector<std::string>& a_collisionLayers)
+    bool RegisterRace(RE::TESRace* a_race, Preset a_preset, CollisionLimitClass a_limitClass, const std::vector<std::string>& a_collisionLayers)
     {
         auto& registry = GetRaceRegistry();
         const auto* plugin = a_race ? a_race->GetFile(0) : nullptr;
         const auto* preset = Manager::GetSingleton().GetPresetConfig(a_preset);
 
-        if (!registry.canSave || !plugin || !preset ||
-            Manager::GetSingleton().IsCameraPreset(preset->preset)) {
+        if (!registry.canSave || !plugin || !preset || Manager::GetSingleton().IsCameraPreset(preset->preset)) {
             return false;
         }
 
@@ -140,9 +134,7 @@ namespace VCD::Race {
         bool replaced = false;
 
         for (auto& existing : registeredRaces) {
-            if (existing.race == a_race ||
-                (existing.plugin == registeredRace.plugin &&
-                    existing.localFormID == registeredRace.localFormID)) {
+            if (existing.race == a_race || (existing.plugin == registeredRace.plugin && existing.localFormID == registeredRace.localFormID)) {
                 existing = registeredRace;
                 replaced = true;
                 break;
@@ -160,8 +152,7 @@ namespace VCD::Race {
             };
 
             for (const auto& saved : registeredRaces) {
-                const auto* limit = FindRegisteredRaceLimit(
-                    saved.limitClass, &RegisteredRaceLimit::limitClass);
+                const auto* limit = FindRegisteredRaceLimit(saved.limitClass, &RegisteredRaceLimit::limitClass);
                 const auto* limits = limit ? limit->key : kRegisteredRaceLimits.front().key;
 
                 data["races"].push_back({
@@ -174,18 +165,13 @@ namespace VCD::Race {
                     });
             }
 
-            if (!JSON::WriteFile(
-                GetRegisteredRacesPath(), data, "Registered races", nullptr, { 4, true })) {
+            if (!JSON::WriteFile(GetRegisteredRacesPath(), data, "Registered races", nullptr, { 4, true })) {
                 return false;
             }
 
             registry.races = std::move(registeredRaces);
 
-            logger::info(
-                "Registered race {} from {} with preset {}",
-                registeredRace.editorID,
-                registeredRace.plugin,
-                registeredRace.presetKey);
+            logger::info("Registered race {} from {} with preset {}", registeredRace.editorID, registeredRace.plugin, registeredRace.presetKey);
 
             return true;
         }

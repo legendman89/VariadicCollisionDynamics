@@ -65,8 +65,8 @@ namespace VCD::Race {
 	{
 		std::string plugin{}, editorID{}, presetKey{};
 		RE::TESRace* race{ nullptr };
-		RE::FormID localFormID{ 0 };
 		std::vector<std::string> collisionLayers{};
+		RE::FormID localFormID{ 0 };
 		CollisionLimitClass limitClass{ CollisionLimitClass::kDefault };
 	};
 
@@ -89,8 +89,7 @@ namespace VCD::Race {
 
 	const RegisteredRace* FindRegisteredRace(const RE::Actor* a_actor);
 
-	const std::vector<std::string>* GetRaceCollisionLayers(
-		const RE::TESRace* a_race);
+	const std::vector<std::string>* GetRaceCollisionLayers(const RE::TESRace* a_race);
 
 	inline RaceRegistry& GetRaceRegistry()
 	{
