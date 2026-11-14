@@ -174,12 +174,6 @@ namespace CollisionLayers
             return false;
         }
 
-        auto* actorState = Dynamics::FindNPCPresetState(a_actor->GetFormID());
-
-        if (!actorState) {
-            return false;
-        }
-
         const auto index = std::to_underlying(a_otherLayer);
 
         if (index >= CollisionLayers::kCollisionLayerNames.size()) {
@@ -187,7 +181,24 @@ namespace CollisionLayers
         }
 
         auto& manager = VCD::Manager::GetSingleton();
-        const auto* presetConfig = manager.GetPresetConfig(actorState->preset);
+
+        auto* actorState = Dynamics::FindNPCPresetState(a_actor->GetFormID());
+
+        VCD::Preset preset;
+
+        if (actorState) {
+            preset = actorState->preset;
+        }
+        else if (a_actor->HasKeywordString("ActorTypeGhost")) {
+            preset = a_actor->IsInCombat()
+                ? VCD::Preset::kGhostCombat
+                : VCD::Preset::kGhostNeutral;
+        }
+        else {
+            return false;
+        }
+
+        const auto* presetConfig = manager.GetPresetConfig(preset);
 
         if (!presetConfig) {
             return false;
@@ -196,7 +207,7 @@ namespace CollisionLayers
         const auto& layerName = CollisionLayers::kCollisionLayerNames[index];
 
         const auto* actorLayers = Settings::GetNPCActorPresetCollisionLayers(
-            a_actor->GetFormID(), actorState->preset);
+            a_actor->GetFormID(), preset);
 
         const auto* raceLayers = VCD::Race::GetRaceCollisionLayers(a_actor->GetRace());
 
@@ -208,7 +219,13 @@ namespace CollisionLayers
 
         const bool overridden = CollisionLayers::IsLayerOverridden(collisionLayers, layerName);
 
-        logger::debug("[NPC Collision] {} [{:08X}] | Preset: {} | Other layer: {} | Override: {}", a_actor->GetDisplayFullName(), a_actor->GetFormID(), VCD::PresetName(actorState->preset), layerName, overridden);
+        logger::debug(
+            "[NPC Collision] {} [{:08X}] | Preset: {} | Other layer: {} | Override: {}",
+            a_actor->GetDisplayFullName(),
+            a_actor->GetFormID(),
+            VCD::PresetName(preset),
+            layerName,
+            overridden);
 
         return overridden;
     }
@@ -294,18 +311,29 @@ namespace CollisionLayers
         }
 
         const auto* actorState = Dynamics::FindNPCPresetState(a_victim->GetFormID());
-        if (!actorState) {
+
+        VCD::Preset preset;
+
+        if (actorState) {
+            preset = actorState->preset;
+        }
+        else if (a_victim->HasKeywordString("ActorTypeGhost")) {
+            preset = a_victim->IsInCombat()
+                ? VCD::Preset::kGhostCombat
+                : VCD::Preset::kGhostNeutral;
+        }
+        else {
             return false;
         }
 
-        const auto* presetConfig = manager.GetPresetConfig(actorState->preset);
+        const auto* presetConfig = manager.GetPresetConfig(preset);
 
         if (!presetConfig) {
             return false;
         }
 
         const auto* actorLayers = Settings::GetNPCActorPresetCollisionLayers(
-            a_victim->GetFormID(), actorState->preset);
+            a_victim->GetFormID(), preset);
 
         const auto* raceLayers = VCD::Race::GetRaceCollisionLayers(
             a_victim->GetRace());
@@ -315,7 +343,8 @@ namespace CollisionLayers
             presetConfig->collisionLayers;
 
         if (ShouldRejectPresetMeleeHit(collisionLayers, a_aggressor, a4)) {
-            logger::debug("[Melee Hit] Weapon collision disabled for {} [{:08X}] preset {}, ignoring hit", a_victim->GetDisplayFullName(), a_victim->GetFormID(), VCD::PresetName(actorState->preset));
+            logger::debug("[Melee Hit] Weapon collision disabled for {} [{:08X}] preset {}, ignoring hit",
+                a_victim->GetDisplayFullName(), a_victim->GetFormID(), VCD::PresetName(preset));
             return true;
         }
 
