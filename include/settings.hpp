@@ -149,7 +149,9 @@ namespace Settings {
 
 	const VCD::CollisionData* GetNPCActorPresetOverride(const RE::FormID& a_formID, const VCD::Preset& a_preset);
 
-	void MarkNPCActorPresetEdited(const RE::FormID& a_formID, const std::string& a_name, const VCD::Preset& a_preset, const VCD::CollisionData& a_data);
+	const std::vector<std::string>* GetNPCActorPresetCollisionLayers(const RE::FormID& a_formID, const VCD::Preset& a_preset);
+
+	void MarkNPCActorPresetEdited(const RE::FormID& a_formID, const std::string& a_name, const VCD::Preset& a_preset, const VCD::CollisionData& a_data, const std::vector<std::string>& a_collisionLayer);
 
 	void ClearNPCActorPresetEdited(const RE::FormID& a_formID, const VCD::Preset& a_preset);
 

@@ -173,6 +173,7 @@ namespace UI {
         auto& manager = VCD::Manager::GetSingleton();
         auto* presetConfig = manager.GetPresetConfig(a_preset);
         const auto* defaultData = GetDefaultPlayerPresetData(a_preset);
+
         if (!presetConfig || !defaultData) {
             return;
         }
@@ -194,7 +195,9 @@ namespace UI {
         editor.preset = a_preset;
         editor.defaults = *defaultData;
         editor.current = GetPlayerPresetEditorCurrent(*presetConfig, *defaultData);
+        editor.collisionLayers = presetConfig->collisionLayers;
         editor.limits = GetCollisionEditorLimits(VCD::Race::CollisionLimitClass::kPlayer);
+
 
         if (editor.preview) {
             if (const auto* player = RE::PlayerCharacter::GetSingleton()) {
@@ -685,6 +688,14 @@ namespace UI {
             editor.current = *defaultData;
         }
 
+        if (const auto* actorLayers = Settings::GetNPCActorPresetCollisionLayers(a_actor->GetFormID(), a_preset)) {
+            editor.collisionLayers = *actorLayers;
+        }
+        else {
+            const auto* presetConfig = VCD::Manager::GetSingleton().GetPresetConfig(a_preset);
+            editor.collisionLayers = presetConfig ? presetConfig->collisionLayers : std::vector<std::string>{};
+        }
+
         StartNPCEditorPreview(a_actor);
         ScheduleEditorCollisionApply(false);
     }
@@ -852,7 +863,7 @@ namespace UI {
             auto* actor = actorPtr.get();
             if (actor) {
                 editor.current.RecalculateHeight();
-                Settings::MarkNPCActorPresetEdited(actor->GetFormID(), VCD::GetActorName(actor), editor.preset, editor.current);
+                Settings::MarkNPCActorPresetEdited(actor->GetFormID(), VCD::GetActorName(actor), editor.preset, editor.current, editor.collisionLayers);
                 ApplyEditorCollisionPreview();
             }
         }
@@ -1830,6 +1841,8 @@ namespace UI {
             return;
         }
 
+        auto& overrides = presetEditor.npcPreview ? presetEditor.collisionLayers : presetConfig->collisionLayers;
+
         static constexpr GUI::ImVec2 windowSize{ 520.0F, 600.0F };
         GUI::SetNextWindowSize(windowSize, GUI::ImGuiCond_FirstUseEver);
         CenterNextWindow();
@@ -1840,16 +1853,13 @@ namespace UI {
             GUI::Text("Collision layer overrides");
             GUI::Separator();
 
-            GUI::BeginDisabled(presetEditor.npcPreview);
-
             for (size_t i = 0; i < CollisionLayers::kCollisionLayerNames.size(); ++i) {
-                bool enabled = CollisionLayers::GetLayerEnabled(i, presetConfig->collisionLayers);
+                bool enabled = CollisionLayers::GetLayerEnabled(i, overrides);
 
                 const std::string label(CollisionLayers::kCollisionLayerNames[i]);
 
                 // we only serialize the difference in layers from vanilla
                 if (GUI::Checkbox(label.c_str(), &enabled)) {
-                    auto& overrides = presetConfig->collisionLayers;
                     const auto layer = CollisionLayers::kCollisionLayerNames[i];
 
                     if (CollisionLayers::IsLayerOverridden(overrides, layer)) {
@@ -1859,7 +1869,6 @@ namespace UI {
                         overrides.emplace_back(layer);
                     }
 
-                    // Mark the override in the same map the editor's own edits go to.
                     if (presetEditor.camera) {
                         Settings::MarkCameraPresetEdited(presetEditor.preset, presetEditor.current);
                     }
@@ -1867,13 +1876,17 @@ namespace UI {
                         const auto relative = presetEditor.preset == VCD::Preset::kVanilla;
                         Settings::MarkNPCPresetEdited(presetEditor.preset, relative ? VCD::GetCollisionDataDelta(presetEditor.current, presetEditor.defaults) : presetEditor.current, relative);
                     }
-                    else if (!presetEditor.npcPreview) {
+                    else if (presetEditor.npcPreview) {
+                        if (auto* actor = GetSelectedNPCActorPtr()) {
+                            Settings::MarkNPCActorPresetEdited(actor->GetFormID(), VCD::GetActorName(actor), presetEditor.preset, presetEditor.current, presetEditor.collisionLayers);
+                        }
+                    }
+                    else {
                         Settings::MarkPresetEdited(presetEditor.preset, presetConfig->data);
                     }
                 }
             }
 
-            GUI::EndDisabled();
         }
 
         GUI::End();

@@ -75,7 +75,7 @@ namespace Settings {
 		for (size_t i = 0; i < a_left.npcActorPresets.size(); ++i) {
 			const auto& left = a_left.npcActorPresets[i];
 			const auto& right = a_right.npcActorPresets[i];
-			if (left.formID != right.formID || left.name != right.name || left.preset != right.preset || !left.data.IsSame(right.data)) {
+			if (left.formID != right.formID || left.name != right.name || left.preset != right.preset || !left.data.IsSame(right.data) || left.collisionLayers != right.collisionLayers) {
 				return false;
 			}
 		}
@@ -137,7 +137,7 @@ namespace Settings {
 		for (size_t i = 0; i < a_left.npcActorPresets.size(); ++i) {
 			const auto& left = a_left.npcActorPresets[i];
 			const auto& right = a_right.npcActorPresets[i];
-			if (left.formID != right.formID || left.name != right.name || left.preset != right.preset || !left.data.IsSame(right.data)) {
+			if (left.formID != right.formID || left.name != right.name || left.preset != right.preset || !left.data.IsSame(right.data) || left.collisionLayers != right.collisionLayers) {
 				return false;
 			}
 		}
@@ -326,19 +326,32 @@ namespace Settings {
 		return nullptr;
 	}
 
-	void MarkNPCActorPresetEdited(const RE::FormID& a_formID, const std::string& a_name, const VCD::Preset& a_preset, const VCD::CollisionData& a_data)
+	const std::vector<std::string>* GetNPCActorPresetCollisionLayers(const RE::FormID& a_formID, const VCD::Preset& a_preset)
+	{
+		for (const auto& actorPreset : GetSettings().npcActorPresets) {
+			if (actorPreset.formID == a_formID && actorPreset.preset == a_preset) {
+				return &actorPreset.collisionLayers;
+			}
+		}
+
+		return nullptr;
+	}
+
+	void MarkNPCActorPresetEdited(const RE::FormID& a_formID, const std::string& a_name, const VCD::Preset& a_preset, const VCD::CollisionData& a_data, const std::vector<std::string>& a_collisionLayers)
 	{
 		auto& settings = GetSettings();
+
 		for (auto& actorPreset : settings.npcActorPresets) {
 			if (actorPreset.formID == a_formID && actorPreset.preset == a_preset) {
 				actorPreset.name = a_name;
 				actorPreset.data = a_data;
 				actorPreset.data.RecalculateHeight();
+				actorPreset.collisionLayers = a_collisionLayers;
 				return;
 			}
 		}
 
-		settings.npcActorPresets.push_back({ a_formID, a_name, a_preset, a_data });
+		settings.npcActorPresets.push_back({ a_formID, a_name, a_preset, a_data, a_collisionLayers });
 		settings.npcActorPresets.back().data.RecalculateHeight();
 	}
 

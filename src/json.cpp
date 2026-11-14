@@ -119,8 +119,6 @@ namespace JSON {
 			presetOverride.relative = entry.contains("relative") && entry.at("relative").get<bool>();
 			CollisionDataFromJson(entry, presetOverride.data);
 
-			CollisionDataFromJson(entry, presetOverride.data);
-
 			if (entry.contains("collisionLayers") && entry.at("collisionLayers").is_array()) {
 				presetOverride.collisionLayers = entry.at("collisionLayers").get<std::vector<std::string>>();
 			}
@@ -132,12 +130,18 @@ namespace JSON {
 		auto actors = json::array();
 
 		for (const auto& actorPreset : a_settings.npcActorPresets) {
-			actors.push_back({
+			auto entry = json{
 				{ "formID", actorPreset.formID },
 				{ "name", actorPreset.name },
 				{ "preset", Settings::PresetToString(actorPreset.preset) },
 				{ "data", CollisionDataToJson(actorPreset.data) }
-			});
+			};
+
+			if (!actorPreset.collisionLayers.empty()) {
+				entry["collisionLayers"] = actorPreset.collisionLayers;
+			}
+
+			actors.push_back(entry);
 		}
 
 		return actors;
@@ -168,6 +172,11 @@ namespace JSON {
 				actorPreset.name = entry.at("name").get<std::string>();
 			}
 			CollisionDataFromJson(entry.at("data"), actorPreset.data);
+
+			if (entry.contains("collisionLayers") && entry.at("collisionLayers").is_array()) {
+				actorPreset.collisionLayers = entry.at("collisionLayers").get<std::vector<std::string>>();
+			}
+
 			a_settings.npcActorPresets.push_back(actorPreset);
 		}
 	}

@@ -70,6 +70,7 @@ namespace UI {
         VCD::CollisionData defaults{};
         VCD::CollisionData current{};
         CollisionEditorLimits limits{};
+        std::vector<std::string> collisionLayers{};
         std::chrono::steady_clock::time_point collisionApplyAt{};
     };
 
