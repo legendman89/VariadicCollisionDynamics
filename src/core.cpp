@@ -29,21 +29,15 @@ bool Manager::SetCollisionData(const RE::Actor* a_actor, const CollisionData& a_
     }
 
     CharacterBumperShape bumperShape{};
-    if (!FindWorldCharacterBumperShapeData(context.controller, bumperShape)) {
-        if (a_log) {
-            logger::error("Could not apply preset [{}]. Bumper capsule unavailable", a_name ? a_name : "Unknown");
+    if (!FindWorldCharacterBumperShapeData(context.controller, bumperShape) || !bumperShape.capsule) {
+        if (missingBumperWarnings.insert(a_actor->GetFormID()).second) {
+            const auto* actorName = const_cast<RE::Actor*>(a_actor)->GetDisplayFullName();
+            logger::warn("Bump collision isn't available for {} [{:08X}]", actorName && *actorName ? actorName : "Unknown actor", a_actor->GetFormID());
         }
         return false;
     }
 
     auto* worldCapsuleShape = bumperShape.capsule;
-    if (!worldCapsuleShape) {
-        if (a_log) {
-            logger::error("Could not apply preset [{}]. Bumper capsule unavailable", a_name ? a_name : "Unknown");
-        }
-        return false;
-    }
-
     const auto actorFormID = a_actor->GetFormID();
     CaptureActorVanillaCollisionData(actorFormID, worldCapsuleShape);
     const auto* actorVanillaData = GetActorVanillaCollisionData(actorFormID);
