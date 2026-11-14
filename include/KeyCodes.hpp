@@ -5,9 +5,18 @@
 #include <cctype>
 #include <string>
 #include <string_view>
+#include <atomic>
 
 namespace KeyNames
 {
+	// Keybind value layout (must match KeybindCode.h):
+	//   0   - 255  : keyboard (DIK scancode)
+	//   256 - 511  : mouse,   256 + mouse button id
+	//   512 +      : gamepad, 512 + XInput bitmask
+	inline constexpr int kMouseBase = 256;
+	inline constexpr int kGamepadBase = 512;
+	inline constexpr int kMaxCode = kGamepadBase + 0xFFFF;
+
 	struct KeyEntry
 	{
 		std::string_view name;
@@ -55,7 +64,32 @@ namespace KeyNames
 		KeyEntry{ "Numpad 0", 82 }, KeyEntry{ "Numpad 1", 79 }, KeyEntry{ "Numpad 2", 80 },
 		KeyEntry{ "Numpad 3", 81 }, KeyEntry{ "Numpad 4", 75 }, KeyEntry{ "Numpad 5", 76 },
 		KeyEntry{ "Numpad 6", 77 }, KeyEntry{ "Numpad 7", 71 }, KeyEntry{ "Numpad 8", 72 },
-		KeyEntry{ "Numpad 9", 73 }
+		KeyEntry{ "Numpad 9", 73 },
+
+		// Mouse: kMouseBase + button id
+		KeyEntry{ "Mouse 1", kMouseBase + 0 }, KeyEntry{ "Mouse 2", kMouseBase + 1 },
+		KeyEntry{ "Mouse 3", kMouseBase + 2 }, KeyEntry{ "Mouse 4", kMouseBase + 3 },
+		KeyEntry{ "Mouse 5", kMouseBase + 4 }, KeyEntry{ "Mouse 6", kMouseBase + 5 },
+		KeyEntry{ "Mouse 7", kMouseBase + 6 }, KeyEntry{ "Mouse 8", kMouseBase + 7 },
+		KeyEntry{ "Wheel Up", kMouseBase + 8 }, KeyEntry{ "Wheel Down", kMouseBase + 9 },
+
+		// Gamepad: kGamepadBase + XInput bitmask
+		KeyEntry{ "Pad DPad Up", kGamepadBase + 0x0001 },
+		KeyEntry{ "Pad DPad Down", kGamepadBase + 0x0002 },
+		KeyEntry{ "Pad DPad Left", kGamepadBase + 0x0004 },
+		KeyEntry{ "Pad DPad Right", kGamepadBase + 0x0008 },
+		KeyEntry{ "Pad Start", kGamepadBase + 0x0010 },
+		KeyEntry{ "Pad Back", kGamepadBase + 0x0020 },
+		KeyEntry{ "Pad L Stick", kGamepadBase + 0x0040 },
+		KeyEntry{ "Pad R Stick", kGamepadBase + 0x0080 },
+		KeyEntry{ "Pad LB", kGamepadBase + 0x0100 },
+		KeyEntry{ "Pad RB", kGamepadBase + 0x0200 },
+		KeyEntry{ "Pad A", kGamepadBase + 0x1000 },
+		KeyEntry{ "Pad B", kGamepadBase + 0x2000 },
+		KeyEntry{ "Pad X", kGamepadBase + 0x4000 },
+		KeyEntry{ "Pad Y", kGamepadBase + 0x8000 },
+		KeyEntry{ "Pad LT", kGamepadBase + 0x0009 },
+		KeyEntry{ "Pad RT", kGamepadBase + 0x000A }
 	};
 
 	// Extra spellings that map onto the same codes.
@@ -69,7 +103,19 @@ namespace KeyNames
 		KeyEntry{ "Up", 200 }, KeyEntry{ "Down", 208 }, KeyEntry{ "Left", 203 }, KeyEntry{ "Right", 205 },
 		KeyEntry{ "-", 12 }, KeyEntry{ "=", 13 }, KeyEntry{ "[", 26 }, KeyEntry{ "]", 27 },
 		KeyEntry{ "\\", 43 }, KeyEntry{ ";", 39 }, KeyEntry{ "'", 40 }, KeyEntry{ "`", 41 },
-		KeyEntry{ ",", 51 }, KeyEntry{ ".", 52 }, KeyEntry{ "/", 53 }
+		KeyEntry{ ",", 51 }, KeyEntry{ ".", 52 }, KeyEntry{ "/", 53 },
+
+		// Mouse aliases
+		KeyEntry{ "LMB", kMouseBase + 0 }, KeyEntry{ "RMB", kMouseBase + 1 }, KeyEntry{ "MMB", kMouseBase + 2 },
+		KeyEntry{ "Mouse Left", kMouseBase + 0 }, KeyEntry{ "Mouse Right", kMouseBase + 1 },
+		KeyEntry{ "Mouse Middle", kMouseBase + 2 },
+		KeyEntry{ "Mouse Wheel Up", kMouseBase + 8 }, KeyEntry{ "Mouse Wheel Down", kMouseBase + 9 },
+
+		// Gamepad aliases
+		KeyEntry{ "LB", kGamepadBase + 0x0100 }, KeyEntry{ "RB", kGamepadBase + 0x0200 },
+		KeyEntry{ "LT", kGamepadBase + 0x0009 }, KeyEntry{ "RT", kGamepadBase + 0x000A },
+		KeyEntry{ "L3", kGamepadBase + 0x0040 }, KeyEntry{ "R3", kGamepadBase + 0x0080 },
+		KeyEntry{ "Pad Select", kGamepadBase + 0x0020 }
 	};
 
 	inline bool IsDigit(unsigned char a_character)
@@ -100,7 +146,7 @@ namespace KeyNames
 		return {};
 	}
 
-	// Accepts a key name, "None" (-1), or a raw code number (1-255).
+	// Accepts a key/button name, "None" (-1), or a raw code number (1 - kMaxCode).
 	inline bool TryParse(std::string_view a_text, int& a_codeOut)
 	{
 		const auto text = Normalize(a_text);
@@ -122,14 +168,27 @@ namespace KeyNames
 			}
 		}
 
-		if (std::all_of(text.begin(), text.end(), IsDigit) && text.size() <= 3) {
+		// Raw number. 6 digits max keeps stoi safe; the range check does the real work.
+		if (std::all_of(text.begin(), text.end(), IsDigit) && text.size() <= 6) {
 			const int value = std::stoi(text);
-			if (value >= 1 && value <= 255) {
+			if (value >= 1 && value <= kMaxCode) {
 				a_codeOut = value;
 				return true;
 			}
 		}
 
 		return false;
+	}
+
+	// Converts a raw input event (device + id) into a keybind value.
+	// Returns -1 for unsupported devices.
+	inline int Encode(RE::INPUT_DEVICE a_device, std::uint32_t a_id)
+	{
+		switch (a_device) {
+		case RE::INPUT_DEVICE::kKeyboard: return static_cast<int>(a_id);
+		case RE::INPUT_DEVICE::kMouse:    return kMouseBase + static_cast<int>(a_id);
+		case RE::INPUT_DEVICE::kGamepad:  return kGamepadBase + static_cast<int>(a_id);
+		default:                          return -1;
+		}
 	}
 }

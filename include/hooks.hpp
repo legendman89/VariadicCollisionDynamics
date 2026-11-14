@@ -92,6 +92,19 @@ namespace Hook {
         static inline REL::Relocation<decltype(actorFilter)*> actorFunc;
     };
 
+    struct CollidableFilterHook
+    {
+        static uint8_t* thunk(
+            const RE::hkpCollidableCollidableFilter* a_this,
+            uint8_t* a_result,
+            const RE::hkpCollidable& a_collidableA,
+            const RE::hkpCollidable& a_collidableB);
+
+        static inline REL::Relocation<decltype(thunk)> func;
+
+        static void Install();
+    };
+
     struct MeleeHitHookSE
     {
         static void func(RE::Character* a_aggressor, RE::Actor* a_victim, int64_t a3, char a4);

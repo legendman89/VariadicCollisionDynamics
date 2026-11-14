@@ -41,9 +41,13 @@ namespace API
 			g_vState = LookupVState();
 		}
 
+		// Set User Defined GLobal Variable Cutom Key Bind Preset Active State
+		void SyncStateGlobal();
+
 		// User has defined a lock global variable to prevent then custom keybind from working
 		//until a condition they define has been met
 		bool IsCustomKeyBindPresetLocked();
+
 
 	}
 

@@ -51,6 +51,15 @@ static void MessageHandler(SKSE::MessagingInterface::Message* msg) {
 
         API::CustomKeyGlobals::Resolve(); 
 
+        RE::TESDataHandler* dataHandler = RE::TESDataHandler::GetSingleton();
+
+        Dynamics::actorTypeGhost =
+            dataHandler->LookupForm<RE::BGSKeyword>(0x000D205E, "Skyrim.esm");
+
+        if (!Dynamics::actorTypeGhost) {
+            logger::warn("no actor type ghost keyword 0x0D205E found");
+        }
+
         break;
     }
     default:

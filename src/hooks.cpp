@@ -422,7 +422,7 @@ uint8_t* CollisionFilterHooks::actorFilter(const RE::hkpShapeCollectionFilter* a
 	auto* actorA = CollisionLayers::GetCollisionActor(a_bodyA);
 	auto* actorB = CollisionLayers::GetCollisionActor(a_bodyB);
 
-	//see if char controller collision layer meaning its a actor amd see if actors Preset should return false on this collision interaction
+	//see if char controller collision layer meaning its a actor and see if actors Preset should return false on this collision interaction
 	if (CollisionLayers::ShouldRejectNPCCollision(actorA, layerB)) {
 		logger::debug("[NPC Collision] Rejected collision through body A");
 		*result = false;
@@ -451,7 +451,7 @@ bool CollisionFilterHooks::playerFilter(RE::bhkCollisionFilter* filter, RE::CFil
 	const auto layerB = filterB.GetCollisionLayer();
 
 	//player camera collision layer logic here
-	if (layerA == RE::COL_LAYER::kCameraPick || layerB == RE::COL_LAYER::kCameraPick && Settings::GetSettings().enableCameraDynamics) {
+	if ((layerA == RE::COL_LAYER::kCameraPick || layerB == RE::COL_LAYER::kCameraPick) && Settings::GetSettings().enableCameraDynamics) {
 		const auto otherLayer = layerA == RE::COL_LAYER::kCameraPick ? layerB : layerA;
 		const auto index = std::to_underlying(otherLayer);
 		if (index >= CollisionLayers::kCollisionLayerNames.size()) {
@@ -503,7 +503,7 @@ void CollisionFilterHooks::Install()
 
 	actorFunc = vtable.write_vfunc(0, actorFilter);
 
-	REL::Relocation<uintptr_t> playerTarget{ RELOCATION_ID(76677, 78549), 0xBC };
+	REL::Relocation<std::uintptr_t> playerTarget{REL::VariantID(76677, 78549, 0xE2B740), 0xBC};
 	playerFunc = trampoline.write_call<5>(playerTarget.address(), playerFilter);
 
 	logger::info("Collision Filter Hooks installed");
@@ -588,11 +588,36 @@ bool AdmitAnimationHook::thunk(void* a_manager, RE::BGSActionData* a_data)
 
 	const auto& event = a_data->animEvent;
 
-	if (event.empty()) {
+	if (event.empty() || _strnicmp(event.c_str(), killmovePrefix.data(), killmovePrefix.size()) != 0) {
 		return originalFunc(a_manager, a_data);
 	}
 
-	if (_strnicmp(event.c_str(), killmovePrefix.data(), killmovePrefix.size()) == 0 && a_data->target.get() == RE::PlayerCharacter::GetSingleton()) {
+	// The recipient of the killmove
+	auto* targetRef = a_data->target.get();
+	auto* targetActor = targetRef ? targetRef->As<RE::Actor>() : nullptr;
+
+	if (!targetActor) {
+		return originalFunc(a_manager, a_data);
+	}
+
+	constexpr auto weaponLayer = RE::COL_LAYER::kWeapon;
+
+	if (targetActor->IsPlayerRef()) {
+		// Same lookup playerFilter uses for the player's active preset
+		const auto index = std::to_underlying(weaponLayer);
+		if (index < CollisionLayers::kCollisionLayerNames.size()) {
+			const auto& state = Dynamics::GetPresetState();
+			auto& manager = VCD::Manager::GetSingleton();
+			const auto* presetConfig = manager.GetPresetConfig(state.current);
+
+			if (presetConfig && CollisionLayers::IsLayerOverridden(presetConfig->collisionLayers, CollisionLayers::kCollisionLayerNames[index])) {
+				logger::debug("[Killmove] Blocked '{}' on player (weapon layer overridden)", event.c_str());
+				return false;
+			}
+		}
+	}
+	else if (Settings::GetSettings().enableNPCDynamics && CollisionLayers::ShouldRejectNPCCollision(targetActor, weaponLayer)) {
+		logger::debug("[Killmove] Blocked '{}' on {} (weapon layer overridden)", event.c_str(), targetActor->GetDisplayFullName());
 		return false;
 	}
 
@@ -621,6 +646,45 @@ void AdmitAnimationHook::Install()
 	logger::info("Installed AdmitAnimationHook");
 }
 
+//this is used for kcharcontroller layer for NPCS
+uint8_t* Hook::CollidableFilterHook::thunk(
+	const RE::hkpCollidableCollidableFilter* a_this,
+	uint8_t* a_result,
+	const RE::hkpCollidable& a_collidableA,
+	const RE::hkpCollidable& a_collidableB)
+{
+	auto* result = func(a_this, a_result, a_collidableA, a_collidableB);
+
+	if (!result || !*result || !Settings::GetSettings().enableNPCDynamics) {
+		return result;
+	}
+
+	const auto layerA = a_collidableA.GetCollisionLayer();
+	const auto layerB = a_collidableB.GetCollisionLayer();
+
+	if (layerA != RE::COL_LAYER::kCharController && layerB != RE::COL_LAYER::kCharController) {
+		return result;
+	}
+
+	auto* actorA = CollisionLayers::GetCollisionActor(a_collidableA);
+	auto* actorB = CollisionLayers::GetCollisionActor(a_collidableB);
+
+	if (CollisionLayers::ShouldRejectNPCCollision(actorA, layerB) ||
+		CollisionLayers::ShouldRejectNPCCollision(actorB, layerA)) {
+		*result = false;
+	}
+
+	return result;
+}
+
+void Hook::CollidableFilterHook::Install()
+{
+	REL::Relocation<std::uintptr_t> vtbl{ RE::VTABLE_bhkCollisionFilter[1] };
+	func = vtbl.write_vfunc(1, thunk);
+
+	logger::info("Installed CollidableFilterHook");
+}
+
 void Hook::Install() {
 	SKSE::AllocTrampoline(1 << 8);
 
@@ -643,4 +707,6 @@ void Hook::Install() {
 	MeleeHitHookAE::Install();
 
 	AdmitAnimationHook::Install();
+
+	CollidableFilterHook::Install();
 }
