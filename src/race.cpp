@@ -17,6 +17,22 @@ namespace VCD::Race {
         return nullptr;
     }
 
+    const std::vector<std::string>* GetRaceCollisionLayers(
+        const RE::TESRace* a_race)
+    {
+        if (!a_race) {
+            return nullptr;
+        }
+
+        for (const auto& registeredRace : GetRaceRegistry().races) {
+            if (registeredRace.race == a_race) {
+                return &registeredRace.collisionLayers;
+            }
+        }
+
+        return nullptr;
+    }
+
     void LoadRegisteredRaces()
     {
         auto& registry = GetRaceRegistry();
@@ -60,6 +76,10 @@ namespace VCD::Race {
                 registeredRace.editorID = value.value("editorID", std::string{});
                 registeredRace.presetKey = value.at("preset").get<std::string>();
 
+                if (value.contains("collisionLayers") && value["collisionLayers"].is_array()) {
+                    registeredRace.collisionLayers = value["collisionLayers"].get<std::vector<std::string>>();
+                }
+
                 const auto limits = value.at("limits").get<std::string>();
                 const auto* limit = FindRegisteredRaceLimit(limits, &RegisteredRaceLimit::key);
                 if (!limit || registeredRace.plugin.empty() || registeredRace.presetKey.empty() || !registeredRace.localFormID) {
@@ -86,12 +106,18 @@ namespace VCD::Race {
         }
     }
 
-    bool RegisterRace(RE::TESRace* a_race, Preset a_preset, CollisionLimitClass a_limitClass)
+    bool RegisterRace(
+        RE::TESRace* a_race,
+        Preset a_preset,
+        CollisionLimitClass a_limitClass,
+        const std::vector<std::string>& a_collisionLayers)
     {
         auto& registry = GetRaceRegistry();
         const auto* plugin = a_race ? a_race->GetFile(0) : nullptr;
         const auto* preset = Manager::GetSingleton().GetPresetConfig(a_preset);
-        if (!registry.canSave || !plugin || !preset || Manager::GetSingleton().IsCameraPreset(preset->preset)) {
+
+        if (!registry.canSave || !plugin || !preset ||
+            Manager::GetSingleton().IsCameraPreset(preset->preset)) {
             return false;
         }
 
@@ -100,6 +126,7 @@ namespace VCD::Race {
         }
 
         const auto* editorID = a_race->GetFormEditorID();
+
         RegisteredRace registeredRace;
         registeredRace.plugin = plugin->fileName;
         registeredRace.localFormID = a_race->GetLocalFormID();
@@ -107,11 +134,15 @@ namespace VCD::Race {
         registeredRace.presetKey = preset->key;
         registeredRace.race = a_race;
         registeredRace.limitClass = a_limitClass;
+        registeredRace.collisionLayers = a_collisionLayers;
+
         auto registeredRaces = registry.races;
         bool replaced = false;
 
         for (auto& existing : registeredRaces) {
-            if (existing.race == a_race || (existing.plugin == registeredRace.plugin && existing.localFormID == registeredRace.localFormID)) {
+            if (existing.race == a_race ||
+                (existing.plugin == registeredRace.plugin &&
+                    existing.localFormID == registeredRace.localFormID)) {
                 existing = registeredRace;
                 replaced = true;
                 break;
@@ -123,23 +154,39 @@ namespace VCD::Race {
         }
 
         try {
-            auto data = nlohmann::json{ { "version", 1 }, { "races", nlohmann::json::array() } };
-            for (const auto& saved : registeredRaces) {
+            auto data = nlohmann::json{
+                { "version", 1 },
+                { "races", nlohmann::json::array() }
+            };
 
-                const auto* limit = FindRegisteredRaceLimit(saved.limitClass, &RegisteredRaceLimit::limitClass);
+            for (const auto& saved : registeredRaces) {
+                const auto* limit = FindRegisteredRaceLimit(
+                    saved.limitClass, &RegisteredRaceLimit::limitClass);
                 const auto* limits = limit ? limit->key : kRegisteredRaceLimits.front().key;
 
-                data["races"].push_back({ { "plugin", saved.plugin }, { "localFormID", saved.localFormID }, { "editorID", saved.editorID }, { "preset", saved.presetKey }, { "limits", limits } });
+                data["races"].push_back({
+                    { "plugin", saved.plugin },
+                    { "localFormID", saved.localFormID },
+                    { "editorID", saved.editorID },
+                    { "preset", saved.presetKey },
+                    { "limits", limits },
+                    { "collisionLayers", saved.collisionLayers }
+                    });
             }
 
-            if (!JSON::WriteFile(GetRegisteredRacesPath(), data, "Registered races", nullptr, { 4, true })) {
+            if (!JSON::WriteFile(
+                GetRegisteredRacesPath(), data, "Registered races", nullptr, { 4, true })) {
                 return false;
             }
 
             registry.races = std::move(registeredRaces);
 
-            logger::info("Registered race {} from {} with preset {}", registeredRace.editorID, registeredRace.plugin, registeredRace.presetKey);
-            
+            logger::info(
+                "Registered race {} from {} with preset {}",
+                registeredRace.editorID,
+                registeredRace.plugin,
+                registeredRace.presetKey);
+
             return true;
         }
         catch (const std::exception& error) {

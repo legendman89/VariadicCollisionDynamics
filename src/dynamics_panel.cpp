@@ -1153,21 +1153,42 @@ namespace UI {
     {
         static RaceRegistrationEditorState state;
         auto* race = a_actor ? a_actor->GetRace() : nullptr;
+
         if (state.race != race) {
             state = {};
             state.race = race;
         }
 
         const auto* registration = VCD::Race::FindRegisteredRace(a_actor);
+
         if (IconCTAButton(Trans::Tr("Dynamics.NPC.RegisterRace").c_str(), race && race->GetFile(0), Icons::kSave)) {
             const auto limits = VCD::Race::GetCollisionLimitClass(a_actor, registration);
-            const bool saved = VCD::Race::RegisterRace(race, a_preset, limits);
+            const auto* presetConfig = VCD::Manager::GetSingleton().GetPresetConfig(a_preset);
+
+            const bool saved = [&]() {
+                if (!presetConfig) {
+                    return false;
+                }
+
+                const auto* actorLayers = a_actor
+                    ? Settings::GetNPCActorPresetCollisionLayers(a_actor->GetFormID(), a_preset)
+                    : nullptr;
+
+                const auto& collisionLayers = actorLayers
+                    ? *actorLayers
+                    : presetConfig->collisionLayers;
+
+                return VCD::Race::RegisterRace(race, a_preset, limits, collisionLayers);
+                }();
+
             state.message = saved ? std::string{} : Trans::Tr("Dynamics.NPC.RaceSaveFailed");
+
             if (saved) {
                 Dynamics::GetNPCDynamicsState().nextScan = {};
                 Scan::UpdateNearbyActorCache(RE::PlayerCharacter::GetSingleton(), true);
             }
         }
+
         Tooltip(Trans::Tr("Dynamics.NPC.RegisterRaceTooltip").c_str());
         return state.message;
     }

@@ -195,8 +195,16 @@ namespace CollisionLayers
 
         const auto& layerName = CollisionLayers::kCollisionLayerNames[index];
 
-        const auto* actorLayers = Settings::GetNPCActorPresetCollisionLayers(a_actor->GetFormID(), actorState->preset);
-        const auto& collisionLayers = actorLayers ? *actorLayers : presetConfig->collisionLayers;
+        const auto* actorLayers = Settings::GetNPCActorPresetCollisionLayers(
+            a_actor->GetFormID(), actorState->preset);
+
+        const auto* raceLayers = VCD::Race::GetRaceCollisionLayers(a_actor->GetRace());
+
+        const auto& collisionLayers = actorLayers
+            ? *actorLayers
+            : raceLayers
+            ? *raceLayers
+            : presetConfig->collisionLayers;
 
         const bool overridden = CollisionLayers::IsLayerOverridden(collisionLayers, layerName);
 
@@ -296,8 +304,15 @@ namespace CollisionLayers
             return false;
         }
 
-        const auto* actorLayers = Settings::GetNPCActorPresetCollisionLayers(a_victim->GetFormID(), actorState->preset);
-        const auto& collisionLayers = actorLayers ? *actorLayers : presetConfig->collisionLayers;
+        const auto* actorLayers = Settings::GetNPCActorPresetCollisionLayers(
+            a_victim->GetFormID(), actorState->preset);
+
+        const auto* raceLayers = VCD::Race::GetRaceCollisionLayers(
+            a_victim->GetRace());
+
+        const auto& collisionLayers = actorLayers ? *actorLayers :
+            raceLayers ? *raceLayers :
+            presetConfig->collisionLayers;
 
         if (ShouldRejectPresetMeleeHit(collisionLayers, a_aggressor, a4)) {
             logger::debug("[Melee Hit] Weapon collision disabled for {} [{:08X}] preset {}, ignoring hit", a_victim->GetDisplayFullName(), a_victim->GetFormID(), VCD::PresetName(actorState->preset));

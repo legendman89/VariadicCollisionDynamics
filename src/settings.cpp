@@ -337,6 +337,7 @@ namespace Settings {
 		return nullptr;
 	}
 
+
 	void MarkNPCActorPresetEdited(const RE::FormID& a_formID, const std::string& a_name, const VCD::Preset& a_preset, const VCD::CollisionData& a_data, const std::vector<std::string>& a_collisionLayers)
 	{
 		auto& settings = GetSettings();
