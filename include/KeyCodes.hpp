@@ -182,7 +182,7 @@ namespace KeyNames
 
 	// Converts a raw input event (device + id) into a keybind value.
 	// Returns -1 for unsupported devices.
-	inline int Encode(RE::INPUT_DEVICE a_device, std::uint32_t a_id)
+	inline int Encode(RE::INPUT_DEVICE a_device, uint32_t a_id)
 	{
 		switch (a_device) {
 		case RE::INPUT_DEVICE::kKeyboard: return static_cast<int>(a_id);

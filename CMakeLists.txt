@@ -1,8 +1,3 @@
-# Source: Thiago (SKSE Menu Framework Example 3).
-# Edited to add debug info for 'Release', and
-# pass PRODUCT_NAME as a preprocessor.
-
-
 # ---------------------------------------------------- #
 #                 Required envs assert                 #
 # ---------------------------------------------------- #
@@ -158,9 +153,6 @@ target_include_directories(
     ${CMAKE_CURRENT_SOURCE_DIR}/ImGuiMCP
     ${CMAKE_CURRENT_SOURCE_DIR}/ImGuiMCP/backends
 )
-
-
-
 
 # ---------------------------------------------------- #
 #                        Output                        #

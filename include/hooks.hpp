@@ -94,11 +94,7 @@ namespace Hook {
 
     struct CollidableFilterHook
     {
-        static uint8_t* thunk(
-            const RE::hkpCollidableCollidableFilter* a_this,
-            uint8_t* a_result,
-            const RE::hkpCollidable& a_collidableA,
-            const RE::hkpCollidable& a_collidableB);
+        static uint8_t* thunk(const RE::hkpCollidableCollidableFilter* a_this, uint8_t* a_result, const RE::hkpCollidable& a_collidableA, const RE::hkpCollidable& a_collidableB);
 
         static inline REL::Relocation<decltype(thunk)> func;
 
