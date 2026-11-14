@@ -12,6 +12,7 @@
 #include <limits>
 #include <string_view>
 #include <unordered_map>
+#include <unordered_set>
 #include <vector>
 
 namespace VCD {
@@ -358,6 +359,9 @@ namespace VCD {
         std::unordered_map<RE::FormID, ConvexShapeState> convexShapeStates;
         std::unordered_map<RE::FormID, LastActorState> actorStates;
         std::unordered_map<RE::FormID, CollisionData> actorVanillaCollisionData;
+
+        // Keep warnings across actor retries and log them once.
+        std::unordered_set<RE::FormID> missingBumperWarnings;
     };
 
     inline const char* PresetKey(const Preset& a_preset)

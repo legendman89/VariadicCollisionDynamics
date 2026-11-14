@@ -44,6 +44,7 @@ void Manager::ClearRuntimeState()
     convexShapeStates.clear();
     actorStates.clear();
     actorVanillaCollisionData.clear();
+    missingBumperWarnings.clear();
 }
 
 void Manager::ClearActorRuntimeState(const RE::FormID& a_formID)
@@ -325,7 +326,7 @@ bool Manager::FindWorldCharacterBumperShapeData(RE::bhkCharacterController* a_co
         return true;
     }
 
-    LogCharacterBumperFailure("Bumper capsule not found", static_cast<std::uint32_t>(shape->type));
+    // Missing capsules are reported once per actor by SetCollisionData.
     return false;
 }
 
