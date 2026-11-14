@@ -149,6 +149,26 @@ Mouse Button 8             263  (0x107)
 Mouse Wheel Up             264  (0x108)
 Mouse Wheel Down           265  (0x109)
 
+------------------------------------------------------------
+GAMEPAD BUTTON SCANCODES (512 + XInput bitmask)
+------------------------------------------------------------
+Pad DPad Up .......... 513   (0x201)
+Pad DPad Down ........ 514   (0x202)
+Pad DPad Left ........ 516   (0x204)
+Pad DPad Right ....... 520   (0x208)
+Pad Start ............ 528   (0x210)
+Pad Back / Select .... 544   (0x220)
+Pad Left Stick (L3) .. 576   (0x240)
+Pad Right Stick (R3) . 640   (0x280)
+Pad LB / L1 .......... 768   (0x300)
+Pad RB / R1 .......... 1024  (0x400)
+Pad A / Cross ........ 4608  (0x1200)
+Pad B / Circle ....... 8704  (0x2200)
+Pad X / Square ....... 16896 (0x4200)
+Pad Y / Triangle ..... 33280 (0x8200)
+Pad LT / L2 .......... 521   (0x209)
+Pad RT / R2 .......... 522   (0x20A)
+
 ============================================================
 END OF SCANCODE REFERENCE
 ============================================================
