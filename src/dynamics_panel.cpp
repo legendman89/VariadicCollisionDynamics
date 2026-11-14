@@ -1165,21 +1165,12 @@ namespace UI {
             const auto limits = VCD::Race::GetCollisionLimitClass(a_actor, registration);
             const auto* presetConfig = VCD::Manager::GetSingleton().GetPresetConfig(a_preset);
 
-            const bool saved = [&]() {
-                if (!presetConfig) {
-                    return false;
-                }
-
-                const auto* actorLayers = a_actor
-                    ? Settings::GetNPCActorPresetCollisionLayers(a_actor->GetFormID(), a_preset)
-                    : nullptr;
-
-                const auto& collisionLayers = actorLayers
-                    ? *actorLayers
-                    : presetConfig->collisionLayers;
-
-                return VCD::Race::RegisterRace(race, a_preset, limits, collisionLayers);
-                }();
+            bool saved = false;
+            if (presetConfig) {
+                const auto* actorLayers = a_actor ? Settings::GetNPCActorPresetCollisionLayers(a_actor->GetFormID(), a_preset) : nullptr;
+                const auto& collisionLayers = actorLayers ? *actorLayers : presetConfig->collisionLayers;
+                saved = VCD::Race::RegisterRace(race, a_preset, limits, collisionLayers);
+            }
 
             state.message = saved ? std::string{} : Trans::Tr("Dynamics.NPC.RaceSaveFailed");
 
