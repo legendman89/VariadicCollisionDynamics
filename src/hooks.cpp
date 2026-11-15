@@ -566,7 +566,9 @@ void MeleeHitHookSE::Install()
 	auto& trampoline = SKSE::GetTrampoline();
 
 	REL::Relocation<uintptr_t> meleeTarget{ REL::ID(37650) };
-	REL::Relocation<uintptr_t> sweepTarget{ REL::ID(37689) };
+
+	// ID 37689 has offset 0x634740 for VR.
+	REL::Relocation<uintptr_t> sweepTarget{ REL::VariantID(37689, 0, 0x634740) };
 
 	//unlike AE there are 2 seperate functions sweep and melee
 	originalFunc = trampoline.write_call<5>(meleeTarget.address() + 0x38B, /* melee hit */ func);
@@ -638,7 +640,9 @@ void AdmitAnimationHook::Install()
 		trampoline.write_call<5>(target2.address(), thunk);
 	}
 	else {
-		REL::Relocation<uintptr_t> target{ REL::RelocationID(37999, 0), 0x33 };
+		
+		// ID 37999 has offset 0x644160 for VR.
+		REL::Relocation<uintptr_t> target{ REL::VariantID(37999, 0, 0x644160), 0x33 };
 
 		originalFunc = trampoline.write_call<5>(target.address(), thunk);
 	}
