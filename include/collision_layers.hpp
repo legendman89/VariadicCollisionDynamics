@@ -232,7 +232,13 @@ namespace CollisionLayers
 
     inline bool IsEnchanted(RE::TESObjectWEAP* a_weapon)
     {
-        return a_weapon && a_weapon->formEnchanting != nullptr;
+        if (!a_weapon) return false; 
+
+        if (a_weapon->formEnchanting) return true; 
+
+        if (a_weapon->HasKeywordString("WeapMaterialSilver")) return true;
+
+        return false;
     }
 
     inline bool ShouldRejectPresetMeleeHit(const std::vector<std::string>& a_collisionLayers, RE::Actor* a_aggressor, char a_left)
