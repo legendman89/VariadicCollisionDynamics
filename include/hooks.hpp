@@ -79,17 +79,13 @@ namespace Hook {
         static void Install();
     };
 
-    struct CollisionFilterHooks
+    struct CollisionFilterHook
     {
         static void Install();
-
-        static uint8_t* actorFilter(const RE::hkpShapeCollectionFilter* a_this, uint8_t* a_result, const RE::hkpCollisionInput& a_input, const RE::hkpCdBody& a_bodyA, const RE::hkpCdBody& a_bodyB, const RE::hkpShapeContainer& a_shapeA, const RE::hkpShapeContainer& a_shapeB, RE::hkpShapeKey a_keyA, RE::hkpShapeKey a_keyB);
-
+       
         static bool playerFilter(RE::bhkCollisionFilter* filter, RE::CFilter filterA, RE::CFilter filterB);
 
         static inline REL::Relocation<decltype(playerFilter)> playerFunc;
-
-        static inline REL::Relocation<decltype(actorFilter)*> actorFunc;
     };
 
     struct CollidableFilterHook

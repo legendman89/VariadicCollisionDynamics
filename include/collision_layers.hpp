@@ -150,21 +150,9 @@ namespace CollisionLayers
         return IsLayerOverridden(a_overrides, kCollisionLayerNames[a_index]) ? !vanillaEnabled : vanillaEnabled;
     }
 
-    inline RE::Actor* GetCollisionActor(const RE::hkpCdBody& a_body)
+    inline RE::Actor* GetCollisionActor(const RE::hkpCollidable& a_collidable)
     {
-        auto* root = &a_body;
-
-        while (root->parent) {
-            root = root->parent;
-        }
-
-        const auto& collidable = static_cast<const RE::hkpCollidable&>(*root);
-
-        if (collidable.GetCollisionLayer() != RE::COL_LAYER::kCharController) {
-            return nullptr;
-        }
-
-        auto* ref = RE::TESHavokUtilities::FindCollidableRef(collidable);
+        auto* ref = RE::TESHavokUtilities::FindCollidableRef(a_collidable);
         return ref ? ref->As<RE::Actor>() : nullptr;
     }
 

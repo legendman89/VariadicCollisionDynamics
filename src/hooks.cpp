@@ -405,42 +405,9 @@ void CameraLinearCastHook::Install()
 	logger::info("CameraLinearCastHook installed");
 }
 
-//Used to make our own collision layer filtering logic,
-//Player or player camera doesent come through here see playerFilter below
-uint8_t* CollisionFilterHooks::actorFilter(const RE::hkpShapeCollectionFilter* a_this, uint8_t* a_result, const RE::hkpCollisionInput& a_input, const RE::hkpCdBody& a_bodyA, const RE::hkpCdBody& a_bodyB, const RE::hkpShapeContainer& a_shapeA, const RE::hkpShapeContainer& a_shapeB, RE::hkpShapeKey a_keyA, RE::hkpShapeKey a_keyB)
-{
-	auto* result = actorFunc(a_this, a_result, a_input, a_bodyA, a_bodyB, a_shapeA, a_shapeB, a_keyA, a_keyB);
-
-	if (!result || !*result || !Settings::GetSettings().enableNPCDynamics) {
-		return result;
-	}
-
-	const auto layerA = static_cast<const RE::hkpCollidable&>(a_bodyA).GetCollisionLayer();
-
-	const auto layerB = static_cast<const RE::hkpCollidable&>(a_bodyB).GetCollisionLayer();
-
-	auto* actorA = CollisionLayers::GetCollisionActor(a_bodyA);
-	auto* actorB = CollisionLayers::GetCollisionActor(a_bodyB);
-
-	//see if char controller collision layer meaning its a actor and see if actors Preset should return false on this collision interaction
-	if (CollisionLayers::ShouldRejectNPCCollision(actorA, layerB)) {
-		logger::debug("[NPC Collision] Rejected collision through body A");
-		*result = false;
-		return result;
-	}
-
-	//see if char controller collision layer meaning its a actor amd see if actors Preset should return false on this collision interaction
-	if (CollisionLayers::ShouldRejectNPCCollision(actorB, layerA)) {
-		logger::debug("[NPC Collision] Rejected collision through body B");
-		*result = false;
-		return result;
-	}
-
-	return result;
-}
 
 // at this write_call address only the player and his camera comes through here
-bool CollisionFilterHooks::playerFilter(RE::bhkCollisionFilter* filter, RE::CFilter filterA, RE::CFilter filterB)
+bool CollisionFilterHook::playerFilter(RE::bhkCollisionFilter* filter, RE::CFilter filterA, RE::CFilter filterB)
 {
 	//char controller is used for Npcs, Player
 	constexpr auto actorLayer = RE::COL_LAYER::kCharController;
@@ -495,15 +462,11 @@ bool CollisionFilterHooks::playerFilter(RE::bhkCollisionFilter* filter, RE::CFil
 	return playerFunc(filter, filterA, filterB);
 }
 
-void CollisionFilterHooks::Install()
+void CollisionFilterHook::Install()
 {
 	auto& trampoline = SKSE::GetTrampoline();
-
-	REL::Relocation<uintptr_t> vtable{ RE::VTABLE_bhkCollisionFilter[2] };
-
-	actorFunc = vtable.write_vfunc(0, actorFilter);
-
-	REL::Relocation<uintptr_t> playerTarget{ REL::VariantID(76677, 78549, 0xE2B740), 0xBC };
+																	// SE 140dd67b0 AE 140EB6980 (Call 140eb650)
+	REL::Relocation<uintptr_t> playerTarget{ REL::VariantID(76677, 78549, 0xE2B740), 0xBC }; // hkpShapeCollectionFilter::numShapeKeyHitsLimitBreached
 	playerFunc = trampoline.write_call<5>(playerTarget.address(), playerFilter);
 
 	logger::info("Collision Filter Hooks installed");
@@ -698,8 +661,6 @@ void Hook::Install() {
 	MenuTopicManagerHook::Install();
 
 	ThirdPersonState_SetRotation::Install();
-
-	CollisionFilterHooks::Install();
 
 	MeleeHitHookSE::Install();
 
