@@ -153,7 +153,7 @@ namespace CollisionLayers
     inline RE::Actor* GetCollisionActor(const RE::hkpCollidable& a_collidable)
     {
         auto* ref = RE::TESHavokUtilities::FindCollidableRef(a_collidable);
-        return ref ? ref->As<RE::Actor>() : nullptr;
+        return ref ? skyrim_cast<RE::Actor*>(ref) : nullptr;
     }
 
     inline bool ShouldRejectNPCCollision(RE::Actor* a_actor, RE::COL_LAYER a_otherLayer)
