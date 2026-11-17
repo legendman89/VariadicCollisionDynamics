@@ -472,7 +472,7 @@ void CollisionFilterHook::Install()
 	logger::info("Collision Filter Hooks installed");
 }
 
-//this is used for kcharcontroller layer for NPCS
+//this is used to modify collision layers for NPCs
 uint8_t* CollidableFilterHook::thunk(const RE::hkpCollidableCollidableFilter* a_this, uint8_t* a_result, const RE::hkpCollidable& a_collidableA, const RE::hkpCollidable& a_collidableB)
 {
 	auto* result = func(a_this, a_result, a_collidableA, a_collidableB);
@@ -484,15 +484,18 @@ uint8_t* CollidableFilterHook::thunk(const RE::hkpCollidableCollidableFilter* a_
 	const auto layerA = a_collidableA.GetCollisionLayer();
 	const auto layerB = a_collidableB.GetCollisionLayer();
 
-	if (layerA != RE::COL_LAYER::kCharController && layerB != RE::COL_LAYER::kCharController) {
-		return result;
+	if (layerA == RE::COL_LAYER::kCharController) {
+		auto* actorA = CollisionLayers::GetCollisionActor(a_collidableA);
+		if (actorA && CollisionLayers::ShouldRejectNPCCollision(actorA, layerB)) {
+			*result = false;
+		}
 	}
 
-	auto* actorA = CollisionLayers::GetCollisionActor(a_collidableA);
-	auto* actorB = CollisionLayers::GetCollisionActor(a_collidableB);
-
-	if (CollisionLayers::ShouldRejectNPCCollision(actorA, layerB) || CollisionLayers::ShouldRejectNPCCollision(actorB, layerA)) {
-		*result = false;
+	if (layerB == RE::COL_LAYER::kCharController) {
+		auto* actorB = CollisionLayers::GetCollisionActor(a_collidableB);
+		if (actorB && CollisionLayers::ShouldRejectNPCCollision(actorB, layerA)) {
+			*result = false;
+		}
 	}
 
 	return result;
