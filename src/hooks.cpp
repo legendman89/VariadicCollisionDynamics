@@ -647,7 +647,7 @@ void AdmitAnimationHook::Install()
 	logger::info("Installed AdmitAnimationHook");
 }
 
-void Install() {
+void Hook::Install() {
 	SKSE::AllocTrampoline(1 << 8);
 
 	CharacterProxyProcessConstraints::Install();
