@@ -117,16 +117,16 @@ namespace Hook {
         static void Install();
     };
 
-    namespace AdmitAnimationHook
+    struct AdmitAnimationHook
     {
         using AdmitAnimation = bool(void*, RE::BGSActionData*);
 
         static inline REL::Relocation<AdmitAnimation> originalFunc;
 
-        bool thunk(void* a_manager, RE::BGSActionData* a_data);
+        static bool thunk(void* a_manager, RE::BGSActionData* a_data);
 
-        void Install();
-    }
+        static void Install();
+    };
 
     void Install();
 

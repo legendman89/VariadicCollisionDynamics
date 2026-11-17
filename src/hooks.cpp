@@ -472,6 +472,40 @@ void CollisionFilterHook::Install()
 	logger::info("Collision Filter Hooks installed");
 }
 
+//this is used for kcharcontroller layer for NPCS
+uint8_t* CollidableFilterHook::thunk(const RE::hkpCollidableCollidableFilter* a_this, uint8_t* a_result, const RE::hkpCollidable& a_collidableA, const RE::hkpCollidable& a_collidableB)
+{
+	auto* result = func(a_this, a_result, a_collidableA, a_collidableB);
+
+	if (!result || !*result || !Settings::GetSettings().enableNPCDynamics) {
+		return result;
+	}
+
+	const auto layerA = a_collidableA.GetCollisionLayer();
+	const auto layerB = a_collidableB.GetCollisionLayer();
+
+	if (layerA != RE::COL_LAYER::kCharController && layerB != RE::COL_LAYER::kCharController) {
+		return result;
+	}
+
+	auto* actorA = CollisionLayers::GetCollisionActor(a_collidableA);
+	auto* actorB = CollisionLayers::GetCollisionActor(a_collidableB);
+
+	if (CollisionLayers::ShouldRejectNPCCollision(actorA, layerB) || CollisionLayers::ShouldRejectNPCCollision(actorB, layerA)) {
+		*result = false;
+	}
+
+	return result;
+}
+
+void CollidableFilterHook::Install()
+{
+	REL::Relocation<uintptr_t> vtbl{ RE::VTABLE_bhkCollisionFilter[1] };
+	func = vtbl.write_vfunc(1, thunk);
+
+	logger::info("Installed CollidableFilterHook");
+}
+
 //Collision layer "kWeapon" does not take into account hitting/damaging player or NPCS
 //I wanted that functionality so with this hook, if kWeapon layer is disabled for active preset of any actor
 //Said actor cannot be hit by weapons.
@@ -613,41 +647,7 @@ void AdmitAnimationHook::Install()
 	logger::info("Installed AdmitAnimationHook");
 }
 
-//this is used for kcharcontroller layer for NPCS
-uint8_t* Hook::CollidableFilterHook::thunk(const RE::hkpCollidableCollidableFilter* a_this, uint8_t* a_result, const RE::hkpCollidable& a_collidableA, const RE::hkpCollidable& a_collidableB)
-{
-	auto* result = func(a_this, a_result, a_collidableA, a_collidableB);
-
-	if (!result || !*result || !Settings::GetSettings().enableNPCDynamics) {
-		return result;
-	}
-
-	const auto layerA = a_collidableA.GetCollisionLayer();
-	const auto layerB = a_collidableB.GetCollisionLayer();
-
-	if (layerA != RE::COL_LAYER::kCharController && layerB != RE::COL_LAYER::kCharController) {
-		return result;
-	}
-
-	auto* actorA = CollisionLayers::GetCollisionActor(a_collidableA);
-	auto* actorB = CollisionLayers::GetCollisionActor(a_collidableB);
-
-	if (CollisionLayers::ShouldRejectNPCCollision(actorA, layerB) || CollisionLayers::ShouldRejectNPCCollision(actorB, layerA)) {
-		*result = false;
-	}
-
-	return result;
-}
-
-void Hook::CollidableFilterHook::Install()
-{
-	REL::Relocation<uintptr_t> vtbl{ RE::VTABLE_bhkCollisionFilter[1] };
-	func = vtbl.write_vfunc(1, thunk);
-
-	logger::info("Installed CollidableFilterHook");
-}
-
-void Hook::Install() {
+void Install() {
 	SKSE::AllocTrampoline(1 << 8);
 
 	CharacterProxyProcessConstraints::Install();
@@ -662,11 +662,13 @@ void Hook::Install() {
 
 	ThirdPersonState_SetRotation::Install();
 
+	CollisionFilterHook::Install();
+
+	CollidableFilterHook::Install();
+
 	MeleeHitHookSE::Install();
 
 	MeleeHitHookAE::Install();
 
 	AdmitAnimationHook::Install();
-
-	CollidableFilterHook::Install();
 }
