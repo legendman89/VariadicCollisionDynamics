@@ -77,7 +77,7 @@ SKSEPluginLoad(const SKSE::LoadInterface* skse)
 
     Trans::GetTranslator().load();
 
-    UI::Register(); 
+    UI::Register();
 
     Hook::Install();
 
