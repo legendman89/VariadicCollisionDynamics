@@ -10,6 +10,7 @@
 #include "transformations.hpp"
 #include "eventsinks.hpp"
 #include "API.hpp"
+#include "Precision.hpp"
 
 static void MessageHandler(SKSE::MessagingInterface::Message* msg) {
     switch (msg->type) {
@@ -78,7 +79,9 @@ SKSEPluginLoad(const SKSE::LoadInterface* skse)
 
     UI::Register(); 
 
-    Hook::Install(); 
+    Hook::Install(); ``
+
+    RegisterPrecisionCallbacks();
 
     return true;
 }
