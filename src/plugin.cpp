@@ -79,7 +79,7 @@ SKSEPluginLoad(const SKSE::LoadInterface* skse)
 
     UI::Register(); 
 
-    Hook::Install(); ``
+    Hook::Install();
 
     RegisterPrecisionCallbacks();
 
