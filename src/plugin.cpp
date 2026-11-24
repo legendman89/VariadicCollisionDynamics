@@ -79,9 +79,10 @@ SKSEPluginLoad(const SKSE::LoadInterface* skse)
 
     UI::Register(); 
 
-    Hook::Install(); ``
+    //Alphabetical order matters with skse plugins P < V
+    precision::RegisterPrecisionCallbacks();
 
-    RegisterPrecisionCallbacks();
+    Hook::Install();
 
     return true;
 }

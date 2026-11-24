@@ -9,6 +9,7 @@
 #include "raycast.hpp"
 #include "posefixes.hpp"
 #include "collision_layers.hpp"
+#include "precision.hpp"
 
 #include <CLibUtilsQTR/DrawDebug.hpp>
 #include <CLibUtilsQTR/Hooks.hpp>
@@ -669,9 +670,12 @@ void Hook::Install() {
 
 	CollidableFilterHook::Install();
 
-	MeleeHitHookSE::Install();
+	if (!precision::IsInstalled()) {
+		MeleeHitHookSE::Install();
 
-	MeleeHitHookAE::Install();
+		MeleeHitHookAE::Install();
+	}
+
 
 	AdmitAnimationHook::Install();
 }
