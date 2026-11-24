@@ -77,7 +77,7 @@ SKSEPluginLoad(const SKSE::LoadInterface* skse)
 
     Trans::GetTranslator().load();
 
-    UI::Register(); 
+    UI::Register();
 
     //Alphabetical order matters with skse plugins P < V
     precision::RegisterPrecisionCallbacks();
