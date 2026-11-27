@@ -135,8 +135,6 @@ namespace CollisionLayers
 
     bool IsLayerOverridden(const std::vector<std::string>& a_overrides, const std::string_view a_layer);
     bool GetLayerEnabled(const size_t a_index, const std::vector<std::string>& a_overrides);
-    bool IsSameAsDefault(const std::vector<std::string>& a_overrides);
-    void RestoreToDefaultLayers(std::vector<std::string>& a_overrides);
     RE::Actor* GetCollisionActor(const RE::hkpCollidable& a_collidable);
     bool ShouldRejectNPCCollision(RE::Actor* a_actor, RE::COL_LAYER a_otherLayer);
     RE::TESObjectWEAP* GetMeleeHitWeapon(RE::Actor* a_attacker, char a_left);

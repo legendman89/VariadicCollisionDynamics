@@ -649,6 +649,15 @@ namespace UI {
         ScheduleEditorCollisionApply(false);
     }
 
+    void RefreshNPCEditorLayers(PresetEditorState& a_editor, const RE::Actor& a_actor, const VCD::PresetConfig& a_config)
+    {
+        const auto* layers = Settings::GetNPCActorPresetCollisionLayers(a_actor.GetFormID(), a_config.preset);
+        if (!layers) {
+            layers = VCD::Race::GetRaceCollisionLayers(a_actor.GetRace());
+        }
+        a_editor.collisionLayers = layers ? *layers : a_config.collisionLayers;
+    }
+
     void OpenNPCPresetEditor(const VCD::Preset& a_preset, RE::Actor* a_actor)
     {
         if (GetCreatePresetEditorState().open) {
@@ -660,7 +669,8 @@ namespace UI {
         }
 
         const auto* defaultData = GetDefaultNPCActorPresetData(a_preset, a_actor);
-        if (!defaultData || !a_actor) {
+        const auto* presetConfig = VCD::Manager::GetSingleton().GetPresetConfig(a_preset);
+        if (!defaultData || !a_actor || !presetConfig) {
             return;
         }
 
@@ -688,13 +698,7 @@ namespace UI {
             editor.current = *defaultData;
         }
 
-        if (const auto* actorLayers = Settings::GetNPCActorPresetCollisionLayers(a_actor->GetFormID(), a_preset)) {
-            editor.collisionLayers = *actorLayers;
-        }
-        else {
-            const auto* presetConfig = VCD::Manager::GetSingleton().GetPresetConfig(a_preset);
-            editor.collisionLayers = presetConfig ? presetConfig->collisionLayers : std::vector<std::string>{};
-        }
+        RefreshNPCEditorLayers(editor, *a_actor, *presetConfig);
 
         StartNPCEditorPreview(a_actor);
         ScheduleEditorCollisionApply(false);
@@ -748,6 +752,7 @@ namespace UI {
 
             editor.limits = GetCollisionEditorLimits(GetPresetCollisionLimitClass(editor.preset, actor));
             if (actor) {
+                RefreshNPCEditorLayers(editor, *actor, *presetConfig);
                 if (const auto* actorOverride = Settings::GetNPCActorPresetOverride(actor->GetFormID(), editor.preset)) {
                     editor.current = *actorOverride;
                     return true;
@@ -1375,31 +1380,12 @@ namespace UI {
         GUI::EndDisabled();
     }
 
-    void ClearAllPresetCollisionLayers()
-    {
-        auto& manager = VCD::Manager::GetSingleton();
-
-        // Collect ids first, then go through GetPresetConfig(), which gives mutable access.
-        std::vector<VCD::Preset> presets;
-        for (const auto& config : manager.GetPresetConfigs()) {
-            presets.push_back(config.preset);
-        }
-
-        for (const auto& preset : presets) {
-            if (auto* config = manager.GetPresetConfig(preset)) {
-                CollisionLayers::RestoreToDefaultLayers(config->collisionLayers);
-            }
-        }
-    }
-
-
     void ResetDynamicsToDefaults()
     {
         const auto wasNPCDynamicsEnabled = Settings::GetSettings().enableNPCDynamics;
         const auto wasCameraDynamicsEnabled = Settings::GetSettings().enableCameraDynamics;
 
         Settings::ResetDynamics();
-        ClearAllPresetCollisionLayers();
 
         if (wasNPCDynamicsEnabled) {
             Dynamics::RestoreNPCsToVanilla();
@@ -1410,7 +1396,6 @@ namespace UI {
 
         if (RefreshPresetEditor()) {
             auto& editor = GetPresetEditorState();
-            CollisionLayers::RestoreToDefaultLayers(editor.collisionLayers);
 
             if (editor.camera && editor.preview) {
                 Dynamics::ApplyCameraCollisionRadius(editor.current.capsule.radius);
@@ -1460,14 +1445,7 @@ namespace UI {
 
         GUI::SameLine(0.0F, 6.0F);
 
-        const auto& presetConfigs = VCD::Manager::GetSingleton().GetPresetConfigs();
-        const bool layersChanged = std::any_of(presetConfigs.begin(), presetConfigs.end(),
-            [](const VCD::PresetConfig& a_config) {
-                return !CollisionLayers::IsSameAsDefault(a_config.collisionLayers);
-            }
-        );
-
-        const bool changed = !Settings::IsDynamicsDefault() || layersChanged;
+        const bool changed = !Settings::IsDynamicsDefault();
 
         if (IconCTAButton(Trans::Tr("Dynamics.Menu.ResetDefaultsButton").c_str(), changed, Icons::kReset)) {
             ResetDynamicsToDefaults();
@@ -1788,10 +1766,22 @@ namespace UI {
 
         GUI::SameLine(0.0F, 6.0F);
 
-        // Collision layers are stored outside CollisionData: per-actor edits live in editor.collisionLayers,
-        // every other mode edits presetConfig->collisionLayers.
-        auto& currentLayers = editor.npcPreview ? editor.collisionLayers : presetConfig->collisionLayers;
-        const bool differsFromDefault = !editor.current.IsSame(editor.defaults) || !CollisionLayers::IsSameAsDefault(currentLayers);
+        const auto& settings = Settings::GetSettings();
+        bool hasOverride;
+        if (editor.npcPreview) {
+            const auto actor = editor.previewActor.get();
+            hasOverride = actor && Settings::GetNPCActorPresetOverride(actor->GetFormID(), editor.preset);
+        }
+        else if (editor.npcGlobal) {
+            hasOverride = settings.npcPresets.contains(presetConfig->key);
+        }
+        else if (editor.camera) {
+            hasOverride = settings.cameraPresets.contains(presetConfig->key);
+        }
+        else {
+            hasOverride = settings.presets.contains(presetConfig->key);
+        }
+        const bool differsFromDefault = hasOverride || !editor.current.IsSame(editor.defaults);
 
         if (IconCTAButton(Trans::Tr("Dynamics.Editor.ResetButton").c_str(), differsFromDefault, Icons::kReset)) {
             if (editor.camera) {
@@ -1807,6 +1797,7 @@ namespace UI {
 
                 if (actor) {
                     Settings::ClearNPCActorPresetEdited(actor->GetFormID(), editor.preset);
+                    RefreshNPCEditorLayers(editor, *actor, *presetConfig);
                     editor.current = editor.defaults;
                     StartNPCEditorPreview(actor);
                     ScheduleEditorCollisionApply(false);
@@ -1837,7 +1828,6 @@ namespace UI {
                     ScheduleEditorCollisionApply(false);
                 }
             }
-            CollisionLayers::RestoreToDefaultLayers(currentLayers);
         }
 
         WrappedTooltip(
@@ -1902,8 +1892,8 @@ namespace UI {
                         Settings::MarkNPCPresetEdited(presetEditor.preset, relative ? VCD::GetCollisionDataDelta(presetEditor.current, presetEditor.defaults) : presetEditor.current, relative);
                     }
                     else if (presetEditor.npcPreview) {
-                        if (auto* actor = GetSelectedNPCActorPtr()) {
-                            Settings::MarkNPCActorPresetEdited(actor->GetFormID(), VCD::GetActorName(actor), presetEditor.preset, presetEditor.current, presetEditor.collisionLayers);
+                        if (const auto actor = presetEditor.previewActor.get()) {
+                            Settings::MarkNPCActorPresetEdited(actor->GetFormID(), VCD::GetActorName(actor.get()), presetEditor.preset, presetEditor.current, presetEditor.collisionLayers);
                         }
                     }
                     else {

@@ -3,6 +3,7 @@
 #include "preset_states.hpp"
 
 #include <array>
+#include <optional>
 #include <string>
 #include <unordered_map>
 #include <vector>
@@ -88,10 +89,10 @@ namespace Settings {
 	{
 		struct PresetOverride
 		{
+			std::optional<std::vector<std::string>> collisionLayers{};
+			VCD::CollisionData data{};
 			bool edited{ false };
 			bool relative{ false };
-			VCD::CollisionData data{};
-			std::vector<std::string> collisionLayers{};
 		};
 
 		struct NPCActorPresetOverride

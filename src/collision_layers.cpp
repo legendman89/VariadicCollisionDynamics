@@ -24,29 +24,6 @@ namespace CollisionLayers
         return IsLayerOverridden(a_overrides, kCollisionLayerNames[a_index]) ? !vanillaEnabled : vanillaEnabled;
     }
 
-    // The shared default for every actor is the vanilla kCharController mask.
-    // Returns true when no layer differs from it.
-    bool IsSameAsDefault(const std::vector<std::string>& a_overrides)
-    {
-        constexpr auto charControllerIndex = std::to_underlying(RE::COL_LAYER::kCharController);
-        const auto vanillaMask = kVanillaCollisionMasks[charControllerIndex];
-
-        for (size_t i = 0; i < kCollisionLayerNames.size(); ++i) {
-            const bool vanillaEnabled = ((vanillaMask >> i) & 1) != 0;
-            if (GetLayerEnabled(i, a_overrides) != vanillaEnabled) {
-                return false;
-            }
-        }
-
-        return true;
-    }
-
-    // Overrides are stored as a diff from vanilla, so restoring vanilla means no overrides.
-    void RestoreToDefaultLayers(std::vector<std::string>& a_overrides)
-    {
-        a_overrides.clear();
-    }
-
     RE::Actor* GetCollisionActor(const RE::hkpCollidable& a_collidable)
     {
         auto* ref = RE::TESHavokUtilities::FindCollidableRef(a_collidable);
@@ -95,13 +72,7 @@ namespace CollisionLayers
 
         const bool overridden = CollisionLayers::IsLayerOverridden(collisionLayers, layerName);
 
-        logger::debug(
-            "[NPC Collision] {} [{:08X}] | Preset: {} | Other layer: {} | Override: {}",
-            a_actor->GetDisplayFullName(),
-            a_actor->GetFormID(),
-            VCD::PresetName(preset),
-            layerName,
-            overridden);
+        logger::debug("[NPC Collision] {} [{:08X}] | Preset: {} | Other layer: {} | Override: {}", a_actor->GetDisplayFullName(), a_actor->GetFormID(), VCD::PresetName(preset), layerName, overridden);
 
         return overridden;
     }
@@ -196,11 +167,7 @@ namespace CollisionLayers
             const auto* presetConfig = manager.GetPresetConfig(state.current);
 
             if (presetConfig && ShouldRejectPresetMeleeHit(presetConfig->collisionLayers, a_aggressor, a4)) {
-                logger::debug(
-                    "[Melee Hit] Weapon collision disabled for player preset {}, ignoring hit from {} [{:08X}]",
-                    VCD::PresetName(state.current),
-                    a_aggressor ? a_aggressor->GetDisplayFullName() : "null",
-                    a_aggressor ? a_aggressor->GetFormID() : 0);
+                logger::debug("[Melee Hit] Weapon collision disabled for player preset {}, ignoring hit from {} [{:08X}]", VCD::PresetName(state.current), a_aggressor ? a_aggressor->GetDisplayFullName() : "null", a_aggressor ? a_aggressor->GetFormID() : 0);
 
                 return true;
             }
@@ -238,11 +205,7 @@ namespace CollisionLayers
         const auto& collisionLayers = actorLayers ? *actorLayers : raceLayers ? *raceLayers : presetConfig->collisionLayers;
 
         if (ShouldRejectPresetMeleeHit(collisionLayers, a_aggressor, a4)) {
-            logger::debug(
-                "[Melee Hit] Weapon collision disabled for {} [{:08X}] preset {}, ignoring hit",
-                a_victim->GetDisplayFullName(),
-                a_victim->GetFormID(),
-                VCD::PresetName(preset));
+            logger::debug("[Melee Hit] Weapon collision disabled for {} [{:08X}] preset {}, ignoring hit", a_victim->GetDisplayFullName(), a_victim->GetFormID(), VCD::PresetName(preset));
 
             return true;
         }

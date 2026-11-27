@@ -26,7 +26,7 @@ cmake_minimum_required(VERSION 3.21)
 set(AUTHOR_NAME "Legendman & Truman")
 set(PRODUCT_NAME "VariadicCollisionDynamics")
 set(BEAUTIFUL_NAME "Variadic Collision Dynamics")
-set(CURR_VERSION "1.4.4.1")
+set(CURR_VERSION "1.4.5.0")
 
 project(${PRODUCT_NAME} VERSION ${CURR_VERSION} LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD 23)

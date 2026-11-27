@@ -89,8 +89,8 @@ namespace JSON {
 			if (presetOverride.edited) {
 				entry.update(CollisionDataToJson(presetOverride.data));
 
-				if (!presetOverride.collisionLayers.empty()) {
-					entry["collisionLayers"] = presetOverride.collisionLayers;
+				if (presetOverride.collisionLayers) {
+					entry["collisionLayers"] = *presetOverride.collisionLayers;
 				}
 			}
 

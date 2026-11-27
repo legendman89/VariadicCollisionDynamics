@@ -696,11 +696,12 @@ bool Manager::RestorePresetDefault(const Preset& a_preset)
     auto* presetConfig = GetPresetConfig(a_preset);
     const auto* defaultPresetConfig = GetDefaultPresetConfig(a_preset);
 
-    if (!presetConfig || !defaultPresetConfig || !defaultPresetConfig->loaded) {
+    if (!presetConfig || !defaultPresetConfig) {
         return false;
     }
 
-    *presetConfig = *defaultPresetConfig;
+    presetConfig->data = defaultPresetConfig->data;
+    presetConfig->collisionLayers = defaultPresetConfig->collisionLayers;
     return true;
 }
 

@@ -154,6 +154,35 @@ namespace Settings {
 		FOREACH_PRESET_STATE(PRESET_STATE2CAPTURE)
 	}
 
+	void ApplyPresetSettings(const VCDSettings& a_settings, const VCD::Preset& a_preset)
+	{
+		auto& manager = VCD::Manager::GetSingleton();
+		auto* preset = manager.GetPresetConfig(a_preset);
+		if (!preset || !manager.RestorePresetDefault(a_preset)) {
+			return;
+		}
+
+		const auto player = a_settings.presets.find(preset->key);
+		if (player != a_settings.presets.end() && player->second.edited) {
+			preset->data = player->second.data;
+			preset->data.RecalculateHeight();
+			if (player->second.collisionLayers) {
+				preset->collisionLayers = *player->second.collisionLayers;
+			}
+			else {
+				// Older player settings omitted the array when all layers used the vanilla mask.
+				preset->collisionLayers.clear();
+			}
+		}
+
+		for (const auto* overrides : { &a_settings.npcPresets, &a_settings.cameraPresets }) {
+			const auto it = overrides->find(preset->key);
+			if (it != overrides->end() && it->second.edited && it->second.collisionLayers) {
+				preset->collisionLayers = *it->second.collisionLayers;
+			}
+		}
+	}
+
 	void ApplySettings(const VCDSettings& a_settings)
 	{
 		auto& config = Dynamics::GetConfig();
@@ -164,30 +193,7 @@ namespace Settings {
 		spdlog::flush_on(logLevel);
 
 		for (const auto& presetConfig : manager.GetPresetConfigs()) {
-			manager.RestorePresetDefault(presetConfig.preset);
-		}
-
-		for (const auto& [key, presetOverride] : a_settings.presets) {
-			if (!presetOverride.edited) {
-				continue;
-			}
-
-			if (auto* presetConfig = manager.GetPresetConfig(key)) {
-				presetConfig->data = presetOverride.data;
-				presetConfig->data.RecalculateHeight();
-				presetConfig->collisionLayers = presetOverride.collisionLayers;
-			}
-		}
-
-		for (const auto* overrides : { &a_settings.npcPresets, &a_settings.cameraPresets }) {
-			for (const auto& [key, presetOverride] : *overrides) {
-				if (!presetOverride.edited || presetOverride.collisionLayers.empty()) {
-					continue;
-				}
-				if (auto* presetConfig = manager.GetPresetConfig(key)) {
-					presetConfig->collisionLayers = presetOverride.collisionLayers;
-				}
-			}
+			ApplyPresetSettings(a_settings, presetConfig.preset);
 		}
 
 	}
@@ -223,7 +229,7 @@ namespace Settings {
 		}
 
 		settings.presets.erase(presetConfig->key);
-		VCD::Manager::GetSingleton().RestorePresetDefault(a_preset);
+		ApplyPresetSettings(settings, a_preset);
 	}
 
 	const VCD::CollisionData* GetNPCPresetOverride(const VCD::Preset& a_preset)
@@ -287,6 +293,7 @@ namespace Settings {
 		}
 
 		settings.npcPresets.erase(presetConfig->key);
+		ApplyPresetSettings(settings, a_preset);
 	}
 
 	void MarkCameraPresetEdited(const VCD::Preset& a_preset, const VCD::CollisionData& a_data)
@@ -313,6 +320,7 @@ namespace Settings {
 		}
 
 		settings.cameraPresets.erase(presetConfig->key);
+		ApplyPresetSettings(settings, a_preset);
 	}
 
 	const VCD::CollisionData* GetNPCActorPresetOverride(const RE::FormID& a_formID, const VCD::Preset& a_preset)
