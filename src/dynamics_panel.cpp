@@ -31,11 +31,11 @@ namespace UI {
                 if (i == VCD::kBuiltInPresetCount) {
                     GUI::Separator();
                 }
-                
+
                 const auto& presetConfig = presetConfigs[i];
 
                 if (manager.IsCameraPreset(presetConfig.preset)) {
-                    continue; 
+                    continue;
                 }
 
                 const bool selected = presetConfig.preset == a_preset;
@@ -849,8 +849,8 @@ namespace UI {
             return;
         }
 
-		// Ordered by most specific to least specific preview type.
-		// NPC Actor Preview -> NPC Global Preview. Player is decoupled.
+        // Ordered by most specific to least specific preview type.
+        // NPC Actor Preview -> NPC Global Preview. Player is decoupled.
         if (editor.camera) {
             editor.current.RecalculateHeight();
             Settings::MarkCameraPresetEdited(editor.preset, editor.current);
@@ -995,7 +995,7 @@ namespace UI {
         result.active |= GUI::IsItemActive();
 
         // Grey out top / bottom offset if camera.
-        GUI::BeginDisabled(isCamera); 
+        GUI::BeginDisabled(isCamera);
 
         auto top = a_current.capsule.point1.z;
         const auto topMin = defaultTop - kHeightLimit;
@@ -1011,13 +1011,13 @@ namespace UI {
         const auto bottomMin = defaultBottom - kHeightLimit;
         const auto bottomMax = defaultBottom + kHeightLimit;
         if (GUI::SliderFloat(Trans::Tr("Dynamics.Editor.BottomOffset").c_str(), &bottom, bottomMin, bottomMax)) {
-            const auto maxBottom = std::clamp((a_current.capsule.point1.z + defaultBottom) * 0.5F - kTolerance, bottomMin,  bottomMax);
+            const auto maxBottom = std::clamp((a_current.capsule.point1.z + defaultBottom) * 0.5F - kTolerance, bottomMin, bottomMax);
             a_current.capsule.point2.z = std::clamp(bottom, bottomMin, maxBottom);
             result.changed = true;
         }
         result.active |= GUI::IsItemActive();
 
-        GUI::EndDisabled(); 
+        GUI::EndDisabled();
 
         auto forward = a_current.bump.translation.y;
         if (GUI::SliderFloat(Trans::Tr("Dynamics.Editor.ForwardOffset").c_str(), &forward, -kOffsetLimit, kOffsetLimit)) {
@@ -1143,7 +1143,7 @@ namespace UI {
         GUI::SameLine();
         GUI::PushStyleColor(GUI::ImGuiCol_ButtonHovered, Color::kEditHover);
         GUI::PushStyleColor(GUI::ImGuiCol_ButtonActive, Color::kEditActive);
-         if (EditButton(a_label)) {
+        if (EditButton(a_label)) {
             OpenCameraPresetEditor(a_preset);
         }
         GUI::PopStyleColor(2);
@@ -1190,7 +1190,7 @@ namespace UI {
         const bool filterChanged = GUI::Checkbox(Trans::Tr("Dynamics.NPC.ShowUnregistered").c_str(), &scan.showUnregistered);
         Tooltip(Trans::Tr("Dynamics.NPC.ShowUnregisteredTooltip").c_str());
         Scan::UpdateNearbyActorCache(RE::PlayerCharacter::GetSingleton(), filterChanged);
-        
+
         auto options = Scan::GetNearbyNPCActorOptions();
         auto* selectedActor = GetSelectedNPCActorPtr();
         std::string preview = Trans::Tr("Dynamics.NPC.SelectActorPreview");
@@ -1202,7 +1202,7 @@ namespace UI {
                 break;
             }
         }
-        
+
         if (!selectedAvailable) {
             GetSelectedNPCActor() = {};
             selectedActor = nullptr;
@@ -1225,7 +1225,7 @@ namespace UI {
             }
         }
 
-        
+
         SolidBackground(GUI::ImGuiCol_PopupBg);
         GUI::SetNextItemWidth(kFixedActorComboWidth);
         if (GUI::BeginCombo(Trans::Tr("Dynamics.NPC.ActorComboLabel").c_str(), preview.c_str())) {
@@ -1256,15 +1256,15 @@ namespace UI {
         GUI::SameLine(0.0F, 12.0F);
 
         GUI::BeginDisabled(!Settings::GetSettings().enableNPCDynamics || !VCD::Race::IsSupportedNPCPresetActor(GetSelectedNPCActorPtr()));
-        
+
         if (EditTextButton(Trans::Tr("Dynamics.NPC.EditSelectedActorButton").c_str())) {
             OpenNPCPresetEditor(a_selectedPreset, GetSelectedNPCActorPtr());
         }
-        
+
         GUI::EndDisabled();
 
         Tooltip(Trans::Tr("Dynamics.NPC.EditSelectedActorTooltip").c_str());
-        
+
         if (!registrationError.empty()) {
             GUI::TextWrapped("%s", registrationError.c_str());
         }
@@ -1353,7 +1353,7 @@ namespace UI {
                 GUI::ImVec2{ deletePresetWidth, kPresetActionButtonHeight }
             );
         WrappedTooltip(hasCustomPresets ? Trans::Tr("Dynamics.DeletePreset.Tooltip.Custom").c_str() :
-                                          Trans::Tr("Dynamics.DeletePreset.Tooltip.Default").c_str());
+            Trans::Tr("Dynamics.DeletePreset.Tooltip.Default").c_str());
 
         GUI::GetItemRectMin(&buttonMin);
         GUI::GetItemRectMax(&buttonMax);
@@ -1387,18 +1387,19 @@ namespace UI {
 
         for (const auto& preset : presets) {
             if (auto* config = manager.GetPresetConfig(preset)) {
-                config->collisionLayers.clear();
+                CollisionLayers::RestoreToDefaultLayers(config->collisionLayers);
             }
         }
     }
 
- 
+
     void ResetDynamicsToDefaults()
     {
         const auto wasNPCDynamicsEnabled = Settings::GetSettings().enableNPCDynamics;
         const auto wasCameraDynamicsEnabled = Settings::GetSettings().enableCameraDynamics;
 
         Settings::ResetDynamics();
+        ClearAllPresetCollisionLayers();
 
         if (wasNPCDynamicsEnabled) {
             Dynamics::RestoreNPCsToVanilla();
@@ -1409,6 +1410,7 @@ namespace UI {
 
         if (RefreshPresetEditor()) {
             auto& editor = GetPresetEditorState();
+            CollisionLayers::RestoreToDefaultLayers(editor.collisionLayers);
 
             if (editor.camera && editor.preview) {
                 Dynamics::ApplyCameraCollisionRadius(editor.current.capsule.radius);
@@ -1458,7 +1460,14 @@ namespace UI {
 
         GUI::SameLine(0.0F, 6.0F);
 
-        const bool changed = !Settings::IsDynamicsDefault();
+        const auto& presetConfigs = VCD::Manager::GetSingleton().GetPresetConfigs();
+        const bool layersChanged = std::any_of(presetConfigs.begin(), presetConfigs.end(),
+            [](const VCD::PresetConfig& a_config) {
+                return !CollisionLayers::IsSameAsDefault(a_config.collisionLayers);
+            }
+        );
+
+        const bool changed = !Settings::IsDynamicsDefault() || layersChanged;
 
         if (IconCTAButton(Trans::Tr("Dynamics.Menu.ResetDefaultsButton").c_str(), changed, Icons::kReset)) {
             ResetDynamicsToDefaults();
@@ -1571,7 +1580,7 @@ namespace UI {
 
         GUI::Spacing();
         GUI::EndDisabled();
-        
+
         RenderNPCActorSelector(GetSelectedNPCPreset());
     }
 
@@ -1629,11 +1638,11 @@ namespace UI {
         const auto actorName =
             editor.camera ? std::string("Camera")
             : (editor.npcPreview ? VCD::GetActorName(GetSelectedNPCActorPtr())
-            : (editor.npcGlobal ? std::string("NPC") : std::string("Player")));
+                : (editor.npcGlobal ? std::string("NPC") : std::string("Player")));
 
         const auto title = Trans::Tr("Dynamics.Editor.WindowTitlePrefix") + " " +
-            actorName + " " + 
-            Trans::Tr("Dynamics.Editor.WindowTitlePreset") + " " + 
+            actorName + " " +
+            Trans::Tr("Dynamics.Editor.WindowTitlePreset") + " " +
             VCD::PresetName(editor.preset) +
             "###VCDPresetEditor";
 
@@ -1768,18 +1777,21 @@ namespace UI {
 
         }
         else {*/
-            const auto sliderResult = RenderCollisionSliders(editor.current, editor.defaults, editor.limits, editor.camera);
-            if (sliderResult.changed) {
-                UpdateEditedPreset();
-                ScheduleEditorCollisionApply(sliderResult.active);
-            }
-      //  }
+        const auto sliderResult = RenderCollisionSliders(editor.current, editor.defaults, editor.limits, editor.camera);
+        if (sliderResult.changed) {
+            UpdateEditedPreset();
+            ScheduleEditorCollisionApply(sliderResult.active);
+        }
+        //  }
 
         GUI::Spacing();
 
         GUI::SameLine(0.0F, 6.0F);
 
-        const bool differsFromDefault = !editor.current.IsSame(editor.defaults);
+        // Collision layers are stored outside CollisionData: per-actor edits live in editor.collisionLayers,
+        // every other mode edits presetConfig->collisionLayers.
+        auto& currentLayers = editor.npcPreview ? editor.collisionLayers : presetConfig->collisionLayers;
+        const bool differsFromDefault = !editor.current.IsSame(editor.defaults) || !CollisionLayers::IsSameAsDefault(currentLayers);
 
         if (IconCTAButton(Trans::Tr("Dynamics.Editor.ResetButton").c_str(), differsFromDefault, Icons::kReset)) {
             if (editor.camera) {
@@ -1825,6 +1837,7 @@ namespace UI {
                     ScheduleEditorCollisionApply(false);
                 }
             }
+            CollisionLayers::RestoreToDefaultLayers(currentLayers);
         }
 
         WrappedTooltip(

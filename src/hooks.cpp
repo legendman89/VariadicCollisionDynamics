@@ -406,7 +406,6 @@ void CameraLinearCastHook::Install()
 	logger::info("CameraLinearCastHook installed");
 }
 
-
 // at this write_call address only the player and his camera comes through here
 bool CollisionFilterHook::playerFilter(RE::bhkCollisionFilter* filter, RE::CFilter filterA, RE::CFilter filterB)
 {
@@ -474,6 +473,7 @@ void CollisionFilterHook::Install()
 }
 
 //this is used to modify collision layers for NPCs
+// player does not come through here
 uint8_t* CollidableFilterHook::thunk(const RE::hkpCollidableCollidableFilter* a_this, uint8_t* a_result, const RE::hkpCollidable& a_collidableA, const RE::hkpCollidable& a_collidableB)
 {
 	auto* result = func(a_this, a_result, a_collidableA, a_collidableB);
@@ -521,10 +521,10 @@ void MeleeHitHookAE::func(RE::Actor* a_aggressor, RE::Actor* a_victim, int64_t a
 	originalFunc(a_aggressor, a_victim, a3, a4);
 }
 
-//not the same as SE cant use Relocation varient ID
+//not the same as SE
 void MeleeHitHookAE::Install()
 {
-	if (!REL::Module::IsAE()) {
+	if (!REL::Module::IsAE() || precision::IsInstalled()) {
 		return;
 	}
 
@@ -560,7 +560,7 @@ void MeleeHitHookSE::func(RE::Character* a_aggressor, RE::Actor* a_victim, int64
 
 void MeleeHitHookSE::Install()
 {
-	if (REL::Module::IsAE()) {
+	if (REL::Module::IsAE() || precision::IsInstalled()) {
 		return;
 	}
 
@@ -670,12 +670,9 @@ void Hook::Install() {
 
 	CollidableFilterHook::Install();
 
-	if (!precision::IsInstalled()) {
-		MeleeHitHookSE::Install();
+	MeleeHitHookSE::Install();
 
-		MeleeHitHookAE::Install();
-	}
-
+	MeleeHitHookAE::Install();
 
 	AdmitAnimationHook::Install();
 }
